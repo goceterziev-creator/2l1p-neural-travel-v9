@@ -39,12 +39,19 @@ const ENABLE_VISION_TEST_ENDPOINTS = /^(1|true|yes|on)$/i.test(String(process.en
 const AGENCY_WHATSAPP_PHONE = String(process.env.AGENCY_WHATSAPP_PHONE || "359885078980").replace(/[^\d]/g, "");
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const OCR_ENGINE_VERSION = "8.3.2";
+const GT63_DATABASE_SCHEMA_VERSION = "gt63-v9-staging-1";
+const GT63_PRODUCT_LINE = process.env.GT63_PRODUCT_LINE || "V9";
+const GT63_RUNTIME_ENV = process.env.GT63_RUNTIME_ENV || process.env.NODE_ENV || "development";
+const GT63_REQUIRE_ISOLATED_STORAGE = /^(1|true|yes|on)$/i.test(String(process.env.GT63_REQUIRE_ISOLATED_STORAGE || ""));
 const DATA_DIR = process.env.DATA_DIR || process.env.PERSISTENT_DATA_DIR || __dirname;
 
 const DB_FILE = process.env.DB_FILE
   ? path.resolve(process.env.DB_FILE)
   : path.join(DATA_DIR, "DATABASE", "database.json");
 const DB_DIR = path.dirname(DB_FILE);
+const MEDIA_DIR = process.env.MEDIA_DIR
+  ? path.resolve(process.env.MEDIA_DIR)
+  : path.join(DATA_DIR, "storage", "media");
 const AIRPORT_REPOSITORY_SEED_FILE = path.join(__dirname, "data", "airports.json");
 const AIRPORT_RUNTIME_FILE = process.env.AIRPORT_CONFIG_FILE
   ? path.resolve(process.env.AIRPORT_CONFIG_FILE)
@@ -112,14 +119,67 @@ app.get(["/gt63-core/product", "/gt63-core/product/"], requireAuthPage, (req, re
 });
 app.use("/gt63-core/fixtures/smart-import", requireAuthPage, express.static(SMART_IMPORT_FIXTURE_DIR));
 app.use("/gt63-core", requireAuthPage, express.static(GT63_CORE_DIR));
+app.use("/media", express.static(MEDIA_DIR, {
+  dotfiles: "deny",
+  fallthrough: false,
+  index: false,
+  maxAge: IS_PRODUCTION ? "1h" : 0
+}));
 app.use(express.static(PUBLIC_DIR));
 
+validateRuntimeIsolation();
 ensureDb();
+ensureMediaHealthFile();
+
+function validateRuntimeIsolation() {
+  if (!GT63_REQUIRE_ISOLATED_STORAGE) return;
+
+  const hasExplicitRuntimeRoot = Boolean(process.env.DB_FILE || process.env.DATA_DIR || process.env.PERSISTENT_DATA_DIR);
+  if (!hasExplicitRuntimeRoot) {
+    throw new Error("GT63 V9 staging requires DB_FILE, DATA_DIR, or PERSISTENT_DATA_DIR to avoid unsafe runtime fallback");
+  }
+  if (path.resolve(DATA_DIR) === path.resolve(__dirname) && !process.env.DB_FILE) {
+    throw new Error("GT63 V9 staging DATA_DIR resolves to the application directory; configure an isolated Railway volume path");
+  }
+  if (/2l1p-neural-travel-production\.up\.railway\.app/i.test(LIVE_BASE_URL)) {
+    throw new Error("GT63 V9 staging must not use the V8 production LIVE_BASE_URL");
+  }
+}
 
 function ensureDb() {
   if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
   if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify({ offers: [] }, null, 2), "utf8");
+    fs.writeFileSync(DB_FILE, JSON.stringify(createEmptyDbSnapshot(), null, 2), "utf8");
+    return;
+  }
+  try {
+    const current = readDbSnapshotFile(DB_FILE);
+    if (!current.schemaVersion) {
+      current.schemaVersion = GT63_DATABASE_SCHEMA_VERSION;
+      fs.writeFileSync(DB_FILE, JSON.stringify(current, null, 2), "utf8");
+    }
+  } catch {
+    // readDb() handles recovery and detailed reporting for corrupted snapshots.
+  }
+}
+
+function createEmptyDbSnapshot() {
+  return {
+    schemaVersion: GT63_DATABASE_SCHEMA_VERSION,
+    agencies: [],
+    users: [],
+    clients: [],
+    offers: [],
+    activities: []
+  };
+}
+
+function ensureMediaHealthFile() {
+  const healthDir = path.join(MEDIA_DIR, "health");
+  if (!fs.existsSync(healthDir)) fs.mkdirSync(healthDir, { recursive: true });
+  const healthFile = path.join(healthDir, "test.txt");
+  if (!fs.existsSync(healthFile)) {
+    fs.writeFileSync(healthFile, "GT63 V9 media storage OK\n", "utf8");
   }
 }
 
@@ -141,8 +201,12 @@ function normalizeDbSnapshot(db) {
   if (!db || typeof db !== "object" || Array.isArray(db)) {
     throw new Error("Invalid database snapshot");
   }
+  if (!Array.isArray(db.agencies)) db.agencies = [];
   if (!Array.isArray(db.users)) db.users = [];
+  if (!Array.isArray(db.clients)) db.clients = [];
   if (!Array.isArray(db.offers)) db.offers = [];
+  if (!Array.isArray(db.activities)) db.activities = [];
+  if (!db.schemaVersion) db.schemaVersion = GT63_DATABASE_SCHEMA_VERSION;
   return db;
 }
 
@@ -832,8 +896,23 @@ function ensureDefaultUser() {
   const now = new Date().toISOString();
   let changed = false;
 
+  if (!Array.isArray(db.agencies)) {
+    db.agencies = [];
+    changed = true;
+  }
   if (!Array.isArray(db.users)) {
     db.users = [];
+    changed = true;
+  }
+  if (!db.agencies.some((agency) => (agency.agencyId || agency.id) === "AGY-AYA")) {
+    db.agencies.unshift({
+      id: "AGY-AYA",
+      agencyId: "AGY-AYA",
+      name: process.env.AGENCY_NAME || "AYA TRAVEL",
+      status: "active",
+      plan: "PRO",
+      createdAt: now
+    });
     changed = true;
   }
 
@@ -8391,8 +8470,44 @@ app.post("/api/admin/reset-password", requireCapability("users.manage"), async (
   }
 });
 
-app.get("/api/health", (req, res) => {
-  res.json({ ok: true, service: "2L1P Neural Travel", port: PORT, liveBaseUrl: LIVE_BASE_URL });
+function checkDatabaseHealth() {
+  try {
+    const db = readDb();
+    return { ok: true, offers: safeArray(db.offers).length };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
+function checkMediaHealth() {
+  try {
+    ensureMediaHealthFile();
+    fs.accessSync(MEDIA_DIR, fs.constants.R_OK | fs.constants.W_OK);
+    return { ok: true, publicTestPath: "/media/health/test.txt" };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
+
+function buildRuntimeHealth() {
+  const database = checkDatabaseHealth();
+  const media = checkMediaHealth();
+  return {
+    ok: Boolean(database.ok && media.ok),
+    service: "GT63 Next",
+    line: GT63_PRODUCT_LINE,
+    runtime: GT63_RUNTIME_ENV,
+    version: "V9",
+    port: PORT,
+    liveBaseUrl: LIVE_BASE_URL,
+    database,
+    media
+  };
+}
+
+app.get(["/health", "/api/health"], (req, res) => {
+  const health = buildRuntimeHealth();
+  res.status(health.ok ? 200 : 503).json(health);
 });
 
 function readAirportConfigFile(filePath) {

@@ -141,7 +141,21 @@ function checkDbShape() {
   const offers = Array.isArray(db.offers) ? db.offers : [];
   const clients = Array.isArray(db.clients) ? db.clients : [];
   const activities = Array.isArray(db.activities) ? db.activities : [];
+  const isEmptyStagingDb = agencies.length === 0
+    && users.length === 0
+    && offers.length === 0
+    && clients.length === 0
+    && activities.length === 0;
+  const isBootstrapStagingDb = agencies.length === 0
+    && offers.length === 0
+    && clients.length === 0
+    && users.every((user) => (user.agencyId || "AGY-AYA") === "AGY-AYA");
 
+  if (isEmptyStagingDb || isBootstrapStagingDb) {
+    assert(typeof db.schemaVersion === "string" && db.schemaVersion.length > 0, "V9 staging DB must persist schemaVersion");
+    console.log(isEmptyStagingDb ? "ok V9 empty staging database shape" : "ok V9 bootstrap staging database shape");
+    return;
+  }
   assert(agencies.length > 0, "expected at least one agency");
 
   const agencyIds = new Set(agencies.map(idOf).filter(Boolean));
