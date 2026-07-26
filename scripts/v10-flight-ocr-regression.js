@@ -1,0 +1,1360 @@
+const assert = require("assert");
+const fs = require("fs");
+const path = require("path");
+
+process.env.DB_FILE = process.env.DB_FILE || "storage/generated/V10_FLIGHT_OCR_TEST_DATABASE.json";
+process.env.AIRPORT_CONFIG_FILE = process.env.AIRPORT_CONFIG_FILE || "storage/generated/V10_AIRPORTS_TEST_CONFIG.json";
+process.env.OCR_PATTERN_CONFIG_FILE = process.env.OCR_PATTERN_CONFIG_FILE || "storage/generated/V10_OCR_PATTERNS_TEST_CONFIG.json";
+process.env.REGRESSION_LIBRARY_DIR = process.env.REGRESSION_LIBRARY_DIR || "storage/generated/V10_REGRESSION_LIBRARY_TEST";
+if (process.env.AIRPORT_CONFIG_FILE.includes("storage/generated/")) {
+  fs.rmSync(process.env.AIRPORT_CONFIG_FILE, { force: true });
+}
+if (process.env.OCR_PATTERN_CONFIG_FILE.includes("storage/generated/")) {
+  fs.rmSync(process.env.OCR_PATTERN_CONFIG_FILE, { force: true });
+}
+
+const {
+  airportResolverMetrics,
+  archiveRegressionCaseSafe,
+  buildFlightDateSourceTrace,
+  buildBookingAndroidFlightProfileTrace,
+  buildSmartImportResponse,
+  buildValidationWarnings,
+  classifyFlightScreenshot,
+  cleanupFlightDateTimeDisplay,
+  detectGenericConnectingFlight,
+  enrichFlightStopSummary,
+  enrichFlightOfferLevelDateTimes,
+  extractFlightPriceFromText,
+  extractPriceFromOcrPatternDatabase,
+  extractGlobalFlightDateTimeCandidates,
+  getFlightCoreBlockingReasons,
+  inferConnectingAirline,
+  listRegressionCases,
+  mergeMultiImageFlightSegments,
+  normalizeOffer,
+  normalizeAirportAliases,
+  normalizeVisionFlightJson,
+  findAirport,
+  parseBookingLastminuteFlightModal,
+  parseDirectRoundTripTicket,
+  parseVisionPrice,
+  collectHotelImageAliases,
+  parseWizzCheckout,
+  readRegressionCaseDetail,
+  summarizeRegressionLibrary,
+  summarizeBetaHealth,
+  isTemporaryGeminiDemandError,
+  normalizeUniversalIntakeError,
+  parseConnectingFlightCheckout,
+  shouldFallbackToOpenAiFlight,
+  uniqueGeminiModels,
+  universalIntakeError,
+  buildFlightOcrConfidence,
+  ocrPricePatternMetrics
+} = require("../server");
+
+const airportSeed = require("../data/airports.json");
+const ocrPatternSeed = require("../data/ocr-patterns.json");
+assert.ok(ocrPatternSeed.price.currencySymbols.includes("\u20ac"), "OCR price pattern seed must include euro symbol");
+assert.ok(ocrPatternSeed.price.currencySymbols.includes("\u00a2"), "OCR price pattern seed must include OCR cent/euro symbol");
+assert.ok(Number.isFinite(ocrPricePatternMetrics.totalPriceLookups), "OCR price pattern shadow metrics must be available");
+const airportRecords = normalizeAirportAliases(airportSeed);
+for (const code of ["SOF", "PMO", "BVA", "JFK", "YYZ", "WAW", "ZRH", "VIE", "IST", "NRT", "HND", "MLE", "AUH", "ATH", "DXB", "FCO", "CIA", "MXP", "BGY", "BRI", "PRG", "BCN", "TIA", "LPA"]) {
+  assert.ok(airportRecords.some((record) => record.code === code), `airport seed must include ${code}`);
+  assert.equal(findAirport(code)?.code, code, `shadow airport lookup must resolve ${code}`);
+}
+assert.ok(airportRecords.some((record) => record.code === "NUE"), "airport seed must include NUE");
+assert.equal(findAirport("Nuremberg")?.code, "NUE", "shadow airport lookup must resolve Nuremberg");
+assert.ok(Number.isFinite(airportResolverMetrics.totalAirportLookups), "airport resolver metrics must be available");
+
+const canonicalDateOffer = {
+  id: "DATE-SOURCE-TEST",
+  destination: "",
+  travelDates: "16.07.2026 - 18.07.2026",
+  guests: "2 adults",
+  finalPrice: 1000,
+  flights: [{
+    airline: "Test Air",
+    route: "SOF -> PMO / PMO -> SOF",
+    departure: "SOF -> PMO, 16 July - 16 July",
+    arrival: "PMO -> SOF, 16 July - 16 July",
+    outboundSegments: [
+      { from: "SOF", to: "PMO", departure: "16 July 10:00", arrival: "16 July 12:00" }
+    ],
+    inboundSegments: [
+      { from: "PMO", to: "SOF", departure: "18 July 13:00", arrival: "18 July 15:00" }
+    ]
+  }],
+  hotels: []
+};
+const dateTrace = buildFlightDateSourceTrace(canonicalDateOffer, "SOF -> PMO 16 July PMO -> SOF 16 July");
+assert.equal(dateTrace.keys.outbound, "2026-07-16", "validator should use outbound segment departure date");
+assert.equal(dateTrace.keys.inbound, "2026-07-18", "validator should use inbound segment departure date");
+assert.match(dateTrace.sourceFields.inbound, /inboundSegments\[0\]\.departure/, "inbound date source must be inbound segment departure");
+const dateWarnings = buildValidationWarnings(canonicalDateOffer, {}, []);
+assert.ok(!dateWarnings.some((warning) => String(warning).includes("полетът показва")), "stale legacy summary dates must not override canonical segment dates");
+
+const overnightInboundOffer = {
+  id: "DATE-SOURCE-OVERNIGHT",
+  destination: "",
+  travelDates: "16.07.2026 - 18.07.2026",
+  guests: "2 adults",
+  finalPrice: 1000,
+  flights: [{
+    route: "SOF -> PMO / PMO -> SOF",
+    outboundSegments: [
+      { from: "SOF", to: "PMO", departure: "16 July 10:00", arrival: "16 July 12:00" }
+    ],
+    inboundSegments: [
+      { from: "PMO", to: "SOF", departure: "18 July 23:00", arrival: "19 July 01:00" }
+    ]
+  }],
+  hotels: []
+};
+const overnightTrace = buildFlightDateSourceTrace(overnightInboundOffer, "");
+assert.equal(overnightTrace.keys.inbound, "2026-07-18", "inbound validation should use inbound departure date, not overnight arrival date");
+
+const missingYearTrace = buildFlightDateSourceTrace({
+  id: "DATE-SOURCE-MISSING-YEAR",
+  destination: "",
+  travelDates: "16.07 - 18.07",
+  flights: [{
+    outboundSegments: [{ departure: "16 July 10:00" }],
+    inboundSegments: [{ departure: "18 July 12:00" }]
+  }]
+}, "");
+assert.equal(missingYearTrace.keys.outbound, "07-16", "missing year should remain partial date");
+assert.equal(missingYearTrace.keys.inbound, "07-18", "missing year inbound should remain partial date");
+
+const universalError = universalIntakeError("json-parse", "Gemini JSON parse failed", "bad key=SECRET", {
+  requestId: "UI-test",
+  statusCode: 502
+});
+const universalPayload = normalizeUniversalIntakeError(universalError);
+assert.deepStrictEqual(
+  {
+    success: universalPayload.success,
+    stage: universalPayload.stage,
+    reason: universalPayload.reason,
+    requestId: universalPayload.requestId
+  },
+  {
+    success: false,
+    stage: "json-parse",
+    reason: "Gemini JSON parse failed",
+    requestId: "UI-test"
+  },
+  "universal intake errors should expose structured diagnostics"
+);
+assert.ok(!universalPayload.details.includes("SECRET"), "universal intake frontend details should redact API-key-like tokens");
+assert.equal(isTemporaryGeminiDemandError(503, "This model is currently experiencing high demand. Please try again later."), true, "Gemini high demand should be retryable");
+assert.deepStrictEqual(uniqueGeminiModels("gemini-2.5-flash", "gemini-2.5-flash"), ["gemini-2.5-flash"], "Gemini fallback model list should be unique");
+assert.deepStrictEqual(uniqueGeminiModels("gemini-1.5-flash", "gemini-2.5-flash"), ["gemini-2.0-flash", "gemini-2.5-flash"], "Gemini legacy 1.5 model should be replaced before retry");
+assert.equal(shouldFallbackToOpenAiFlight(new Error("Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-2.0-flash")), true, "Gemini quota limit should trigger OpenAI flight fallback");
+assert.equal(shouldFallbackToOpenAiFlight(new Error("This model models/gemini-2.5-flash is no longer available to new users.")), true, "Gemini unavailable model should trigger OpenAI flight fallback");
+assert.equal(shouldFallbackToOpenAiFlight(new Error("Uploaded image is empty")), false, "Image validation errors should not trigger provider fallback");
+const serverSource = fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8");
+assert.match(serverSource, /GT63_ENABLE_VISION_TEST_ENDPOINTS/, "production vision test endpoints must require an explicit env flag");
+assert.match(serverSource, /\/api\/import-image-gemini-test"[\s\S]*requireVisionTestEndpointEnabled/, "flight Gemini test endpoint must be guarded in production");
+assert.match(serverSource, /\/api\/universal-travel-intake-gemini-test"[\s\S]*requireVisionTestEndpointEnabled/, "universal Gemini test endpoint must be guarded in production");
+const openAiFlightShape = normalizeVisionFlightJson({
+  outboundSegments: [{
+    departureAirport: "SOF",
+    arrivalAirport: "IST",
+    departureDate: "28 March",
+    departureTime: "15:50",
+    arrivalDate: "28 March",
+    arrivalTime: "17:20",
+    flight_number: "TK 1032",
+    carrier: "Turkish Airlines"
+  }],
+  returnSegments: [{
+    originAirportCode: "SCL",
+    destinationAirportCode: "IST",
+    departure_datetime: "8 April 11:15",
+    arrival_datetime: "9 April 11:15",
+    flightNo: "TK 216",
+    airline: "Turkish Airlines"
+  }],
+  totalPrice: { amount: "3,474.94", currency: "EUR" },
+  baggageSummary: "2 checked bags"
+});
+assert.equal(openAiFlightShape.outbound.segments[0].from, "SOF", "OpenAI segment aliases should normalize departure airport to from");
+assert.equal(openAiFlightShape.outbound.segments[0].to, "IST", "OpenAI segment aliases should normalize arrival airport to to");
+assert.equal(openAiFlightShape.outbound.segments[0].flightNumber, "TK 1032", "OpenAI flight number aliases should normalize");
+assert.equal(openAiFlightShape.inbound.segments[0].from, "SCL", "OpenAI return segment aliases should normalize to inbound segments");
+assert.equal(openAiFlightShape.price, "3,474.94", "OpenAI price alias should normalize before validation");
+assert.equal(openAiFlightShape.currency, "EUR", "OpenAI currency alias should normalize");
+assert.equal(parseVisionPrice("3,474.94"), 3474.94, "OpenAI flight price parser should support comma thousands and dot decimals");
+assert.equal(parseVisionPrice("3.474,94 EUR"), 3474.94, "OpenAI flight price parser should support dot thousands and comma decimals");
+
+const smartImportContract = buildSmartImportResponse({
+  intakeId: "SMART-contract-test",
+  sources: [
+    { sourceId: "SRC-1", sourceType: "flight", confidence: 0.95, reason: "flight itinerary" },
+    { sourceId: "SRC-2", sourceType: "hotel", confidence: 0.91, reason: "hotel details" }
+  ],
+  classifications: [
+    { sourceId: "SRC-1", sourceType: "flight", confidence: 0.95, reason: "flight itinerary" },
+    { sourceId: "SRC-2", sourceType: "hotel", confidence: 0.91, reason: "hotel details" }
+  ],
+  offerFlight: { route: "SOF -> MLE / MLE -> SOF", price: 1200 },
+  offerHotel: { name: "Conrad Maldives Rangali Island", price: 8000 },
+  warnings: ["Review mixed sources if needed."],
+  evidence: { archived: true, sources: [] },
+  flightResult: { canonical: { outbound: { segments: [] } }, model: "gemini-test" },
+  hotelResult: {
+    source: "serpapi",
+    metadata: { source: "hotel_hint_serpapi" },
+    missingFields: [],
+    rawParsedHotels: [{ name: "Conrad Maldives Rangali Island" }]
+  }
+});
+assert.equal(smartImportContract.success, true, "Smart Import contract must be successful");
+assert.equal(smartImportContract.contractVersion, "1.0", "Smart Import contract must expose version 1.0");
+assert.equal(smartImportContract.mode, "GT63_SMART_IMPORT", "Smart Import contract must expose stable mode");
+assert.equal(smartImportContract.intakeId, "SMART-contract-test", "Smart Import contract must include intake id");
+assert.equal(smartImportContract.sources.length, 2, "Smart Import contract must include source evidence list");
+assert.equal(smartImportContract.offerFlight.route, "SOF -> MLE / MLE -> SOF", "Smart Import contract must include selected flight offer data");
+assert.equal(smartImportContract.offerHotel.name, "Conrad Maldives Rangali Island", "Smart Import contract must include selected hotel offer data");
+assert.equal(smartImportContract.flight.outbound.segments.length, 0, "Smart Import contract must include canonical flight debug payload when available");
+assert.equal(smartImportContract.hotel.metadata.source, "hotel_hint_serpapi", "Smart Import contract must include hotel metadata for admin/debug");
+assert.equal(smartImportContract.universalIntakeDeprecated, true, "Smart Import contract must expose top-level Universal Intake deprecation marker");
+assert.equal(smartImportContract.debug.universalIntakeDeprecated, true, "Smart Import contract must mark Universal Intake as deprecated");
+
+const smartImportFixtureDir = path.join(__dirname, "..", "test", "fixtures", "smart-import");
+const smartImportFixtureNames = [
+  "flight-only.json",
+  "hotel-only.json",
+  "flight-hotel-mixed.json",
+  "unknown-partial-failure.json"
+];
+const expectedSmartImportKeys = Object.keys(smartImportContract).sort();
+for (const fixtureName of smartImportFixtureNames) {
+  const fixturePath = path.join(smartImportFixtureDir, fixtureName);
+  const fixture = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
+  assert.deepStrictEqual(Object.keys(fixture).sort(), expectedSmartImportKeys, `${fixtureName} must match Smart Import response top-level keys`);
+  assert.equal(fixture.contractVersion, "1.0", `${fixtureName} must expose Smart Import contract version 1.0`);
+  assert.equal(fixture.mode, "GT63_SMART_IMPORT", `${fixtureName} must expose Smart Import mode`);
+  assert.ok(Array.isArray(fixture.sources), `${fixtureName} must include sources array`);
+  assert.ok(Array.isArray(fixture.classifications), `${fixtureName} must include classifications array`);
+  assert.ok(Array.isArray(fixture.warnings), `${fixtureName} must include warnings array`);
+  assert.equal(fixture.universalIntakeDeprecated, true, `${fixtureName} must expose top-level Universal Intake deprecation marker`);
+  assert.equal(fixture.debug?.universalIntakeDeprecated, true, `${fixtureName} must preserve debug Universal Intake deprecation marker`);
+  assert.ok(!JSON.stringify(fixture).match(/OPENAI_API_KEY|GEMINI_API_KEY|SERPAPI_KEY|AIza|sk-|C:\\\\Users|\/data\/|cookie/i), `${fixtureName} must not contain secrets, local paths, cookies, or production storage paths`);
+}
+const smartImportFlightFixture = JSON.parse(fs.readFileSync(path.join(smartImportFixtureDir, "flight-only.json"), "utf8"));
+assert.ok(smartImportFlightFixture.offerFlight.route, "flight-only fixture must include offerFlight");
+assert.deepStrictEqual(smartImportFlightFixture.offerHotel, {}, "flight-only fixture must keep current empty object hotel shape");
+assert.ok(smartImportFlightFixture.classifications.some((item) => item.sourceType === "flight"), "flight-only fixture must include flight classification");
+const smartImportHotelFixture = JSON.parse(fs.readFileSync(path.join(smartImportFixtureDir, "hotel-only.json"), "utf8"));
+assert.ok(smartImportHotelFixture.offerHotel.name, "hotel-only fixture must include offerHotel");
+assert.deepStrictEqual(smartImportHotelFixture.offerFlight, {}, "hotel-only fixture must keep current empty object flight shape");
+assert.ok(smartImportHotelFixture.classifications.some((item) => item.sourceType === "hotel"), "hotel-only fixture must include hotel classification");
+const smartImportMixedFixture = JSON.parse(fs.readFileSync(path.join(smartImportFixtureDir, "flight-hotel-mixed.json"), "utf8"));
+assert.ok(smartImportMixedFixture.offerFlight.route, "mixed fixture must include offerFlight");
+assert.ok(smartImportMixedFixture.offerHotel.name, "mixed fixture must include offerHotel");
+assert.ok(smartImportMixedFixture.sources.length > 1, "mixed fixture must include multiple sources");
+assert.ok(smartImportMixedFixture.classifications.some((item) => item.sourceType === "flight"), "mixed fixture must include flight classification");
+assert.ok(smartImportMixedFixture.classifications.some((item) => item.sourceType === "hotel"), "mixed fixture must include hotel classification");
+const smartImportUnknownFixture = JSON.parse(fs.readFileSync(path.join(smartImportFixtureDir, "unknown-partial-failure.json"), "utf8"));
+assert.ok(smartImportUnknownFixture.classifications.some((item) => item.sourceType === "unknown"), "unknown fixture must include unknown classification");
+assert.ok(smartImportUnknownFixture.warnings.length >= 1, "unknown fixture must include actionable warnings");
+assert.ok(smartImportUnknownFixture.offerFlight.route, "unknown fixture should preserve successful partial extraction");
+
+fs.rmSync(process.env.REGRESSION_LIBRARY_DIR, { recursive: true, force: true });
+const archiveResult = archiveRegressionCaseSafe({
+  type: "flight",
+  files: [
+    {
+      originalname: "regression-test.png",
+      buffer: Buffer.from("fake-image")
+    }
+  ],
+  rawOcrText: "SOF -> JFK Total: €762.61",
+  parsedOutput: { airline: "SWISS", route: "SOF -> JFK / JFK -> SOF", price: 762.61 },
+  trace: { confidence: { price: 0.91 } },
+  metadata: { source: "test_fixture" },
+  decision: "PASS",
+  route: "SOF -> JFK / JFK -> SOF",
+  price: 762.61,
+  sourceProfile: "test_fixture"
+});
+assert.equal(archiveResult.archived, true, "regression case archive should succeed");
+assert.ok(fs.existsSync(path.join(archiveResult.path, "metadata.json")), "metadata.json should be written");
+assert.ok(fs.existsSync(path.join(archiveResult.path, "parsed_output.json")), "parsed_output.json should be written");
+const regressionStats = summarizeRegressionLibrary();
+assert.ok(regressionStats.flightCases >= 1, "regression library should count archived flight cases");
+const regressionCases = listRegressionCases();
+assert.ok(Array.isArray(regressionCases), "regression case inspector should expose a list");
+assert.ok(regressionCases.some((item) => item.id && item.route === "SOF -> JFK / JFK -> SOF"), "regression case list should include archived case ids");
+const archivedCase = regressionCases.find((item) => item.route === "SOF -> JFK / JFK -> SOF");
+const archivedCaseDetail = readRegressionCaseDetail(archivedCase.id);
+assert.equal(archivedCaseDetail.id, archivedCase.id, "regression case detail should load by id");
+assert.equal(archivedCaseDetail.parsedOutput.route, "SOF -> JFK / JFK -> SOF", "regression case detail should include parsed output");
+assert.ok(archivedCaseDetail.rawOcr.includes("SOF -> JFK"), "regression case detail should include raw OCR");
+assert.ok(archivedCaseDetail.files.includes("metadata.json"), "regression case detail should list files");
+assert.equal(readRegressionCaseDetail("missing-case"), null, "missing regression case should return a safe null");
+const sensitiveArchive = archiveRegressionCaseSafe({
+  type: "flight",
+  files: [{ originalname: "sensitive.png", buffer: Buffer.from("fake-image") }],
+  rawOcrText: "Card number 4111 1111 1111 1111",
+  parsedOutput: {
+    route: "SOF -> JFK",
+    operatorWarnings: [
+      "Missing OCR field: flight.price.",
+      "Flight date/time confidence below production threshold."
+    ]
+  },
+  decision: "REVIEW"
+});
+assert.equal(sensitiveArchive.archived, true, "sensitive archive should still save metadata");
+assert.equal(sensitiveArchive.screenshotsArchived, false, "sensitive archive must skip screenshots");
+assert.ok(!fs.existsSync(path.join(sensitiveArchive.path, "screenshot_1.png")), "sensitive screenshot should not be written");
+const betaHealthStats = summarizeBetaHealth();
+assert.ok(betaHealthStats.totalImports >= 2, "beta health should count archived imports");
+assert.ok(betaHealthStats.passImports >= 1, "beta health should count PASS imports");
+assert.ok(betaHealthStats.reviewImports >= 1, "beta health should count REVIEW imports");
+assert.ok(betaHealthStats.reviewRate > 0, "beta health should calculate review rate");
+assert.ok(Array.isArray(betaHealthStats.topReviewReasons), "beta health should expose top review reasons");
+assert.ok(betaHealthStats.topReviewReasons.some((item) => item.reason === "Missing OCR field: flight.price"), "beta health should normalize duplicate review reason punctuation");
+assert.ok(Array.isArray(betaHealthStats.reviewReasonGroups), "beta health should expose review reason groups");
+assert.ok(betaHealthStats.reviewReasonGroups.some((item) => item.category === "PRICE" && item.count >= 1), "beta health should group price review reasons");
+assert.ok(betaHealthStats.reviewReasonGroups.some((item) => item.category === "DATES" && item.count >= 1), "beta health should group date/time review reasons");
+assert.ok(Array.isArray(betaHealthStats.topAffectedRoutes), "beta health should expose top affected routes");
+assert.ok(betaHealthStats.topAffectedRoutes.some((item) => item.route === "SOF -> JFK" && item.count >= 1), "beta health should count affected routes");
+assert.ok(Array.isArray(betaHealthStats.recentReviewCases), "beta health should expose recent review cases");
+
+const originalWriteFileSync = fs.writeFileSync;
+fs.writeFileSync = () => {
+  throw new Error("simulated archive write failure");
+};
+try {
+  const failedArchive = archiveRegressionCaseSafe({
+    type: "hotel",
+    parsedOutput: { name: "Test Hotel" },
+    metadata: { source: "test_fixture" },
+    decision: "REVIEW"
+  });
+  assert.equal(failedArchive.archived, false, "archive failure should return a safe result");
+} finally {
+  fs.writeFileSync = originalWriteFileSync;
+}
+
+const fuzzyFlightOcr = `
+NIS.DOOKING.CO
+Bawusm noaem go Meua cumu
+Monet go Meitn cut
+srop. 1 cent 21104
+SOF - Nlewue Coun
+IST - Nermue Ucransyn
+cp. 2cen 02104
+IST - Nermue Ucransyn
+MLE - Mexaynapoauo neue Benana
+Toner go Coun
+15 cen. 2125
+MLE - Mexaynapoawo netuue Benana
+AUH - Mexaymapogso netwie Sake
+cp.16cent. 0715
+ATH - Netwue Enestepwoc
+cp.16cent. 0900
+SOF - Netwuie Coda
+241428€
+`;
+
+const bulgarianEskTurkishNurembergOcr = `
+Детайли за полета
+София > Нюрнберг
+Време на пътуването: 13h 25min 1 прекачване
+21:10 Летище София (SOF)
+9 юли
+Продължителност на полета: 01h 30min
+Turkish Airlines
+Номер на полета: TK 1030
+22:40 Istanbul Airport (IST)
+9 юли
+Време за престой: 09h 05min
+07:45 Istanbul Airport (IST)
+10 юли
+Продължителност на полета: 02h 50min
+Turkish Airlines
+Номер на полета: TK 1503
+09:35 Nurnberg Airport (NUE)
+10 юли
+Нюрнберг > София
+Време на пътуването: 13h 00min 1 прекачване
+18:45 Nurnberg Airport (NUE)
+16 юли
+Продължителност на полета: 02h 50min
+Turkish Airlines
+Номер на полета: TK 1506
+22:35 Istanbul Airport (IST)
+16 юли
+Време за престой: 08h 55min
+07:30 Istanbul Airport (IST)
+17 юли
+Продължителност на полета: 01h 15min
+Turkish Airlines
+Номер на полета: TK 1027
+08:45 Летище София (SOF)
+17 юли
+Малка чанта
+Ръчен багаж
+Регистриран багаж
+655 ©
+Цена за 2 пътници, двупосочно
+`;
+
+assert.equal(extractFlightPriceFromText(bulgarianEskTurkishNurembergOcr), 655, "Bulgarian passenger/return price label should repair OCR euro symbol");
+const nurembergParsed = parseConnectingFlightCheckout(bulgarianEskTurkishNurembergOcr);
+assert.equal(nurembergParsed.flight.airline, "Turkish Airlines");
+assert.equal(nurembergParsed.flight.route, "SOF -> NUE / NUE -> SOF");
+assert.equal(nurembergParsed.flight.price, 655);
+assert.match(nurembergParsed.flight.departure, /SOF -> NUE, Jul 9 21:10 - Jul 10 09:35, via IST/);
+assert.match(nurembergParsed.flight.arrival, /NUE -> SOF, Jul 16 18:45 - Jul 17 08:45, via IST/);
+assert.ok(!nurembergParsed.metadata.missingFields.includes("flight.price"));
+assert.ok(!nurembergParsed.metadata.missingFields.includes("flight.times"));
+
+const noisyBulgarianEskTurkishNurembergOcr = `
+LeTtannu 3anoneTa X
+Codpua ~~ HiopHbepr
+Bpeme Ha NLTYBaHeTO: 13h 25min 1 npexaysane
+21:10 » Nervwe Coun (SOF)
+0 MpopuratenHocT 4a naneta: 01h 30min
+Turkish Airlines
+Homep ra noneTa: TK1030
+22:40 * Istanbul Airport (IST)
+(©  Bpeme 2anpecTon: 03h 05min
+07:45 eo Istanbul Airport (IST)
+® MpoaLrxATENHOCT 4a noneta: 02h 50min
+Turkish Airlines
+Homep kanoneta: TK1503
+09:35 “® Nurnberg Airport (NUE)
+10 Kn HiooHbepr, NrepuMa-uns
+HiopHbepr Codus
+Bpeme Ha nuLTyeaHeTo: 13h 00min  1npekavaa-e
+18:45 © Nurnberg Airport (NUE)
+0 MpooLraATENHOCT 4a noneta: 02h 50min
+Turkish Airlines
+Homep ra noneTa: TK1506
+22:35 “Istanbul Airport (IST)
+(VU  Bpeme zanpectos: 08n EEmin
+07:30 eo Istanbul Airport (IST)
+B) FpoaurxaTenHocT a noneta: 01h 15min
+Turkish Airlines
+08:45 * Nerve Cows (SOF)
+655 ©
+Цена за 2 пътници, двупосочно
+`;
+assert.equal(extractFlightPriceFromText(noisyBulgarianEskTurkishNurembergOcr), 655, "Noisy Bulgarian eSky total price should be selected from passenger/return context");
+assert.equal(extractPriceFromOcrPatternDatabase(noisyBulgarianEskTurkishNurembergOcr), 655, "OCR pattern database should shadow-detect noisy Bulgarian eSky total price");
+const noisyNurembergParsed = parseConnectingFlightCheckout(noisyBulgarianEskTurkishNurembergOcr);
+assert.equal(noisyNurembergParsed.flight.airline, "Turkish Airlines");
+assert.equal(noisyNurembergParsed.flight.route, "SOF -> NUE / NUE -> SOF");
+assert.equal(noisyNurembergParsed.flight.price, 655);
+assert.match(noisyNurembergParsed.flight.departure, /SOF -> NUE, .*21:10 - .*09:35, via IST/);
+assert.match(noisyNurembergParsed.flight.arrival, /NUE -> SOF, .*18:45 - .*08:45, via IST/);
+
+const noisyBulgarianEskNurembergSummaryPriceOcr = `
+--- OCR IMAGE 1: 1000169682.jpg ---
+Codus HiopHbepr
+Bpeme Ha nbTyeaHeTo: 13h 25min 1 npekaysaHe
+21:10 JeTtvwe Codusa (SOF)
+Turkish Airlines
+Howmep Ha noneta: TK1030
+22:40 Istanbul Airport (IST)
+Bpewme 3a npecTtoi: 09h 05min
+07:45 Istanbul Airport (IST)
+Turkish Airlines
+Howmep Ha noneta: TK 1503
+09:35 Nurnberg Airport (NUE)
+HiopHb6epr Couns
+Bpeme Ha neTysadHeTo: 08h SOmin 1 npekaysane
+10:30 Nurnberg Airport (NUE)
+Turkish Airlines
+Howmep Ha noneTa: TK 1504
+14:25 Istanbul Airport (IST)
+Bpewme 3a npecToit: 04h 35min
+19:00 Istanbul Airport (IST)
+Turkish Airlines
+Howmep Ha noneta: TK 1029
+20:20 JeTtvwe Coda (SOF)
+
+--- OCR IMAGE 2: 1000169684.jpg ---
+(SOF) Codwms - (NUE) HiopH6epr
+O03 rnun-10 onn 2026 * TNbTHUK
+21:10 SOF 13h 25min 09:35 NUE
+3tonm (NT) | npeKauBaHe 4 onu (cH)
+10:30 NUE 08h 50min 20:20 SOF
+10 vonu (nT) | npekauBaHe 10 vonu (NT)
+B ueHaTa: Co Manka yaHTa % PbueH barax
+[3 Pervctpupan barax
+434 ¢
+LleHa 3a 1 NbTHUK, ABYNOCOYHO
+`;
+assert.equal(extractFlightPriceFromText(noisyBulgarianEskNurembergSummaryPriceOcr), 434, "Noisy eSky summary price should repair OCR cent sign as euro in price context");
+assert.equal(extractPriceFromOcrPatternDatabase(noisyBulgarianEskNurembergSummaryPriceOcr), 434, "OCR pattern database should shadow-detect noisy eSky summary price");
+const noisySummaryNurembergParsed = parseConnectingFlightCheckout(noisyBulgarianEskNurembergSummaryPriceOcr);
+assert.equal(noisySummaryNurembergParsed.flight.airline, "Turkish Airlines");
+assert.equal(noisySummaryNurembergParsed.flight.route, "SOF -> NUE / NUE -> SOF");
+assert.ok(!noisySummaryNurembergParsed.flight.route.includes("PRG"), "NUE route title must not be overwritten by stale PRG fallback");
+assert.equal(noisySummaryNurembergParsed.flight.price, 434);
+assert.match(noisySummaryNurembergParsed.flight.departure, /SOF -> NUE, .*21:10 - .*09:35, via IST/);
+assert.match(noisySummaryNurembergParsed.flight.arrival, /NUE -> SOF, .*10:30 - .*20:20, via IST/);
+
+const noisyBulgarianEskLasPalmasOcr = `
+Codus Jlac NanmMac
+Bpeme Ha nbTyBaHeTO: 17h 30min 1 npekayBaHe
+05:45 Jletuwe Codusa (SOF)
+9 onu Cound, bbnrapus
+Ryanair
+HomMmep Ha noneta: FR 1731
+07:00 CrTaHcTen (STN)
+9 onu J'loHpoH, BenukobputaHus
+Bpeme 3a npecton: 09h 45min
+16:45 CTaHcten (STN)
+9 onu IloHpoH, BenukobputaHus
+Jet2.com
+HomMep Ha noneta: LS 1507
+21:15 Gran Canaria (LPA)
+9 onu Nac Manmac, VicnaHna
+Jlac NanMac Codus
+Bpeme Ha nbTyBaHeTo: 10h 10min 1 npekayBaHe
+13:25 Gran Canaria (LPA)
+16 ronu Nac NanmMac, icnaHus
+Vueling
+HomMmep Ha noneta: VY 3011
+17:40 EnnMpaT (BCN)
+16 tonu bapcenoHa, VicnaHug
+Bpewme 3a npecton: 03h 55min
+21:35 EnnMpaT (BCN)
+16 tonm BapcenoHa, VicnaHusa
+Wizz Air
+Homep Ha noneta: W6 4406
+01:35 Jetuwe Coodusa (SOF)
+17 ronu Codwus, bbnrapusa
+390 В« В©
+LleHa 3a 2 NbTHWLW, ABYNOCOYHO
+`;
+const noisyLasPalmasParsed = parseConnectingFlightCheckout(noisyBulgarianEskLasPalmasOcr);
+assert.equal(noisyLasPalmasParsed.flight.route, "SOF -> LPA / LPA -> SOF");
+assert.ok(!noisyLasPalmasParsed.flight.route.includes("BCN"), "LPA endpoint must not be overwritten by BCN stopover");
+assert.match(noisyLasPalmasParsed.flight.departure, /SOF -> LPA, .*05:45 - .*21:15, via STN/);
+assert.match(noisyLasPalmasParsed.flight.arrival, /LPA -> SOF, .*13:25 - .*01:35, via BCN/);
+assert.equal(noisyLasPalmasParsed.flight.price, 390);
+
+const profile = buildBookingAndroidFlightProfileTrace(fuzzyFlightOcr);
+assert.equal(profile.detected, true, "fuzzy flight modal profile should be detected");
+assert.equal(profile.profile, "booking_flight_modal");
+
+const candidates = extractGlobalFlightDateTimeCandidates(fuzzyFlightOcr);
+assert.ok(candidates.length >= 5, `expected at least 5 date/time candidates, received ${candidates.length}`);
+assert.ok(candidates.some((value) => /Sep 1 21:10/i.test(value)), "compact outbound date/time should normalize");
+assert.ok(candidates.some((value) => /Sep 16 09:00/i.test(value)), "compact final arrival date/time should normalize");
+
+const enriched = enrichFlightOfferLevelDateTimes(
+  fuzzyFlightOcr,
+  { route: "SOF -> MLE / MLE -> SOF", departure: "", arrival: "" },
+  { missingFields: ["flight.times"] }
+);
+assert.match(enriched.flight.departure, /SOF -> MLE, Sep 1 21:10/i);
+assert.match(enriched.flight.arrival, /MLE -> SOF, Sep 16 09:00/i);
+assert.ok(!enriched.metadata.missingFields.includes("flight.times"));
+
+assert.equal(
+  cleanupFlightDateTimeDisplay("SOF -> MLE, Sep 211:04", "Sep 1 21:10"),
+  "SOF -> MLE, Sep 1 21:10"
+);
+assert.equal(
+  cleanupFlightDateTimeDisplay("SOF -> MLE, Sep 211:04", "Sep 211:04"),
+  "SOF -> MLE, Sep 1 21:10"
+);
+assert.equal(
+  cleanupFlightDateTimeDisplay("MLE -> SOF, Sep 1609:00", "Sep 16 09:00"),
+  "MLE -> SOF, Sep 16 09:00"
+);
+assert.equal(
+  cleanupFlightDateTimeDisplay("SOF -> MLE, Sep 109:00", "Sep 1 09:00"),
+  "SOF -> MLE, Sep 1 09:00"
+);
+assert.equal(
+  cleanupFlightDateTimeDisplay("SOF -> MLE, Sep 1 21:10", "Sep 1 21:10"),
+  "SOF -> MLE, Sep 1 21:10"
+);
+assert.equal(
+  cleanupFlightDateTimeDisplay("MLE -> SOF, 16.09 09:00", "Sep 16 09:00"),
+  "MLE -> SOF, 16.09 09:00"
+);
+
+const malformedProductionEnriched = enrichFlightOfferLevelDateTimes(
+  "Sep 211:04 Sep 16 09:00",
+  {
+    route: "SOF -> MLE / MLE -> SOF",
+    departure: "SOF -> MLE, Sep 211:04",
+    arrival: "MLE -> SOF, Sep 16 09:00"
+  },
+  { missingFields: [] }
+);
+assert.equal(malformedProductionEnriched.flight.departure, "SOF -> MLE, Sep 1 21:10");
+assert.equal(malformedProductionEnriched.flight.arrival, "MLE -> SOF, Sep 16 09:00");
+assert.deepEqual(
+  extractGlobalFlightDateTimeCandidates(
+    "Flight to Maldives Sep 211:04 SOF Airport Return Sep 16 09:00 SOF Airport"
+  ),
+  ["Sep 1 21:10", "Sep 16 09:00"],
+  "malformed OCR date/time tokens must be repaired before candidate selection"
+);
+
+const stopEnriched = enrichFlightStopSummary(
+  fuzzyFlightOcr,
+  enriched.flight,
+  "Maldives"
+);
+assert.match(stopEnriched.departure, /via IST/i);
+assert.match(stopEnriched.arrival, /via AUH \+ ATH/i);
+assert.match(stopEnriched.notes, /Outbound via IST/i);
+assert.match(stopEnriched.notes, /Return via AUH \+ ATH/i);
+
+const noisyAustrianRoundTripOcr = `
+Travel operated by Austrian Airlines
+Sep 1 08:00 SOF
+Sep 1 10:00 IST
+Sep 2 08:00 NRT
+Sep 15 10:00 NRT
+Sep 15 18:00 IST
+Sep 15 21:00 SOF
+--- ENHANCED OCR ---
+Sep 1 08:00 SOF
+Sep 1 10:00 VIE
+Sep 2 08:00 NRT
+Sep 15 10:00 NRT
+Sep 15 18:00 VIE
+Sep 15 21:00 SOF
+`;
+const austrianStops = enrichFlightStopSummary(
+  noisyAustrianRoundTripOcr,
+  {
+    route: "SOF -> NRT / NRT -> SOF",
+    departure: "SOF -> NRT, Sep 1 08:00",
+    arrival: "NRT -> SOF, Sep 15 21:00",
+    notes: ""
+  }
+);
+assert.match(austrianStops.departure, /via VIE/i);
+assert.match(austrianStops.arrival, /via VIE/i);
+assert.doesNotMatch(austrianStops.notes, /via IST/i);
+assert.equal(
+  inferConnectingAirline("Travel operated by Austrian Airlines Austrian Airlines"),
+  "Austrian Airlines",
+  "visible airline labels should be globally extracted and deduplicated"
+);
+
+assert.deepEqual(
+  getFlightCoreBlockingReasons({
+    airline: "",
+    route: "SOF -> NRT / NRT -> SOF",
+    departure: "SOF -> NRT, Sep 1 08:00",
+    arrival: "NRT -> SOF, Sep 15 21:00",
+    price: 1200
+  }),
+  [],
+  "missing airline alone must remain a review item"
+);
+assert.deepEqual(
+  getFlightCoreBlockingReasons({ airline: "Austrian Airlines", route: "", departure: "", arrival: "", price: 0 }),
+  [
+    "Missing or invalid flight.route.",
+    "Missing or invalid flight.times.",
+    "Missing or invalid flight.price."
+  ],
+  "missing core fields must block import"
+);
+
+const bulgarianMonthDateOcr = `
+25 \u043c\u0430\u0440\u0442 (\u0447\u0442)
+12:30 \u0421\u043e\u0444\u0438\u044f (SOF)
+
+8 \u0430\u043f\u0440 (\u0447\u0442)
+22:25 \u0422\u043e\u043a\u0438\u043e (NRT)
+`;
+const bulgarianDateCandidates = extractGlobalFlightDateTimeCandidates(bulgarianMonthDateOcr);
+assert.deepEqual(
+  bulgarianDateCandidates,
+  ["Mar 25 12:30", "Apr 8 22:25"],
+  "Bulgarian full and abbreviated month formats should produce global date candidates"
+);
+const bulgarianDateEnriched = enrichFlightOfferLevelDateTimes(
+  bulgarianMonthDateOcr,
+  { airline: "Airline", route: "SOF -> NRT", departure: "", arrival: "", price: 100 },
+  { missingFields: ["flight.times"] }
+);
+assert.match(bulgarianDateEnriched.flight.departure, /Mar 25 12:30/);
+assert.match(bulgarianDateEnriched.flight.arrival, /Apr 8 22:25/);
+assert.ok(!bulgarianDateEnriched.metadata.missingFields.includes("flight.times"));
+assert.ok(
+  buildFlightOcrConfidence(
+    bulgarianMonthDateOcr,
+    bulgarianDateEnriched.flight,
+    bulgarianDateEnriched.metadata
+  ).outboundDate.confidence >= 0.8,
+  "day + localized month + time must pass date confidence without a year"
+);
+
+const fuzzyBulgarianMonthDateOcr = `
+25 mapr (ur)
+12:30 Coduma (SOF)
+11:55 Tomo (NRT)
+
+8 anp (ur)
+22:25 Tokuno (NRT)
+23 Codus (SOF)
+`;
+const fuzzyBulgarianDateCandidates = extractGlobalFlightDateTimeCandidates(fuzzyBulgarianMonthDateOcr);
+assert.deepEqual(
+  fuzzyBulgarianDateCandidates,
+  ["Mar 25 12:30", "Apr 8 22:25"],
+  "OCR-deformed Bulgarian month tokens should produce global date candidates"
+);
+const fuzzyBulgarianDateEnriched = enrichFlightOfferLevelDateTimes(
+  fuzzyBulgarianMonthDateOcr,
+  { airline: "Airline", route: "SOF -> NRT / NRT -> SOF", departure: "", arrival: "", price: 100 },
+  { missingFields: ["flight.times"] }
+);
+assert.match(fuzzyBulgarianDateEnriched.flight.departure, /Mar 25 12:30/);
+assert.match(fuzzyBulgarianDateEnriched.flight.arrival, /Apr 8 22:25/);
+assert.ok(!fuzzyBulgarianDateEnriched.metadata.missingFields.includes("flight.times"));
+assert.ok(
+  buildFlightOcrConfidence(
+    fuzzyBulgarianMonthDateOcr,
+    fuzzyBulgarianDateEnriched.flight,
+    fuzzyBulgarianDateEnriched.metadata
+  ).outboundDate.confidence >= 0.8,
+  "OCR-deformed day + month + time must pass date confidence without inventing a missing time"
+);
+assert.deepEqual(
+  getFlightCoreBlockingReasons(fuzzyBulgarianDateEnriched.flight, 100),
+  [],
+  "OCR-deformed Bulgarian dates must not hard-stop an otherwise complete flight"
+);
+
+const productionFuzzyBulgarianMonthDateOcr = `
+25 map (an)
++ 12:30 Coduma (SOF)
+11:55 Tomo (NRT)
+
+samp (em)
+» 22:25 Tokuno (NRT)
+23 Codus (SOF)
+`;
+const productionFuzzyDateCandidates = extractGlobalFlightDateTimeCandidates(
+  productionFuzzyBulgarianMonthDateOcr
+);
+assert.deepEqual(
+  productionFuzzyDateCandidates,
+  ["Mar 25 12:30", "Apr 8 22:25"],
+  "production OCR variants map, samp, an and em should normalize without treating ordinary map text as a month"
+);
+const productionFuzzyDateEnriched = enrichFlightOfferLevelDateTimes(
+  productionFuzzyBulgarianMonthDateOcr,
+  { airline: "Airline", route: "SOF -> NRT / NRT -> SOF", departure: "", arrival: "", price: 100 },
+  { missingFields: ["flight.times"] }
+);
+assert.match(productionFuzzyDateEnriched.flight.departure, /Mar 25 12:30/);
+assert.match(productionFuzzyDateEnriched.flight.arrival, /Apr 8 22:25/);
+assert.deepEqual(
+  getFlightCoreBlockingReasons(productionFuzzyDateEnriched.flight, 100),
+  [],
+  "production fuzzy date variants must not hard-stop an otherwise complete flight"
+);
+
+const globalConnectingFlightOcr = `
+X Flight details
+1 Jul Sofia > New York
+11:05 Sofia Airport (SOF)
+13:15 Zurich Airport (ZRH)
+Flight duration: 2h 20min Flight number: LX 1391
+Class: Economy Airline: SWISS
+1 Jul
+12:25 Zurich Airport (ZRH)
+16:35 John F. Kennedy (JFK)
+Flight duration: 9h 20min Flight number: LX 14
+Class: Economy Airline: SWISS
+New York > Sofia
+8 Jul
+16:15 John F. Kennedy (JFK)
+06:10 Zurich Airport (ZRH)
+8 Jul
+07:05 Zurich Airport (ZRH)
+10:20 Sofia Airport (SOF)
+Passengers €286.71
+Taxes and fees €502.12
+Total: €788.83
+`;
+const globalConnectingFlight = detectGenericConnectingFlight(globalConnectingFlightOcr);
+assert.equal(globalConnectingFlight.airline, "SWISS");
+assert.equal(globalConnectingFlight.route, "SOF -> JFK / JFK -> SOF");
+assert.match(globalConnectingFlight.departure, /via ZRH/i);
+assert.match(globalConnectingFlight.arrival, /via ZRH/i);
+assert.equal(extractFlightPriceFromText(globalConnectingFlightOcr), 788.83);
+assert.equal(extractPriceFromOcrPatternDatabase(globalConnectingFlightOcr), 788.83, "OCR pattern database should shadow-detect global connecting flight total");
+
+const directRoundTripTicketOcr = `
+Sofia to Bari
+Return 7 May - 13 May
+07 MAY
+06:55 Sofia
+07:15 Bari
+FRS 460
+FR 5460
+13 MAY
+22:00 Bari
+00:20 Sofia
+FR 5454
+Total to pay EUR 219.36
+`;
+const directRoundTripTicket = parseDirectRoundTripTicket(directRoundTripTicketOcr, { airline: "Ryanair" });
+assert.equal(directRoundTripTicket.flight.route, "SOF -> BRI / BRI -> SOF");
+assert.match(directRoundTripTicket.flight.departure, /SOF -> BRI, May 7 06:55 - May 7 07:15, FR 5460/);
+assert.match(directRoundTripTicket.flight.arrival, /BRI -> SOF, May 13 22:00 - May 14 00:20, FR 5454/);
+assert.equal(directRoundTripTicket.flight.price, 219.36);
+
+const bookingLastminuteFlightModalOcr = `
+Booking.com
+Flight details
+Sofia - Palermo
+16.07
+20:20 Sofia (SOF)
+21:15 Palermo (PMO)
+Wizzair
+W64313
+Return
+Palermo - Sofia
+18.07
+12:55 Palermo (PMO)
+15:45 Sofia (SOF)
+Wizzair
+W64314
+Total price for all travelers
+809 \u20ac
+`;
+const bookingLastminuteModal = parseBookingLastminuteFlightModal(bookingLastminuteFlightModalOcr);
+assert.equal(bookingLastminuteModal.flight.route, "SOF -> PMO / PMO -> SOF");
+assert.equal(bookingLastminuteModal.flight.dates, "16.07 - 18.07");
+assert.match(bookingLastminuteModal.flight.departure, /SOF -> PMO, 16\.07, 20:20 - 21:15, W64313/);
+assert.match(bookingLastminuteModal.flight.arrival, /PMO -> SOF, 18\.07, 12:55 - 15:45, W64314/);
+assert.equal(bookingLastminuteModal.flight.airline, "Wizz Air");
+assert.match(bookingLastminuteModal.flight.notes, /W64313, W64314/);
+assert.equal(bookingLastminuteModal.flight.price, 809);
+assert.deepEqual(bookingLastminuteModal.metadata.missingFields, []);
+
+const wizzMobileCompactDateOcr = `
+Your flight to Bari
+Flight to Bari
+Direct. 1h 25m
+QO Thu May7-2:30PM
+SOF - Sofia Airport Ww Wizz Air
+W64361 - Economy
+QO Thu May7-2:55PM Flight time 1h 25m
+BRI - Bari Karol Wojtyla Airport
+Flight to Sofia
+Direct: 1h 25m
+© Wed May 13 - 2:05 PM
+BRI - Bari Karol Wojtyla Airport WwW Wizz Air
+W6E4362 - Economy
+(© Wed May 13.430 PM Flight time 1h 25m
+SOF . Sofia Airport
+Baggage @ 2personalitems Included
+Extras you might like Carry-on Available in the next steps
+Can be added for a fee 8 From €58.99
+`;
+const wizzMobileCompactDateParsed = parseWizzCheckout(wizzMobileCompactDateOcr, { destination: "Bari" });
+assert.equal(wizzMobileCompactDateParsed.flight.airline, "Wizz Air");
+assert.equal(wizzMobileCompactDateParsed.flight.route, "SOF -> BRI / BRI -> SOF");
+assert.match(wizzMobileCompactDateParsed.flight.departure, /SOF -> BRI, Thu, May 7, 2:30 PM - 2:55 PM, W64361/);
+assert.match(wizzMobileCompactDateParsed.flight.arrival, /BRI -> SOF, Wed, May 13, 2:05 PM - 4:30 PM, W64362/);
+assert.equal(wizzMobileCompactDateParsed.flight.price, 0, "Wizz add-on price must not be selected as flight total");
+assert.ok(!wizzMobileCompactDateParsed.metadata.missingFields.includes("flight.dates"));
+assert.ok(wizzMobileCompactDateParsed.metadata.missingFields.includes("flight.price"));
+
+const turkishOpenJawConnectingOcr = `
+Flight to Tokyo
+1 stop - 16h 10m
+Tue, Sep 1 - 9:10 PM
+SOF - Sofia Airport
+Tue, Sep 1 - 10:40 PM
+IST - Istanbul Airport
+Layover 3h 25m
+Wed, Sep 2 - 2:05 AM
+IST - Istanbul Airport
+Wed, Sep 2 - 7:20 PM
+HND - Tokyo Haneda Airport
+Flight to Sofia
+1 stop - 17h 30m
+Tue, Sep 15 - 9:15 PM
+NRT - Narita International Airport
+Wed, Sep 16 - 4:40 AM
+IST - Istanbul Airport
+Layover 2h 50m
+Wed, Sep 16 - 7:30 AM
+IST - Istanbul Airport
+Wed, Sep 16 - 8:45 AM
+SOF - Sofia Airport
+Turkish Airlines
+TK1030 - Economy
+Turkish Airlines
+TK198 - Economy
+Turkish Airlines
+TK301 - Economy
+Turkish Airlines
+TK1027 - Economy
+Total price for all travelers
+€2,697.58
+`;
+const turkishOpenJawFlight = detectGenericConnectingFlight(turkishOpenJawConnectingOcr);
+assert.equal(turkishOpenJawFlight.airline, "Turkish Airlines");
+assert.equal(turkishOpenJawFlight.route, "SOF -> HND / NRT -> SOF");
+assert.match(turkishOpenJawFlight.departure, /SOF -> HND, .*via IST/i);
+assert.match(turkishOpenJawFlight.arrival, /NRT -> SOF, .*via IST/i);
+assert.doesNotMatch(turkishOpenJawFlight.route, /SOF -> IST \/ IST -> SOF/i);
+assert.doesNotMatch(turkishOpenJawFlight.departure, /via HND|via NRT/i);
+assert.match(turkishOpenJawFlight.notes, /IST: кацане Tue, Sep 1 - 10:40 PM, излитане Wed, Sep 2 - 2:05 AM, престой 3ч 25м/i);
+assert.match(turkishOpenJawFlight.notes, /IST: кацане Wed, Sep 16 - 4:40 AM, излитане Wed, Sep 16 - 7:30 AM, престой 2ч 50м/i);
+
+const turkishOpenJawStopSummary = enrichFlightStopSummary(
+  turkishOpenJawConnectingOcr,
+  turkishOpenJawFlight
+);
+assert.doesNotMatch(turkishOpenJawStopSummary.notes, /Return via NRT/i);
+assert.doesNotMatch(turkishOpenJawStopSummary.notes, /Outbound via IST/i);
+
+const globalConnectingParsed = parseConnectingFlightCheckout(globalConnectingFlightOcr);
+assert.equal(globalConnectingParsed.flight.price, 788.83);
+assert.equal(globalConnectingParsed.flight.route, "SOF -> JFK / JFK -> SOF");
+assert.equal(globalConnectingParsed.metadata.missingFields.length, 0);
+
+const multiScreenshotSummaryAndDetailsOcr = `
+--- OCR IMAGE 1: desktop-summary.png ---
+Flight information
+View details
+Jul 1 (Wed)
+11:05 Sofia (SOF)
+16:35 New York (JFK)
+1 stop
+Total journey length: 12h 30min
+Jul 8 (Wed)
+16:15 New York (JFK)
+10:20 Sofia (SOF)
+1 stop
+Total journey length: 11h 05min
+Passengers €261.19
+Adult €261.19
+Taxes and fees €501.42
+Airport fees €443.97
+Service fee €57.45
+Total: €762.61
+--- OCR IMAGE 2: desktop-details.png ---
+Flight details
+11:05
+1 Jul
+Sofia Airport (SOF)
+Flight duration: 2 hours 20 minutes Flight number: LX 1391
+Class: Economy Airline: SWISS
+12:25
+1 Jul
+Zurich Airport (ZRH)
+Transfer Time: 50min
+13:15
+1 Jul
+Zurich Airport (ZRH)
+Flight duration: 9h 20min Flight number: LX 14
+Class: Economy Airline: SWISS
+16:35
+1 Jul
+John F. Kennedy (JFK)
+New York > Sofia
+16:15
+8 Jul
+John F. Kennedy (JFK)
+Flight duration: 7h 55min Flight number: LX 17
+Class: Economy Airline: SWISS
+06:10
+Jul 9
+Zurich Airport (ZRH)
+Transfer Time: 55min
+07:05
+Jul 9
+Zurich Airport (ZRH)
+Flight duration: 2 hours 15 minutes Flight number: LX 1390
+Class: Economy Airline: SWISS
+10:20
+Jul 9
+Sofia Airport (SOF)
+`;
+const multiScreenshotParsed = parseConnectingFlightCheckout(multiScreenshotSummaryAndDetailsOcr);
+assert.equal(multiScreenshotParsed.flight.airline, "SWISS");
+assert.equal(multiScreenshotParsed.flight.route, "SOF -> JFK / JFK -> SOF");
+assert.match(multiScreenshotParsed.flight.departure, /SOF -> JFK, Jul 1 11:05 - Jul 1 16:35, via ZRH/i);
+assert.match(multiScreenshotParsed.flight.arrival, /JFK -> SOF, Jul 8 16:15 - Jul 9 10:20, via ZRH/i);
+assert.match(multiScreenshotParsed.flight.notes, /ZRH: кацане .*12:25.*излитане .*13:15.*престой 50м/i);
+assert.match(multiScreenshotParsed.flight.notes, /ZRH: кацане .*06:10.*излитане .*07:05.*престой 55м/i);
+assert.ok(!/\.\.\./.test(multiScreenshotParsed.flight.notes));
+assert.equal(multiScreenshotParsed.flight.price, 762.61);
+assert.equal(extractFlightPriceFromText(multiScreenshotSummaryAndDetailsOcr), 762.61);
+assert.equal(extractPriceFromOcrPatternDatabase(multiScreenshotSummaryAndDetailsOcr), 762.61, "OCR pattern database should shadow-detect SWISS total price");
+assert.equal(multiScreenshotParsed.metadata.missingFields.length, 0);
+assert.deepEqual(
+  multiScreenshotParsed.flight.outboundSegments.map((segment) => `${segment.from}->${segment.to}`),
+  ["SOF->ZRH", "ZRH->JFK"]
+);
+assert.deepEqual(
+  multiScreenshotParsed.flight.inboundSegments.map((segment) => `${segment.from}->${segment.to}`),
+  ["JFK->ZRH", "ZRH->SOF"]
+);
+assert.deepEqual(multiScreenshotParsed.flight.stopoverAirports, ["ZRH"]);
+assert.ok(multiScreenshotParsed.flight.transferTimes.includes("50min"));
+assert.ok(multiScreenshotParsed.flight.transferTimes.includes("55min"));
+  assert.equal(multiScreenshotParsed.flight.outboundSegments[0].flightNumber, "LX 1391");
+  assert.equal(multiScreenshotParsed.flight.outboundSegments[1].flightNumber, "LX 14");
+  assert.equal(multiScreenshotParsed.flight.outboundSegments[0].duration, "2 hours 20 minutes");
+  assert.equal(multiScreenshotParsed.flight.outboundSegments[1].duration, "9h 20min");
+  assert.equal(multiScreenshotParsed.flight.inboundSegments[0].flightNumber, "LX 17");
+assert.equal(multiScreenshotParsed.flight.inboundSegments[1].flightNumber, "LX 1390");
+assert.equal(multiScreenshotParsed.flight.inboundSegments[0].duration, "7h 55min");
+  assert.equal(multiScreenshotParsed.flight.inboundSegments[1].duration, "2 hours 15 minutes");
+  assert.deepEqual(multiScreenshotParsed.flight.transferTimes, ["50min", "55min"]);
+
+const [swissSummaryImage, swissDetailsImage] = multiScreenshotSummaryAndDetailsOcr
+  .split(/--- OCR IMAGE 2: desktop-details\.png ---/i);
+assert.equal(classifyFlightScreenshot(swissSummaryImage), "summary");
+assert.equal(classifyFlightScreenshot(swissDetailsImage), "detail");
+const mergedSwissSegments = mergeMultiImageFlightSegments(
+  [swissSummaryImage, swissDetailsImage],
+  {
+    route: "SOF -> JFK / JFK -> SOF",
+    price: 762.61
+  }
+);
+assert.deepEqual(
+  mergedSwissSegments.inboundSegments.map((segment) => `${segment.from}->${segment.to}`),
+  ["JFK->ZRH", "ZRH->SOF"],
+  "multi-image imports must prefer the detail timeline for inbound segments"
+);
+  assert.equal(mergedSwissSegments.inboundSegments[1].flightNumber, "LX 1390");
+  assert.match(mergedSwissSegments.departure, /SOF -> JFK, Jul 1 11:05 - Jul 1 16:35, via ZRH/);
+  assert.match(mergedSwissSegments.arrival, /JFK -> SOF, Jul 8 16:15 - Jul 9 10:20, via ZRH/);
+  assert.deepEqual(mergedSwissSegments.transferTimes, ["50min", "55min"]);
+  assert.equal(mergedSwissSegments.price, 762.61, "summary-derived price must remain unchanged");
+
+const swissDetailWithSparseReturnDates = `
+1 Jul
+11:05 Sofia Airport (SOF)
+Flight duration: 2 hours 20 minutes
+Flight number: LX 1391
+12:25 Zurich Airport (ZRH)
+Transfer Time: 50min
+13:15 Zurich Airport (ZRH)
+Flight duration: 9h 20min
+Flight number: LX 14
+16:35 John F. Kennedy (JFK)
+16:15 John F. Kennedy (JFK)
+Flight duration: 7h 55min
+Flight number: LX 17
+06:10 Zurich Airport (ZRH)
+Transfer Time: 55min
+07:05 Zurich Airport (ZRH)
+Flight duration: 2 hours 15 minutes
+Flight number: LX 1390
+10:20 Sofia Airport (SOF)
+`;
+const swissSummaryWithReturnAnchors = `
+Jul 1 (Wed)
+11:05 Sofia (SOF)
+16:35 New York (JFK)
+Jul 8 (Wed)
+16:15 New York (JFK)
+10:20 Sofia (SOF)
+Total: €762.61
+`;
+const recoveredSparseSwissSegments = mergeMultiImageFlightSegments(
+  [swissDetailWithSparseReturnDates, swissSummaryWithReturnAnchors],
+  { route: "SOF -> JFK / JFK -> SOF", price: 762.61 }
+);
+assert.deepEqual(
+  recoveredSparseSwissSegments.inboundSegments.map((segment) => `${segment.from}->${segment.to}`),
+  ["JFK->ZRH", "ZRH->SOF"],
+  "detail rows with sparse dates must retain both inbound segments"
+);
+assert.match(recoveredSparseSwissSegments.inboundSegments[0].departure, /Jul 8 16:15/);
+assert.match(recoveredSparseSwissSegments.inboundSegments[1].arrival, /Jul 9 10:20/);
+assert.equal(recoveredSparseSwissSegments.inboundSegments[1].flightNumber, "LX 1390");
+assert.equal(recoveredSparseSwissSegments.inboundSegments[1].duration, "2 hours 15 minutes");
+
+const multiScreenshotPartialDetailsOcr = `
+--- OCR IMAGE 1: desktop-summary.png ---
+Flight information
+View details
+Jul 1 (Wed)
+11:05 Sofia (SOF)
+16:35 New York (JFK)
+1 stop
+Total journey length: 12h 30min
+Jul 8 (Wed)
+16:15 New York (JFK)
+10:20 Sofia (SOF)
+1 stop
+Total journey length: 11h 05min
+Total: €762.61
+--- OCR IMAGE 2: partial-details.png ---
+Flight details
+11:05
+1 Jul
+Sofia Airport (SOF)
+12:25
+1 Jul
+Zurich Airport (ZRH)
+Transfer Time: 50min
+13:15
+1 Jul
+Zurich Airport (ZRH)
+10:20
+Jul 9
+Sofia Airport (SOF)
+`;
+const multiScreenshotPartialParsed = parseConnectingFlightCheckout(multiScreenshotPartialDetailsOcr);
+assert.equal(multiScreenshotPartialParsed.flight.route, "SOF -> JFK / JFK -> SOF");
+assert.notEqual(multiScreenshotPartialParsed.flight.route, "SOF -> ZRH / ZRH -> SOF");
+assert.ok(!/Return via ZRH \(ZRH:.*10:20/i.test(multiScreenshotPartialParsed.flight.notes || ""));
+assert.ok(!/\.\.\./.test(multiScreenshotPartialParsed.flight.notes || ""));
+
+const summaryOnlyOvernight = enrichFlightStopSummary(`
+Flight information
+Jul 1 (Wed)
+11:05 Sofia (SOF)
+16:35 New York (JFK)
+1 stop
+Jul 8 (Wed)
+16:15 New York (JFK)
+10:20 Sofia (SOF)
+1 stop
+Total: €762.61
+`, {
+  airline: "SWISS",
+  route: "SOF -> JFK / JFK -> SOF",
+  departure: "SOF -> JFK, Jul 1 11:05 - Jul 1 16:35",
+  arrival: "JFK -> SOF, Jul 8 16:15 - Jul 8 10:20",
+  notes: ""
+});
+assert.match(summaryOnlyOvernight.arrival, /JFK -> SOF, Jul 8 16:15 - Jul 9 10:20/i);
+
+const partialLotTorontoModalOcr = `
+--- OCR IMAGE 1: screenshot.png ---
+--- ENHANCED OCR ---
+X Flight details
+Sofia » Toronto
+Travel time: 12h 45min 1 stop
+14:35 Sofia Airport (SOF)
+1 Jul Sofia, Bulgaria
+Flight duration: 01h 55min Flight number: LO 632
+LOT Economy
+15:30 Frederic Chopin (WAW)
+1 Jul Warsaw, Poland
+Transfer Time: 01h 30min
+17:00 Frederic Chopin (WAW)
+1 Jul Warsaw, Poland
+Flight duration: 09h 20min Airline LOT
+Flight number: LO 45
+20:20 Lester B. Pearson (YYZ)
+1 Jul Toronto, Canada
+Toronto » Sofia
+Travel time: 11h 50min 1 stop
+19:20 Lester B. Pearson (YYZ)
+8 Jul Toronto, Canada
+Flight duration: 08h 25min Flight number: LO 42
+LOT Economy
+09:45 Frederic Chopin (WAW)
+9 Jul Warsaw, Poland
+Transfer Time: 01h 00min
+10:45 Frederic Chopin (WAW)
+9 Jul Warsaw, Poland
+Flight duration: 02h 05min Flight number: LO 631
+LOT Economy
+13:50 Sofia Airport (SOF)
+9 Jul Sofia, Bulgaria
+--- OCR IMAGE 2: screenshot.png ---
+X Flight details
+Sofia )» Toronto
+Total journey length: 12h 45min 1 stop
+14:35 Sofia Airport (SOF)
+1 Jul Sofia, Bulgaria
+Flight duration: 01h 55min | Flight number: LO 632
+LOT | e175(Jet)
+15:30 Frederic Chopin (WAW)
+1 Jul Warsaw, Poland
+Transfer Time: 01h 30min
+17:00 Frederic Chopin (WAW)
+1 Jul Warsaw, Poland
+Flight duration: 09h 20min | Flight number: LO 45
+LOT Operated by EuroAtlantic Airways
+Toronto » Sofia
+19:20 Lester B. Pearson (YYZ)
+8 Jul Toronto, Canada
+Flight duration: 08h 25min | Flight number: LO 42
+LOT | 787(Jet)
+09:45 Frederic Chopin (WAW)
+9 Jul Warsaw, Poland
+Transfer Time: 01h 00min
+10:45 Frederic Chopin (WAW)
+9 Jul Warsaw, Poland
+Flight duration: 02h 05min | Flight number: LO 631
+LOT | e175(Jet)
+13:50 Sofia Airport (SOF)
+9 Jul Sofia, Bulgaria
+782 ©
+Price per 1 passenger for return
+`;
+const partialLotTorontoParsed = parseConnectingFlightCheckout(partialLotTorontoModalOcr);
+assert.equal(partialLotTorontoParsed.flight.route, "SOF -> YYZ / YYZ -> SOF");
+assert.equal(partialLotTorontoParsed.flight.airline, "LOT Polish Airlines");
+assert.match(partialLotTorontoParsed.flight.departure, /SOF -> YYZ, Jul 1 14:35 - Jul 1 20:20, via WAW/i);
+assert.match(partialLotTorontoParsed.flight.arrival, /YYZ -> SOF, Jul 8 19:20 - Jul 9 13:50, via WAW/i);
+assert.deepEqual(
+  partialLotTorontoParsed.flight.outboundSegments.map((segment) => `${segment.departure} ${segment.from}->${segment.arrival} ${segment.to} ${segment.flightNumber}`),
+  [
+    "Jul 1 14:35 SOF->Jul 1 15:30 WAW LO 632",
+    "Jul 1 17:00 WAW->Jul 1 20:20 YYZ LO 45"
+  ]
+);
+assert.deepEqual(
+  partialLotTorontoParsed.flight.inboundSegments.map((segment) => `${segment.departure} ${segment.from}->${segment.arrival} ${segment.to} ${segment.flightNumber}`),
+  [
+    "Jul 8 19:20 YYZ->Jul 9 09:45 WAW LO 42",
+    "Jul 9 10:45 WAW->Jul 9 13:50 SOF LO 631"
+  ]
+);
+assert.deepEqual(partialLotTorontoParsed.flight.stopoverAirports, ["WAW"]);
+assert.match(partialLotTorontoParsed.flight.notes, /LO 632, LO 45, LO 42, LO 631/);
+assert.equal(partialLotTorontoParsed.flight.price, 782);
+const savedLotTorontoOffer = normalizeOffer({
+  destination: "Toronto",
+  flightPrice: partialLotTorontoParsed.flight.price,
+  flights: [partialLotTorontoParsed.flight]
+});
+assert.deepEqual(
+  savedLotTorontoOffer.flights[0].outboundSegments.map((segment) => `${segment.from}->${segment.to} ${segment.flightNumber}`),
+  ["SOF->WAW LO 632", "WAW->YYZ LO 45"]
+);
+assert.deepEqual(
+  savedLotTorontoOffer.flights[0].inboundSegments.map((segment) => `${segment.from}->${segment.to} ${segment.flightNumber}`),
+  ["YYZ->WAW LO 42", "WAW->SOF LO 631"]
+);
+assert.deepEqual(
+  savedLotTorontoOffer.flights[0].segments.map((segment) => `${segment.from}->${segment.to} ${segment.flightNumber}`),
+  ["SOF->WAW LO 632", "WAW->YYZ LO 45", "YYZ->WAW LO 42", "WAW->SOF LO 631"]
+);
+assert.deepEqual(
+  collectHotelImageAliases({
+    images: [],
+    imageUrls: ["valid-hotel-image.jpg"]
+  }),
+  ["valid-hotel-image.jpg"],
+  "hotel image collector should not drop imageUrls when images is an empty array"
+);
+assert.deepEqual(
+  collectHotelImageAliases({
+    images: ["https://images.example.test/a.jpg"],
+    imageUrls: ["https://images.example.test/a.jpg", "https://images.example.test/b.jpg"],
+    heroImage: "https://images.example.test/c.jpg"
+  }),
+  [
+    "https://images.example.test/a.jpg",
+    "https://images.example.test/b.jpg",
+    "https://images.example.test/c.jpg"
+  ],
+  "hotel image collector should merge and dedupe supported aliases in order"
+);
+const aliasImageOffer = normalizeOffer({
+  destination: "Alias Image Destination",
+  hotels: [{
+    name: "Alias Image Hotel",
+    price: 1000,
+    images: [],
+    imageUrls: ["https://images.example.test/valid-hotel-image.jpg"],
+    selected: true
+  }]
+});
+assert.deepEqual(
+  aliasImageOffer.hotels[0].images,
+  ["https://images.example.test/valid-hotel-image.jpg"],
+  "normalizeOffer should persist imageUrls aliases into canonical hotel images"
+);
+const mergedAliasImageOffer = normalizeOffer({
+  destination: "Alias Image Destination",
+  hotels: [{
+    name: "Merged Alias Image Hotel",
+    price: 1000,
+    images: ["https://images.example.test/a.jpg"],
+    imageUrls: ["https://images.example.test/a.jpg", "https://images.example.test/b.jpg"],
+    heroImage: "https://images.example.test/c.jpg",
+    selected: true
+  }]
+});
+assert.deepEqual(
+  mergedAliasImageOffer.hotels[0].images,
+  [
+    "https://images.example.test/a.jpg",
+    "https://images.example.test/b.jpg",
+    "https://images.example.test/c.jpg"
+  ],
+  "normalizeOffer should merge and dedupe supported hotel image aliases"
+);
+assert.ok(!partialLotTorontoParsed.metadata.missingFields.includes("flight.route"));
+assert.ok(!partialLotTorontoParsed.metadata.missingFields.includes("flight.price"));
+
+const productionRouteSeparatorModalOcr = `
+Sofia » Toronto
+14:35 Sofia Airport (SOF)
+20:20 Lester B. Pearson (YYZ)
+Toronto » Sofia
+19:20 Lester B. Pearson (YYZ)
+13:50 Sofia Airport (SOF)
+`;
+const productionRouteSeparatorParsed = parseBookingLastminuteFlightModal(productionRouteSeparatorModalOcr);
+assert.equal(productionRouteSeparatorParsed.flight.route, "SOF -> YYZ / YYZ -> SOF");
+assert.equal(parseBookingLastminuteFlightModal(`
+ron → Tra
+14:35 Sofia Airport (SOF)
+20:20 Lester B. Pearson (YYZ)
+Tra → ron
+19:20 Lester B. Pearson (YYZ)
+13:50 Sofia Airport (SOF)
+`), null);
+
+const strongIataCandidateRepairOcr = `
+Your selection
+Sofia to New York
+Thursday, 9 July 2026
+11:05 Sofia
+Sofia (SOF)
+16:35 New York
+John F Kennedy International (JFK)
+SOF JFK
+New York to Sofia
+Thursday, 23 July 2026
+21:45 New York
+John F Kennedy International (JFK)
+15:20 Sofia
+Sofia (SOF)
+JFK SOF
+Total price flights: EUR 2,257.94
+`;
+const strongIataCandidateParsed = parseConnectingFlightCheckout(strongIataCandidateRepairOcr);
+assert.equal(strongIataCandidateParsed.flight.route, "SOF -> JFK / JFK -> SOF");
+assert.ok(!strongIataCandidateParsed.flight.route.includes("TIA"), "strong IATA pair route must not fall back to stale TIA");
+assert.ok(!strongIataCandidateParsed.flight.departure.includes("TIA"), "strong IATA pair departure must not include stale TIA stopovers");
+assert.ok(!strongIataCandidateParsed.flight.arrival.includes("TIA"), "strong IATA pair arrival must not include stale TIA stopovers");
+assert.equal(strongIataCandidateParsed.flight.price, 2257.94);
+assert.match(strongIataCandidateParsed.flight.departure, /Jul 9 2026|9 July 2026/i);
+assert.match(strongIataCandidateParsed.flight.arrival, /Jul 23 2026|23 July 2026/i);
+
+console.log("V10 FLIGHT OCR REGRESSION PASS");

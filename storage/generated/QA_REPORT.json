@@ -1,0 +1,93 @@
+{
+  "ok": true,
+  "generatedAt": "2026-05-20T04:23:50.361Z",
+  "baseUrl": "http://localhost:3920",
+  "writeQa": false,
+  "failedChecks": [],
+  "checks": [
+    {
+      "name": "source stability",
+      "status": "pass",
+      "details": {
+        "renderCount": 1,
+        "readDbCount": 1,
+        "writeDbCount": 1,
+        "ocrEngineVersion": "8.3.2"
+      },
+      "timestamp": "2026-05-20T04:23:48.972Z"
+    },
+    {
+      "name": "database integrity",
+      "status": "pass",
+      "details": {
+        "schemaVersion": "8.3.3",
+        "offers": 87,
+        "clients": 4,
+        "activities": 173,
+        "riskyOffers": 28,
+        "invalidImages": 0
+      },
+      "timestamp": "2026-05-20T04:23:49.046Z"
+    },
+    {
+      "name": "auth login",
+      "status": "pass",
+      "details": {},
+      "timestamp": "2026-05-20T04:23:50.067Z"
+    },
+    {
+      "name": "endpoint /api/health",
+      "status": "pass",
+      "details": {
+        "status": 200
+      },
+      "timestamp": "2026-05-20T04:23:50.085Z"
+    },
+    {
+      "name": "endpoint /api/offers",
+      "status": "pass",
+      "details": {
+        "status": 200
+      },
+      "timestamp": "2026-05-20T04:23:50.143Z"
+    },
+    {
+      "name": "endpoint /api/clients",
+      "status": "pass",
+      "details": {
+        "status": 200
+      },
+      "timestamp": "2026-05-20T04:23:50.197Z"
+    },
+    {
+      "name": "endpoint /api/activities",
+      "status": "pass",
+      "details": {
+        "status": 200
+      },
+      "timestamp": "2026-05-20T04:23:50.253Z"
+    },
+    {
+      "name": "endpoint /api/activities/stats",
+      "status": "pass",
+      "details": {
+        "status": 200
+      },
+      "timestamp": "2026-05-20T04:23:50.307Z"
+    },
+    {
+      "name": "endpoint /api/agency",
+      "status": "pass",
+      "details": {
+        "status": 200
+      },
+      "timestamp": "2026-05-20T04:23:50.359Z"
+    },
+    {
+      "name": "warning persistence",
+      "status": "skip",
+      "details": {},
+      "timestamp": "2026-05-20T04:23:50.359Z"
+    }
+  ]
+}
