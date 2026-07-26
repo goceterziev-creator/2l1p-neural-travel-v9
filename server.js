@@ -27,6 +27,9 @@ globalThis.GT63LuxuryV11Renderer = require("./gt63-core/luxury-v11-renderer");
 globalThis.GT63MultiHotelRenderer = require("./gt63-core/renderers/multi-hotel");
 const gt63PrintPresentationRenderer = require("./gt63-core/renderers/print-presentation");
 const gt63ProposalRendererRegistry = require("./gt63-core/proposal-renderer-registry");
+const {
+  buildProposalInputFromProductModel
+} = require("./gt63-core/proposal-input-adapter");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -1877,6 +1880,51 @@ function normalizeProposalInputForOffer(value = {}) {
   return input;
 }
 
+function normalizeOfferSourceEvidence(value = {}) {
+  const evidence = cloneJsonSafe(value);
+  if (!evidence || typeof evidence !== "object") return null;
+  return {
+    intakeId: String(evidence.intakeId || "").trim(),
+    archived: evidence.archived === true,
+    root: String(evidence.root || "").trim(),
+    sources: safeArray(evidence.sources).map((source) => ({
+      sourceId: String(source.sourceId || "").trim(),
+      sourceType: String(source.sourceType || "").trim(),
+      originalFilename: String(source.originalFilename || "").trim(),
+      storedPath: String(source.storedPath || "").trim(),
+      mimeType: String(source.mimeType || "").trim(),
+      uploadedAt: String(source.uploadedAt || "").trim(),
+      confidence: Number(source.confidence || 0) || 0,
+      reason: String(source.reason || "").trim()
+    })).filter((source) => source.sourceId || source.originalFilename || source.storedPath)
+  };
+}
+
+function buildCanonicalProposalInputForOffer(offer = {}, body = {}) {
+  const selectedHotel = safeArray(offer.hotels).find((hotel) => hotel.selected) || safeArray(offer.hotels)[0] || null;
+  const proposalTemplate = normalizeProposalTemplateMetadata(offer.proposalTemplate || body.proposalTemplate) || undefined;
+  try {
+    return normalizeProposalInputForOffer(buildProposalInputFromProductModel({
+      readiness: safeArray(offer.validationWarnings).length ? "review" : "ready",
+      warnings: safeArray(offer.validationWarnings),
+      blockingIssues: [],
+      flight: safeArray(offer.flights)[0] || null,
+      hotel: selectedHotel,
+      hotelOptions: safeArray(offer.hotels),
+      proposalTemplate
+    }, {
+      clientName: offer.clientName,
+      destination: offer.destination,
+      travelDates: offer.travelDates,
+      travelers: offer.guests,
+      marginPercent: offer.markupPercent
+    }));
+  } catch (error) {
+    console.warn("GT63 PROPOSAL INPUT COMPATIBILITY ADAPTER FAILED:", error.message);
+    return null;
+  }
+}
+
 function normalizeOffer(body = {}) {
 const inputFlights = uniqueOfferFlights(Array.isArray(body.flights) ? body.flights : []);
 const inputHotels = Array.isArray(body.hotels) ? body.hotels : [];
@@ -1891,7 +1939,7 @@ const selectedHotelInput =
   null;
 const selectedHotelInputIndex = inputHotels.findIndex((h) => h.selected);
 const hasSelectedHotelInput = selectedHotelInputIndex >= 0;
-const proposalInput = normalizeProposalInputForOffer(body.proposalInput);
+let proposalInput = normalizeProposalInputForOffer(body.proposalInput);
 const proposalTemplate = normalizeProposalTemplateMetadata(body.proposalTemplate || proposalInput?.proposalTemplate);
 
 const calculatedHotelPrice = selectedHotelInput
@@ -2012,11 +2060,16 @@ const hotels = inputHotels.length
     clicks: toNumber(body.clicks, 0),
     proposalTemplate,
     proposalInput,
+    sourceEvidence: normalizeOfferSourceEvidence(body.sourceEvidence || body.smartImportEvidence || body.evidence),
+    importContext: cloneJsonSafe(body.importContext || body.smartImportContext) || null,
     flights,
     hotels
   };
 
   offer.validationWarnings = buildValidationWarnings(offer, body, invalidHotelImages);
+  if (!offer.proposalInput) {
+    offer.proposalInput = buildCanonicalProposalInputForOffer(offer, body);
+  }
   return offer;
 }
 

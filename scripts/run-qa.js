@@ -22,6 +22,7 @@ const CHECK_TARGETS = [
   "scripts/smart-import-consumer-adapter-regression.js",
   "scripts/gt63-offer-engine-adapter-regression.js",
   "scripts/proposal-input-adapter-regression.js",
+  "scripts/v9-smart-import-proposal-input-regression.js",
   "scripts/proposal-template-resolver-regression.js",
   "scripts/presentation-view-model-regression.js",
   "scripts/print-presentation-route-regression.js",
@@ -98,6 +99,7 @@ async function main() {
     await runNode(["scripts/smart-import-consumer-adapter-regression.js"]);
     await runNode(["scripts/gt63-offer-engine-adapter-regression.js"]);
     await runNode(["scripts/proposal-input-adapter-regression.js"]);
+    await runNode(["scripts/v9-smart-import-proposal-input-regression.js"]);
     await runNode(["scripts/proposal-template-resolver-regression.js"]);
     await runNode(["scripts/presentation-view-model-regression.js"]);
     await runNode(["scripts/print-presentation-route-regression.js"]);

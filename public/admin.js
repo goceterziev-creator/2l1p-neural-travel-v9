@@ -18,6 +18,8 @@ let currentCapabilities = [];
 let regressionCaseCache = [];
 let latestUniversalTravelIntake = null;
 let latestUniversalTravelObjectUrls = [];
+let pendingOfferSourceEvidence = null;
+let pendingOfferImportContext = null;
 const NAV_STATE_KEY = "gt63_navigation_state_v1";
 const WORKSPACE_LAZY_FLAGS = {
   activity: "lazy",
@@ -93,7 +95,7 @@ function addHotel(hotel = {}) {
     roomsLeft: hotel.roomsLeft || "",
     description: hotel.description || "",
     images: uniqueHotelImages(hotel.images || []),
-    selected: hotels.length === 0
+    selected: hotel.selected === true || hotels.length === 0
   });
 
   renderHotelCards();
@@ -3063,6 +3065,7 @@ function applyUniversalTravelIntakeResult() {
   const data = latestUniversalTravelIntake || {};
   const flight = { ...(data.offerFlight || {}) };
   const hotel = { ...(data.offerHotel || {}) };
+  const hotelOptions = Array.isArray(data.offerHotelOptions) ? data.offerHotelOptions.filter(Boolean) : [];
 
   if ($("universalFlightAirline")) flight.airline = $("universalFlightAirline").value.trim();
   if ($("universalFlightRoute")) flight.route = $("universalFlightRoute").value.trim();
@@ -3089,8 +3092,16 @@ function applyUniversalTravelIntakeResult() {
     if ($("flightPrice")) $("flightPrice").value = Number(flight.price || 0).toFixed(2);
   }
 
-  if (hotel.name || hotel.area || Number(hotel.price || 0) > 0) {
-    addHotel(hotel);
+  if (hotel.name || hotel.area || Number(hotel.price || 0) > 0 || hotelOptions.length) {
+    const selectedKey = String(hotel.name || "").trim().toLowerCase();
+    const options = hotelOptions.length ? hotelOptions : [hotel];
+    options.forEach((option, index) => {
+      const optionKey = String(option?.name || "").trim().toLowerCase();
+      addHotel({
+        ...option,
+        selected: option.selected === true || (selectedKey && optionKey === selectedKey) || (!selectedKey && index === 0)
+      });
+    });
     if ($("hotelName")) $("hotelName").value = hotel.name || "";
     if ($("hotelArea")) $("hotelArea").value = hotel.area || "";
     if ($("hotelRoom")) $("hotelRoom").value = hotel.room || "";
@@ -3099,6 +3110,15 @@ function applyUniversalTravelIntakeResult() {
     if ($("hotelPrice")) $("hotelPrice").value = Number(hotel.price || 0).toFixed(2);
   }
 
+  pendingOfferSourceEvidence = data.evidence && typeof data.evidence === "object" ? data.evidence : null;
+  pendingOfferImportContext = {
+    mode: data.mode || "",
+    intakeId: data.intakeId || "",
+    contractVersion: data.contractVersion || "",
+    sources: Array.isArray(data.sources) ? data.sources : [],
+    classifications: Array.isArray(data.classifications) ? data.classifications : [],
+    warnings: Array.isArray(data.warnings) ? data.warnings : []
+  };
   calculatePricing();
   alert(`${data.mode === "GT63_SMART_IMPORT" ? "Smart Import" : "Universal Travel Intake"} result applied. Review and save the offer.`);
 }
@@ -3323,7 +3343,9 @@ formValidationWarnings.push(
 
     validForDays: Number($("validForDays")?.value || 1),
     customValidUntil: $("customValidUntil")?.value || "",
-    validationWarnings: formValidationWarnings
+    validationWarnings: formValidationWarnings,
+    sourceEvidence: pendingOfferSourceEvidence,
+    importContext: pendingOfferImportContext
   };
 }
 
@@ -3602,7 +3624,7 @@ function addHotel(hotel = {}) {
     roomsLeft: hotel.roomsLeft || "",
     description: hotel.description || "",
     images: uniqueHotelImages(Array.isArray(hotel.images) ? hotel.images : []),
-    selected: hotels.length === 0
+    selected: hotel.selected === true || hotels.length === 0
   });
 
   renderHotelCards();
@@ -3622,6 +3644,8 @@ function removeHotel(index) {
 
 function clearForm() {
   if (editingOfferId) setEditMode(null);
+  pendingOfferSourceEvidence = null;
+  pendingOfferImportContext = null;
 
   const ids = [
     "clientName",
