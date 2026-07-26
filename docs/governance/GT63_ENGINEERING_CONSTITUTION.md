@@ -163,9 +163,36 @@ Idea
   -> Stable
 ```
 
+### Law 5 - One Canonical Repository Per Product Line
+
+Every official GT63 product line has exactly one canonical GitHub owner and repository.
+
+For the current lines:
+
+```text
+V8 Stable
+  -> goceterziev-creator/2l1p-neural-travel
+
+V9 Next
+  -> goceterziev-creator/2l1p-neural-travel-v9
+```
+
+Railway services must deploy only from the canonical repository for their product line.
+
+The following are not allowed as normal development practice:
+
+- maintaining the same product line under two GitHub owners;
+- deploying from a mirror repository;
+- switching a Railway service source repo to another product line;
+- using a personal fork as the active source of truth;
+- creating V9-copy, V9-test, V9-new, or similar parallel product repositories.
+
+If a temporary fork is required for recovery or investigation, it must remain explicitly temporary and must never be connected to Railway deployment.
+
+Any change to the canonical repository for a product line requires an explicit governance decision before code, deployment, or Railway configuration changes.
+
 ## Constitutional Outcome
 
 GT63 evolves through controlled product lines, proven infrastructure, evidence-backed capabilities, and deliberate release promotion.
 
 This Constitution exists so GT63 can grow without turning Stable into a moving target or Next into uncontrolled experimentation.
-
