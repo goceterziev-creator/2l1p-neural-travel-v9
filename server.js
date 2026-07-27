@@ -7429,10 +7429,11 @@ async function renderOfferHtml(offer, options = {}) {
   const destinationImageKey = destinationKey(offer.destination);
   const resolvedDestinationImage =
     autoImages[destinationImageKey] ||
-    await findDestinationImageWithSerpApi(displayDestination(offer.destination) || offer.destination);
+    offer.destinationImage ||
+    offer.heroImage ||
+    "";
   const heroImage =
     resolvedDestinationImage ||
-    offer.destinationImage ||
     "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee";
   const hotelFallbackImage =
     autoHotelImages[destinationImageKey] ||
@@ -7507,33 +7508,7 @@ async function renderOfferHtml(offer, options = {}) {
 
   const hotelsWithImages = await Promise.all(hotels.map(async (hotel) => {
     const existingImages = uniqueHotelImages(hotel.images || [], 6);
-    if (existingImages.length >= 3 || !hotel.name) {
-      return { ...hotel, images: existingImages };
-    }
-
-    const resolvedImages = await findHotelImagesWithSerpApi(
-      hotel.name,
-      hotel.area || destinationName,
-      6
-    );
-    const mergedImages = existingImages.slice();
-    const usedKeys = new Set(existingImages.flatMap((image) => {
-      const key = hotelImageKey(image);
-      const sceneKey = hotelImageSceneKey(image);
-      return [key, sceneKey ? `scene:${sceneKey}` : ""].filter(Boolean);
-    }));
-
-    for (const image of resolvedImages) {
-      const key = hotelImageKey(image);
-      const sceneKey = hotelImageSceneKey(image);
-      if (!key || usedKeys.has(key) || (sceneKey && usedKeys.has(`scene:${sceneKey}`))) continue;
-      mergedImages.push(image);
-      usedKeys.add(key);
-      if (sceneKey) usedKeys.add(`scene:${sceneKey}`);
-      if (mergedImages.length >= 3) break;
-    }
-
-    return { ...hotel, images: mergedImages };
+    return { ...hotel, images: existingImages };
   }));
   const selectedHotelIndex = hotelsWithImages.findIndex((hotel) => Boolean(hotel.selected));
   const normalizedHotels = hotelsWithImages.map((hotel, index) => ({
@@ -7563,20 +7538,7 @@ async function renderOfferHtml(offer, options = {}) {
     const primaryImages = providedImages.length ? providedImages : [directImage].filter(Boolean);
     let images = arrangeHotelGalleryImages(primaryImages, 3, usedRenderedHotelImageKeys);
 
-    if (images.length < 3 && hotel.name) {
-      const extraImages = await findHotelImagesWithSerpApi(
-        hotel.name,
-        hotel.area || destinationName,
-        9
-      );
-      images = [
-        ...images,
-        ...arrangeHotelGalleryImages(extraImages, 3 - images.length, usedRenderedHotelImageKeys)
-      ];
-    }
-
     if (!images.length && hotelFallbackImage) {
-      // A repeated destination fallback is preferable to an empty hotel card.
       images = uniqueHotelImages([hotelFallbackImage], 1);
     }
     hotelGalleries.push(images);
