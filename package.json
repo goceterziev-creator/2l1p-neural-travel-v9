@@ -12,6 +12,7 @@
     "v9:boundary": "node scripts/v9-boundary-test.js",
     "providers:foundation": "node scripts/provider-layer-foundation-regression.js",
     "providers:gemini": "node scripts/provider-layer-gemini-boundary-regression.js",
+    "providers:openai": "node scripts/provider-layer-openai-boundary-regression.js",
     "qa": "node scripts/run-qa.js && node scripts/v9-boundary-test.js",
     "production:check": "node scripts/production-check.js"
   },

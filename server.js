@@ -33,6 +33,8 @@ const {
 const {
   DEFAULT_GEMINI_VISION_MODEL,
   createGeminiProvider,
+  createOpenAiProvider,
+  DEFAULT_OPENAI_VISION_MODEL,
   createProviderRegistry,
   isTemporaryGeminiDemandError,
   loadProviderConfig,
@@ -58,7 +60,8 @@ const GT63_REQUIRE_ISOLATED_STORAGE = /^(1|true|yes|on)$/i.test(String(process.e
 const DATA_DIR = process.env.DATA_DIR || process.env.PERSISTENT_DATA_DIR || __dirname;
 const providerConfig = loadProviderConfig(process.env);
 const providerRegistry = createProviderRegistry([
-  createGeminiProvider(providerConfig)
+  createGeminiProvider(providerConfig),
+  createOpenAiProvider(providerConfig)
 ]);
 
 const DB_FILE = process.env.DB_FILE
@@ -5840,13 +5843,6 @@ function normalizeHotelProfileMetadata(hotel = {}, parsed = {}) {
 }
 
 async function callVisionJson({ imageBuffer, mimeType, prompt }) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    const err = new Error("Missing OPENAI_API_KEY. Add it in Railway Variables to enable AI hotel screenshot import.");
-    err.status = 500;
-    throw err;
-  }
-
   if (!Buffer.isBuffer(imageBuffer) || imageBuffer.length === 0) {
     const err = new Error("Uploaded image is empty");
     err.status = 400;
@@ -5861,14 +5857,10 @@ async function callVisionJson({ imageBuffer, mimeType, prompt }) {
 
   const base64Image = `data:${mimeType};base64,${imageBuffer.toString("base64")}`;
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "gpt-4.1-mini",
+  const openAiResult = await providerRegistry.get("openai").execute({
+    task: "responses",
+    model: DEFAULT_OPENAI_VISION_MODEL,
+    body: {
       input: [
         {
           role: "user",
@@ -5878,18 +5870,18 @@ async function callVisionJson({ imageBuffer, mimeType, prompt }) {
           ]
         }
       ]
-    })
-  });
+    }
+  }, {});
 
-  const raw = await response.json();
-
-  if (!response.ok) {
-    const err = new Error(raw?.error?.message || "Vision API request failed");
-    err.status = response.status;
-    err.details = raw;
+  if (!openAiResult.ok) {
+    const providerError = openAiResult.errors?.[0] || {};
+    const err = new Error(providerError.message || "Vision API request failed");
+    err.status = providerError.providerStatus || 500;
+    err.details = openAiResult;
     throw err;
   }
 
+  const raw = openAiResult.data || {};
   const outputText =
     raw?.output?.[0]?.content?.find((c) => c.type === "output_text")?.text ||
     raw?.output?.flatMap((o) => o.content || [])?.find((c) => c.type === "output_text")?.text ||
@@ -9691,13 +9683,6 @@ async function extractFlightWithGeminiVision(files = [], { destination = "" } = 
 }
 
 async function extractFlightWithOpenAiVision(files = [], { destination = "" } = {}) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    const error = new Error("Missing OPENAI_API_KEY. Add it in Railway Variables to enable OpenAI flight extraction fallback.");
-    error.statusCode = 400;
-    throw error;
-  }
-
   const prompt = [
     "You are extracting flight itinerary data from travel screenshots for GT63.",
     "Return JSON only. Do not add markdown. Do not guess invisible fields.",
@@ -9719,15 +9704,9 @@ async function extractFlightWithOpenAiVision(files = [], { destination = "" } = 
     }))
   ];
 
-  const model = process.env.OPENAI_VISION_MODEL || "gpt-4.1-mini";
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model,
+  const openAiResult = await providerRegistry.get("openai").execute({
+    task: "responses",
+    body: {
       input: [
         {
           role: "user",
@@ -9735,17 +9714,19 @@ async function extractFlightWithOpenAiVision(files = [], { destination = "" } = 
         }
       ],
       temperature: 0
-    })
-  });
+    }
+  }, { fallbackUsed: true });
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(payload?.error?.message || `OpenAI Vision request failed with HTTP ${response.status}`);
-    error.statusCode = response.status;
-    error.details = payload;
+  if (!openAiResult.ok) {
+    const providerError = openAiResult.errors?.[0] || {};
+    const error = new Error(providerError.message || "OpenAI Vision request failed");
+    error.statusCode = providerError.providerStatus || 500;
+    error.details = openAiResult;
     throw error;
   }
 
+  const payload = openAiResult.data || {};
+  const model = openAiResult.meta?.model || DEFAULT_OPENAI_VISION_MODEL;
   const outputText =
     payload?.output?.flatMap((item) => item.content || [])?.find((item) => item.type === "output_text")?.text ||
     payload?.output_text ||
@@ -9771,14 +9752,15 @@ function shouldFallbackToOpenAiFlight(error = {}) {
 }
 
 async function extractFlightWithAiVision(files = [], options = {}) {
-  const provider = String(process.env.AI_FLIGHT_PROVIDER || process.env.FLIGHT_VISION_PROVIDER || "auto").toLowerCase();
+  const provider = String(providerConfig.ai?.flightProvider || "auto").toLowerCase();
   if (provider === "openai") return extractFlightWithOpenAiVision(files, options);
   if (provider === "gemini") return extractFlightWithGeminiVision(files, options);
 
   try {
     return await extractFlightWithGeminiVision(files, options);
   } catch (error) {
-    if (!process.env.OPENAI_API_KEY || !shouldFallbackToOpenAiFlight(error)) throw error;
+    const openAiHealth = await providerRegistry.get("openai").health();
+    if (openAiHealth.status === "disabled" || !shouldFallbackToOpenAiFlight(error)) throw error;
     console.warn(`GT63 FLIGHT VISION FALLBACK: Gemini failed (${sanitizeUniversalIntakeDetails(error.message)}). Trying OpenAI Vision.`);
     const result = await extractFlightWithOpenAiVision(files, options);
     result.fallbackFrom = "gemini";

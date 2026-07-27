@@ -21,6 +21,7 @@ const CHECK_TARGETS = [
   "scripts/v10-persistence-safety-check.js",
   "scripts/provider-layer-foundation-regression.js",
   "scripts/provider-layer-gemini-boundary-regression.js",
+  "scripts/provider-layer-openai-boundary-regression.js",
   "scripts/smart-import-consumer-adapter-regression.js",
   "scripts/gt63-offer-engine-adapter-regression.js",
   "scripts/proposal-input-adapter-regression.js",
@@ -101,6 +102,7 @@ async function main() {
     await runNode(["scripts/smart-import-consumer-adapter-regression.js"]);
     await runNode(["scripts/provider-layer-foundation-regression.js"]);
     await runNode(["scripts/provider-layer-gemini-boundary-regression.js"]);
+    await runNode(["scripts/provider-layer-openai-boundary-regression.js"]);
     await runNode(["scripts/gt63-offer-engine-adapter-regression.js"]);
     await runNode(["scripts/proposal-input-adapter-regression.js"]);
     await runNode(["scripts/v9-smart-import-proposal-input-regression.js"]);
