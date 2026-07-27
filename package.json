@@ -10,6 +10,7 @@
     "visual-smoke": "node scripts/visual-smoke-v818.js",
     "v9:check": "node scripts/v9-architecture-check.js",
     "v9:boundary": "node scripts/v9-boundary-test.js",
+    "providers:foundation": "node scripts/provider-layer-foundation-regression.js",
     "qa": "node scripts/run-qa.js && node scripts/v9-boundary-test.js",
     "production:check": "node scripts/production-check.js"
   },

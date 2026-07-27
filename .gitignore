@@ -12,6 +12,8 @@ DATABASE/*.bak
 backups/*.json
 *.bak.env.local
 CONFIG/
+!provider-layer/config/
+!provider-layer/config/provider-config.js
 storage/generated/V10_AIRPORTS_TEST_CONFIG.json
 storage/generated/
 storage/media/
