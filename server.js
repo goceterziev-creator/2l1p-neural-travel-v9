@@ -30,6 +30,15 @@ const gt63ProposalRendererRegistry = require("./gt63-core/proposal-renderer-regi
 const {
   buildProposalInputFromProductModel
 } = require("./gt63-core/proposal-input-adapter");
+const {
+  DEFAULT_GEMINI_VISION_MODEL,
+  createGeminiProvider,
+  createProviderRegistry,
+  isTemporaryGeminiDemandError,
+  loadProviderConfig,
+  normalizeGeminiVisionModel,
+  uniqueGeminiModels
+} = require("./provider-layer");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -47,6 +56,10 @@ const GT63_PRODUCT_LINE = process.env.GT63_PRODUCT_LINE || "V9";
 const GT63_RUNTIME_ENV = process.env.GT63_RUNTIME_ENV || process.env.NODE_ENV || "development";
 const GT63_REQUIRE_ISOLATED_STORAGE = /^(1|true|yes|on)$/i.test(String(process.env.GT63_REQUIRE_ISOLATED_STORAGE || ""));
 const DATA_DIR = process.env.DATA_DIR || process.env.PERSISTENT_DATA_DIR || __dirname;
+const providerConfig = loadProviderConfig(process.env);
+const providerRegistry = createProviderRegistry([
+  createGeminiProvider(providerConfig)
+]);
 
 const DB_FILE = process.env.DB_FILE
   ? path.resolve(process.env.DB_FILE)
@@ -9598,107 +9611,32 @@ function extractJsonFromGeminiResponse(payload = {}) {
   }
 }
 
-const DEFAULT_GEMINI_VISION_MODEL = "gemini-2.5-flash";
-const DEFAULT_GEMINI_VISION_FALLBACK_MODEL = "gemini-2.0-flash";
-
-function normalizeGeminiVisionModel(model = "") {
-  const value = String(model || "").trim();
-  if (!value) return "";
-  if (value === "gemini-1.5-flash" || value === "models/gemini-1.5-flash") {
-    console.warn("GT63 GEMINI LEGACY MODEL IGNORED: gemini-1.5-flash is no longer used for vision intake. Falling back to gemini-2.0-flash.");
-    return DEFAULT_GEMINI_VISION_FALLBACK_MODEL;
-  }
-  return value.replace(/^models\//, "");
-}
-
-function uniqueGeminiModels(primary = "", fallback = "") {
-  return [primary, fallback]
-    .map((model) => normalizeGeminiVisionModel(model))
-    .filter(Boolean)
-    .filter((model, index, list) => list.indexOf(model) === index);
-}
-
-function geminiResponseErrorMessage(payload = {}, fallback = "") {
-  return String(payload?.error?.message || payload?.error?.status || fallback || "Gemini request failed");
-}
-
-function isTemporaryGeminiDemandError(status = 0, message = "") {
-  const text = String(message || "").toLowerCase();
-  return [429, 500, 502, 503, 504].includes(Number(status)) ||
-    /high demand|temporar|try again later|overloaded|resource exhausted|rate limit|quota|unavailable|capacity/.test(text);
-}
-
-function wait(ms = 0) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function postGeminiVisionWithRetry({
-  apiKey,
+async function executeGeminiVisionProvider({
   requestBody,
   primaryModel = "",
-  fallbackModel = "",
   requestId = "",
   label = "Gemini Vision"
 } = {}) {
-  const models = uniqueGeminiModels(
-    primaryModel || process.env.GEMINI_VISION_MODEL || DEFAULT_GEMINI_VISION_MODEL,
-    fallbackModel || process.env.GEMINI_VISION_FALLBACK_MODEL || DEFAULT_GEMINI_VISION_FALLBACK_MODEL
-  );
-  let last = null;
-
-  for (let modelIndex = 0; modelIndex < models.length; modelIndex += 1) {
-    const model = models[modelIndex];
-    const maxAttempts = modelIndex === 0 ? 2 : 1;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody)
-        });
-        const payload = await response.json().catch(() => ({}));
-        if (response.ok) {
-          if (modelIndex > 0 || attempt > 1) {
-            console.warn(`[Gemini Retry] requestId=${requestId || "-"} label=${label} recovered model=${model} attempt=${attempt}`);
-          }
-          return { response, payload, model, attempt };
-        }
-
-        const message = geminiResponseErrorMessage(payload, `HTTP ${response.status}`);
-        last = { response, payload, model, attempt, status: response.status, message };
-        if (isTemporaryGeminiDemandError(response.status, message) && (attempt < maxAttempts || modelIndex < models.length - 1)) {
-          console.warn(`[Gemini Retry] requestId=${requestId || "-"} label=${label} model=${model} attempt=${attempt} status=${response.status} reason=${sanitizeUniversalIntakeDetails(message)}`);
-          await wait(700 * attempt);
-          continue;
-        }
-
-        return last;
-      } catch (error) {
-        last = { response: null, payload: {}, model, attempt, status: 0, message: error.message, error };
-        if (attempt < maxAttempts || modelIndex < models.length - 1) {
-          console.warn(`[Gemini Retry] requestId=${requestId || "-"} label=${label} model=${model} attempt=${attempt} status=network reason=${sanitizeUniversalIntakeDetails(error.message)}`);
-          await wait(700 * attempt);
-          continue;
-        }
-        throw error;
-      }
-    }
-  }
-
-  return last || { response: null, payload: {}, model: "", attempt: 0, status: 0, message: "Gemini request failed" };
+  const result = await providerRegistry.get("gemini").execute({
+    task: "generate_content",
+    requestBody,
+    primaryModel,
+    requestId,
+    label
+  }, { requestId });
+  return {
+    response: result.ok ? { ok: true, status: result.meta.providerStatus || 200 } : null,
+    payload: result.data || {},
+    model: result.meta.model || primaryModel || DEFAULT_GEMINI_VISION_MODEL,
+    attempt: result.meta.attempt || 0,
+    status: result.errors?.[0]?.providerStatus || result.meta.providerStatus || 0,
+    message: result.errors?.[0]?.message || "",
+    providerResult: result
+  };
 }
 
 async function extractFlightWithGeminiVision(files = [], { destination = "" } = {}) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    const error = new Error("Missing GEMINI_API_KEY. Add it in Railway Variables to enable Gemini Vision Test.");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const model = normalizeGeminiVisionModel(process.env.GEMINI_VISION_MODEL) || DEFAULT_GEMINI_VISION_MODEL;
+  const model = DEFAULT_GEMINI_VISION_MODEL;
   const prompt = [
     "You are extracting flight itinerary data from travel screenshots for GT63.",
     "Return JSON only. Do not add markdown. Do not guess invisible fields.",
@@ -9715,8 +9653,7 @@ async function extractFlightWithGeminiVision(files = [], { destination = "" } = 
     }
   }));
 
-  const gemini = await postGeminiVisionWithRetry({
-    apiKey,
+  const gemini = await executeGeminiVisionProvider({
     primaryModel: model,
     requestId: "flight-gemini-test",
     label: "Flight Gemini Test",
@@ -10260,17 +10197,8 @@ function sendUniversalIntakeError(res, error = {}) {
 }
 
 async function extractUniversalTravelWithGemini(files = [], { destination = "", requestId = "" } = {}) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw universalIntakeError(
-      "gemini-request",
-      "Missing GEMINI_API_KEY",
-      "Add GEMINI_API_KEY in Railway Variables to enable Universal Travel Intake.",
-      { statusCode: 400, requestId }
-    );
-  }
   const intakeId = `INTAKE-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
-  const model = normalizeGeminiVisionModel(process.env.GEMINI_VISION_MODEL) || DEFAULT_GEMINI_VISION_MODEL;
+  const model = DEFAULT_GEMINI_VISION_MODEL;
   const prompt = [
     "You are GT63 Universal Travel Intake.",
     "Analyze all provided travel screenshots together.",
@@ -10295,8 +10223,7 @@ async function extractUniversalTravelWithGemini(files = [], { destination = "", 
   let payload;
   let usedModel = model;
   try {
-    const gemini = await postGeminiVisionWithRetry({
-      apiKey,
+    const gemini = await executeGeminiVisionProvider({
       primaryModel: model,
       requestId,
       label: "Universal Travel Intake",

@@ -5,5 +5,6 @@ module.exports = {
   ...require("./contracts/provider-result"),
   ...require("./errors/provider-errors"),
   ...require("./registry/provider-registry"),
-  ...require("./config/provider-config")
+  ...require("./config/provider-config"),
+  ...require("./adapters/ai/gemini-provider")
 };

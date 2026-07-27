@@ -138,9 +138,12 @@ function assertFoundationBoundary() {
   });
 
   const server = readText("server.js");
-  assert(server.includes("process.env.GEMINI_API_KEY"), "audit baseline should still show Gemini direct access before migration");
   assert(server.includes("process.env.OPENAI_API_KEY"), "audit baseline should still show OpenAI direct access before migration");
   assert(server.includes("process.env.SERPAPI_KEY"), "audit baseline should still show SerpAPI direct access before migration");
+  assert(!server.includes("process.env.GEMINI_API_KEY"), "server.js must not read GEMINI_API_KEY after Gemini provider migration");
+  assert(!server.includes("process.env.GEMINI_VISION_MODEL"), "server.js must not read GEMINI_VISION_MODEL after Gemini provider migration");
+  assert(!server.includes("process.env.GEMINI_VISION_FALLBACK_MODEL"), "server.js must not read GEMINI_VISION_FALLBACK_MODEL after Gemini provider migration");
+  assert(!server.includes("generativelanguage.googleapis.com"), "server.js must not call Gemini HTTP endpoints after Gemini provider migration");
 }
 
 async function main() {
