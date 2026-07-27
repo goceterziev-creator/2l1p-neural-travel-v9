@@ -34,6 +34,7 @@ const {
   DEFAULT_GEMINI_VISION_MODEL,
   createGeminiProvider,
   createOpenAiProvider,
+  createSerpApiImageProvider,
   DEFAULT_OPENAI_VISION_MODEL,
   createProviderRegistry,
   isTemporaryGeminiDemandError,
@@ -61,7 +62,8 @@ const DATA_DIR = process.env.DATA_DIR || process.env.PERSISTENT_DATA_DIR || __di
 const providerConfig = loadProviderConfig(process.env);
 const providerRegistry = createProviderRegistry([
   createGeminiProvider(providerConfig),
-  createOpenAiProvider(providerConfig)
+  createOpenAiProvider(providerConfig),
+  createSerpApiImageProvider(providerConfig)
 ]);
 
 const DB_FILE = process.env.DB_FILE
@@ -5891,38 +5893,22 @@ async function callVisionJson({ imageBuffer, mimeType, prompt }) {
 }
 
 async function findHotelImagesWithSerpApi(hotelName = "", destination = "", limit = 3) {
-  const apiKey = process.env.SERPAPI_KEY;
   const name = String(hotelName || "").trim();
-  if (!apiKey || !name) return [];
+  if (!name) return [];
+  if (!(await isSerpApiImageProviderConfigured())) return [];
 
   try {
-    const query = [name, destination, "hotel exterior room"]
-      .map((part) => String(part || "").trim())
-      .filter(Boolean)
-      .join(" ");
-
-    const url = new URL("https://serpapi.com/search.json");
-    url.searchParams.set("engine", "google_images");
-    url.searchParams.set("q", query);
-    url.searchParams.set("api_key", apiKey);
-
-    const fetchOptions = {};
-    if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
-      fetchOptions.signal = AbortSignal.timeout(8000);
-    }
-
-    const response = await fetch(url, fetchOptions);
-    if (!response.ok) {
-      console.warn("SerpAPI hotel image lookup failed:", response.status);
+    const result = await providerRegistry.get("serpapi").execute({
+      entity: "hotel_images",
+      name,
+      destination,
+      limit
+    }, {});
+    if (!result.ok) {
+      console.warn("SerpAPI hotel image lookup failed:", result.errors?.[0]?.providerStatus || result.errors?.[0]?.code || "unknown");
       return [];
     }
-
-    const data = await response.json();
-    const candidates = safeArray(data?.images_results)
-      .flatMap((item) => [item?.original, item?.thumbnail])
-      .filter((src) => typeof src === "string" && /^https?:\/\//i.test(src));
-
-    return uniqueHotelImages(candidates, limit);
+    return uniqueHotelImages(result.data || [], limit);
   } catch (error) {
     console.warn("SerpAPI hotel image lookup skipped:", error.message);
     return [];
@@ -5936,10 +5922,19 @@ async function findHotelImageWithSerpApi(hotelName = "", destination = "") {
 
 const destinationHeroImageCache = new Map();
 
+async function isSerpApiImageProviderConfigured() {
+  try {
+    const health = await providerRegistry.get("serpapi").health();
+    return health.status !== "disabled";
+  } catch {
+    return false;
+  }
+}
+
 async function findDestinationImageWithSerpApi(destination = "") {
-  const apiKey = process.env.SERPAPI_KEY;
   const name = String(destination || "").trim();
-  if (!apiKey || !name) return "";
+  if (!name) return "";
+  if (!(await isSerpApiImageProviderConfigured())) return "";
 
   const cacheKey = normalizeSearchText(name);
   if (destinationHeroImageCache.has(cacheKey)) {
@@ -5949,31 +5944,19 @@ async function findDestinationImageWithSerpApi(destination = "") {
   try {
     const profile = destinationProfile(name);
     const queryName = profile?.label || name;
-    const tropicalHint = profile?.key === "maldives" ? "turquoise lagoon overwater villas beach" : "travel destination landmark landscape";
-    const query = `${queryName} ${tropicalHint}`;
-
-    const url = new URL("https://serpapi.com/search.json");
-    url.searchParams.set("engine", "google_images");
-    url.searchParams.set("q", query);
-    url.searchParams.set("api_key", apiKey);
-
-    const fetchOptions = {};
-    if (typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function") {
-      fetchOptions.signal = AbortSignal.timeout(8000);
-    }
-
-    const response = await fetch(url, fetchOptions);
-    if (!response.ok) {
-      console.warn("SerpAPI destination hero lookup failed:", response.status);
+    const hint = profile?.key === "maldives" ? "turquoise lagoon overwater villas beach" : "travel destination landmark landscape";
+    const result = await providerRegistry.get("serpapi").execute({
+      entity: "destination_image",
+      destination: queryName,
+      hint,
+      limit: 1
+    }, {});
+    if (!result.ok) {
+      console.warn("SerpAPI destination hero lookup failed:", result.errors?.[0]?.providerStatus || result.errors?.[0]?.code || "unknown");
       destinationHeroImageCache.set(cacheKey, "");
       return "";
     }
-
-    const data = await response.json();
-    const candidates = safeArray(data?.images_results)
-      .flatMap((item) => [item?.original, item?.thumbnail])
-      .filter((src) => typeof src === "string" && /^https?:\/\//i.test(src));
-    const image = uniqueHotelImages(candidates, 1)[0] || "";
+    const image = uniqueHotelImages(result.data || [], 1)[0] || "";
 
     destinationHeroImageCache.set(cacheKey, image);
     return image;
@@ -10073,7 +10056,7 @@ async function universalHotelToOfferHotel(hotel = {}, { destination = "" } = {})
     3
   );
   const sourceAuthority = universalHotelSourceAuthority({
-    hasSerpApiKey: Boolean(process.env.SERPAPI_KEY),
+    hasSerpApiKey: await isSerpApiImageProviderConfigured(),
     imageCount: imageUrls.length,
     hotelName
   });
@@ -11002,7 +10985,7 @@ async function buildSmartImportHotelOption(hotel = {}, parsed = {}, destination 
     option.imageUrls = mergedImages;
   }
   option.sourceAuthority = universalHotelSourceAuthority({
-    hasSerpApiKey: Boolean(process.env.SERPAPI_KEY),
+    hasSerpApiKey: await isSerpApiImageProviderConfigured(),
     imageCount: mergedImages.length,
     hotelName: option.name
   });

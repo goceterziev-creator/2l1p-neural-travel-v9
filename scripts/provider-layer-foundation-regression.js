@@ -138,7 +138,6 @@ function assertFoundationBoundary() {
   });
 
   const server = readText("server.js");
-  assert(server.includes("process.env.SERPAPI_KEY"), "audit baseline should still show SerpAPI direct access before migration");
   assert(!server.includes("process.env.GEMINI_API_KEY"), "server.js must not read GEMINI_API_KEY after Gemini provider migration");
   assert(!server.includes("process.env.GEMINI_VISION_MODEL"), "server.js must not read GEMINI_VISION_MODEL after Gemini provider migration");
   assert(!server.includes("process.env.GEMINI_VISION_FALLBACK_MODEL"), "server.js must not read GEMINI_VISION_FALLBACK_MODEL after Gemini provider migration");
@@ -146,6 +145,8 @@ function assertFoundationBoundary() {
   assert(!server.includes("process.env.OPENAI_API_KEY"), "server.js must not read OPENAI_API_KEY after OpenAI provider migration");
   assert(!server.includes("process.env.OPENAI_VISION_MODEL"), "server.js must not read OPENAI_VISION_MODEL after OpenAI provider migration");
   assert(!server.includes("api.openai.com/v1/responses"), "server.js must not call OpenAI HTTP endpoints after OpenAI provider migration");
+  assert(!server.includes("process.env.SERPAPI_KEY"), "server.js must not read SERPAPI_KEY after SerpAPI provider migration");
+  assert(!server.includes("https://serpapi.com/search.json"), "server.js must not call SerpAPI HTTP endpoints after SerpAPI provider migration");
 }
 
 async function main() {
