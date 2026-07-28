@@ -20,6 +20,7 @@
     "knowledge:shadow": "node scripts/knowledge-layer-shadow-adoption-regression.js",
     "knowledge:runtime": "node scripts/knowledge-layer-runtime-adoption-regression.js",
     "knowledge:country": "node scripts/knowledge-layer-country-adoption-regression.js",
+    "knowledge:location": "node scripts/knowledge-layer-location-adoption-regression.js",
     "qa": "node scripts/run-qa.js && node scripts/v9-boundary-test.js",
     "production:check": "node scripts/production-check.js"
   },

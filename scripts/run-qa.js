@@ -29,6 +29,7 @@ const CHECK_TARGETS = [
   "scripts/knowledge-layer-shadow-adoption-regression.js",
   "scripts/knowledge-layer-runtime-adoption-regression.js",
   "scripts/knowledge-layer-country-adoption-regression.js",
+  "scripts/knowledge-layer-location-adoption-regression.js",
   "scripts/smart-import-consumer-adapter-regression.js",
   "scripts/gt63-offer-engine-adapter-regression.js",
   "scripts/proposal-input-adapter-regression.js",
@@ -117,6 +118,7 @@ async function main() {
     await runNode(["scripts/knowledge-layer-shadow-adoption-regression.js"]);
     await runNode(["scripts/knowledge-layer-runtime-adoption-regression.js"]);
     await runNode(["scripts/knowledge-layer-country-adoption-regression.js"]);
+    await runNode(["scripts/knowledge-layer-location-adoption-regression.js"]);
     await runNode(["scripts/gt63-offer-engine-adapter-regression.js"]);
     await runNode(["scripts/proposal-input-adapter-regression.js"]);
     await runNode(["scripts/v9-smart-import-proposal-input-regression.js"]);

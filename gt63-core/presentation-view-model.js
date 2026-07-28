@@ -228,7 +228,14 @@
     add("Пътуващи", input.client?.travelers);
     add("Стая", selectedHotel.room || selectedHotel.roomType, "room");
     add("Хранене", resolvedMealPlan(selectedHotel), "meal");
-    add("Локация", selectedHotel.area || selectedHotel.location || selectedHotel.city, "area");
+    const legacyLocation = selectedHotel.area || selectedHotel.location || selectedHotel.city;
+    const resolvedLocation = destinationKnowledge?.resolveHotelLocationDisplayFromKnowledge
+      ? destinationKnowledge.resolveHotelLocationDisplayFromKnowledge(input, legacyLocation, {
+        hotelIndex: Number.isInteger(selectedPayload.index) ? selectedPayload.index : undefined,
+        logger: input.knowledgeRuntimeLogger
+      }).value
+      : legacyLocation;
+    add("Локация", resolvedLocation, "area");
     return facts.slice(0, 9);
   }
 

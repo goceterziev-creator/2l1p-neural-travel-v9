@@ -152,7 +152,73 @@ function resolveDestinationCountryDisplayFromKnowledge(proposalInput = {}, legac
   }
 }
 
+function isValidHotelKnowledge(hotel) {
+  return Boolean(
+    hotel &&
+    hotel.contractVersion === KNOWLEDGE_CONTRACT_VERSION &&
+    hotel.entityType === KNOWLEDGE_ENTITY_TYPES.HOTEL &&
+    cleanText(hotel.name)
+  );
+}
+
+function resolveHotelLocationDisplayFromKnowledge(proposalInput = {}, legacyValue = "", options = {}) {
+  const legacy = cleanText(legacyValue);
+  const logger = options.logger;
+
+  try {
+    const mapper = typeof options.mapProposalInputToKnowledge === "function"
+      ? options.mapProposalInputToKnowledge
+      : mapProposalInputToKnowledge;
+    const knowledge = options.knowledgeBundle || mapper(proposalInput, options);
+    const hotel = knowledge?.hotels?.[Number.isInteger(options.hotelIndex) ? options.hotelIndex : 0];
+
+    if (!isValidHotelKnowledge(hotel)) {
+      const item = diagnostic("KNOWLEDGE_HOTEL_LOCATION_INVALID", "HotelKnowledge is missing or invalid for location display.");
+      emit(logger, item);
+      return { value: legacy, source: "legacy", diagnostics: [item] };
+    }
+
+    if (!confidenceAllowed(hotel, options.minimumConfidenceScore)) {
+      const item = diagnostic("KNOWLEDGE_HOTEL_LOCATION_LOW_CONFIDENCE", "HotelKnowledge confidence is below the location display threshold.", {
+        score: hotel.confidence?.score,
+        minimumScore: options.minimumConfidenceScore
+      });
+      emit(logger, item);
+      return { value: legacy, source: "legacy", diagnostics: [item] };
+    }
+
+    const knowledgeValue = cleanText(hotel.area);
+    if (!knowledgeValue) {
+      const item = diagnostic("KNOWLEDGE_HOTEL_LOCATION_EMPTY", "HotelKnowledge did not contain a location display value.");
+      emit(logger, item);
+      return { value: legacy, source: "legacy", diagnostics: [item] };
+    }
+
+    if (legacy && knowledgeValue !== legacy) {
+      const item = diagnostic("KNOWLEDGE_HOTEL_LOCATION_MISMATCH", "HotelKnowledge area differs from legacy location display value.", {
+        legacyValue: legacy,
+        knowledgeValue
+      });
+      emit(logger, item);
+      return { value: legacy, source: "legacy", diagnostics: [item] };
+    }
+
+    return {
+      value: knowledgeValue || legacy,
+      source: knowledgeValue ? "knowledge" : "legacy",
+      diagnostics: []
+    };
+  } catch (error) {
+    const item = diagnostic("KNOWLEDGE_HOTEL_LOCATION_RESOLVER_ERROR", "HotelKnowledge location resolver failed and legacy fallback was used.", {
+      message: cleanText(error?.message)
+    });
+    emit(logger, item);
+    return { value: legacy, source: "legacy", diagnostics: [item] };
+  }
+}
+
 module.exports = {
   resolveDestinationDisplayFromKnowledge,
-  resolveDestinationCountryDisplayFromKnowledge
+  resolveDestinationCountryDisplayFromKnowledge,
+  resolveHotelLocationDisplayFromKnowledge
 };
