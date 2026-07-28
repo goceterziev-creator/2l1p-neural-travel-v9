@@ -8,6 +8,14 @@
   root.GT63PresentationViewModel = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function createPresentationViewModel() {
   const VALID_PRINT_MODES = new Set(["selected", "comparison"]);
+  const destinationKnowledgeResolver = (() => {
+    if (typeof require !== "function") return null;
+    try {
+      return require("../knowledge-layer").resolveDestinationDisplayFromKnowledge;
+    } catch {
+      return null;
+    }
+  })();
 
   function asArray(value) {
     return Array.isArray(value) ? value : [];
@@ -200,7 +208,13 @@
       const cleaned = text(value, "");
       if (cleaned) facts.push([label, localizeClientText(cleaned), key]);
     };
-    add("Дестинация", input.destination?.name || input.destination?.requested || input.content?.heroTitle, "destination");
+    const legacyDestination = input.destination?.name || input.destination?.requested || input.content?.heroTitle;
+    const resolvedDestination = destinationKnowledgeResolver
+      ? destinationKnowledgeResolver(input, legacyDestination, {
+        logger: input.knowledgeRuntimeLogger
+      }).value
+      : legacyDestination;
+    add("Дестинация", resolvedDestination, "destination");
     add("Категория", numericStars(selectedHotel) ? `${numericStars(selectedHotel)} звезди` : "", "stars");
     add("Дати", travelDates);
     add("Период", dateRangeNights(travelDates));

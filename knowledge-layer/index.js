@@ -5,5 +5,6 @@ module.exports = {
   ...require("./contracts/knowledge-metadata"),
   ...require("./contracts/canonical-entities"),
   ...require("./mappers/knowledge-mappers"),
-  ...require("./shadow/proposal-input-shadow")
+  ...require("./shadow/proposal-input-shadow"),
+  ...require("./runtime/destination-display-resolver")
 };
