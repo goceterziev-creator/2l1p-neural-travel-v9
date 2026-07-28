@@ -17,6 +17,7 @@
     "render:determinism": "node scripts/render-determinism-regression.js",
     "knowledge:contracts": "node scripts/knowledge-layer-contracts-regression.js",
     "knowledge:mapping": "node scripts/knowledge-layer-mapping-regression.js",
+    "knowledge:shadow": "node scripts/knowledge-layer-shadow-adoption-regression.js",
     "qa": "node scripts/run-qa.js && node scripts/v9-boundary-test.js",
     "production:check": "node scripts/production-check.js"
   },

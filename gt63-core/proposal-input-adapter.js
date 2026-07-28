@@ -10,6 +10,14 @@
   const flightDateSanitizer = typeof require === "function"
     ? require("./flight-date-sanitizer")
     : (typeof globalThis !== "undefined" ? globalThis.GT63FlightDateSanitizer : null);
+  const knowledgeShadow = (() => {
+    if (typeof require !== "function") return null;
+    try {
+      return require("../knowledge-layer").evaluateProposalInputKnowledgeShadow;
+    } catch {
+      return null;
+    }
+  })();
 
   const PROPOSAL_INPUT_VERSION = "1.0";
   const MODE = "GT63_LUXURY_PROPOSAL_INPUT";
@@ -235,7 +243,7 @@
       .map(buildHotel)
       .filter(Boolean);
 
-    return assertProposalInput({
+    const proposalInput = assertProposalInput({
       proposalInputVersion: PROPOSAL_INPUT_VERSION,
       mode: MODE,
       readiness: productModel.readiness === "ready" ? "ready" : "review",
@@ -261,6 +269,14 @@
         rendererTarget: "LUXURY_V11"
       }
     });
+
+    if (knowledgeShadow) {
+      knowledgeShadow(proposalInput, {
+        logger: safeContext.knowledgeShadowLogger
+      });
+    }
+
+    return proposalInput;
   }
 
   return {
