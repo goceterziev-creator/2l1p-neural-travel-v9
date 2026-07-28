@@ -8,10 +8,10 @@
   root.GT63PresentationViewModel = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function createPresentationViewModel() {
   const VALID_PRINT_MODES = new Set(["selected", "comparison"]);
-  const destinationKnowledgeResolver = (() => {
+  const destinationKnowledge = (() => {
     if (typeof require !== "function") return null;
     try {
-      return require("../knowledge-layer").resolveDestinationDisplayFromKnowledge;
+      return require("../knowledge-layer");
     } catch {
       return null;
     }
@@ -209,12 +209,19 @@
       if (cleaned) facts.push([label, localizeClientText(cleaned), key]);
     };
     const legacyDestination = input.destination?.name || input.destination?.requested || input.content?.heroTitle;
-    const resolvedDestination = destinationKnowledgeResolver
-      ? destinationKnowledgeResolver(input, legacyDestination, {
+    const resolvedDestination = destinationKnowledge?.resolveDestinationDisplayFromKnowledge
+      ? destinationKnowledge.resolveDestinationDisplayFromKnowledge(input, legacyDestination, {
         logger: input.knowledgeRuntimeLogger
       }).value
       : legacyDestination;
     add("Дестинация", resolvedDestination, "destination");
+    const legacyCountry = input.destination?.country;
+    const resolvedCountry = destinationKnowledge?.resolveDestinationCountryDisplayFromKnowledge
+      ? destinationKnowledge.resolveDestinationCountryDisplayFromKnowledge(input, legacyCountry, {
+        logger: input.knowledgeRuntimeLogger
+      }).value
+      : legacyCountry;
+    add("Държава", resolvedCountry, "country");
     add("Категория", numericStars(selectedHotel) ? `${numericStars(selectedHotel)} звезди` : "", "stars");
     add("Дати", travelDates);
     add("Период", dateRangeNights(travelDates));

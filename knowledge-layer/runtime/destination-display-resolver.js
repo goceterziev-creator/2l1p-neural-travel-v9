@@ -96,6 +96,63 @@ function resolveDestinationDisplayFromKnowledge(proposalInput = {}, legacyValue 
   }
 }
 
+function resolveDestinationCountryDisplayFromKnowledge(proposalInput = {}, legacyValue = "", options = {}) {
+  const legacy = cleanText(legacyValue);
+  const logger = options.logger;
+
+  try {
+    const mapper = typeof options.mapProposalInputToKnowledge === "function"
+      ? options.mapProposalInputToKnowledge
+      : mapProposalInputToKnowledge;
+    const knowledge = options.knowledgeBundle || mapper(proposalInput, options);
+    const destination = knowledge?.destinations?.[0];
+
+    if (!isValidDestinationKnowledge(destination)) {
+      const item = diagnostic("KNOWLEDGE_DESTINATION_COUNTRY_INVALID", "DestinationKnowledge is missing or invalid for country display.");
+      emit(logger, item);
+      return { value: legacy, source: "legacy", diagnostics: [item] };
+    }
+
+    if (!confidenceAllowed(destination, options.minimumConfidenceScore)) {
+      const item = diagnostic("KNOWLEDGE_DESTINATION_COUNTRY_LOW_CONFIDENCE", "DestinationKnowledge confidence is below the country display threshold.", {
+        score: destination.confidence?.score,
+        minimumScore: options.minimumConfidenceScore
+      });
+      emit(logger, item);
+      return { value: legacy, source: "legacy", diagnostics: [item] };
+    }
+
+    const knowledgeValue = cleanText(destination.country);
+    if (!knowledgeValue) {
+      const item = diagnostic("KNOWLEDGE_DESTINATION_COUNTRY_EMPTY", "DestinationKnowledge did not contain a country display value.");
+      emit(logger, item);
+      return { value: legacy, source: "legacy", diagnostics: [item] };
+    }
+
+    if (legacy && knowledgeValue !== legacy) {
+      const item = diagnostic("KNOWLEDGE_DESTINATION_COUNTRY_MISMATCH", "DestinationKnowledge country differs from legacy country display value.", {
+        legacyValue: legacy,
+        knowledgeValue
+      });
+      emit(logger, item);
+      return { value: legacy, source: "legacy", diagnostics: [item] };
+    }
+
+    return {
+      value: knowledgeValue || legacy,
+      source: knowledgeValue ? "knowledge" : "legacy",
+      diagnostics: []
+    };
+  } catch (error) {
+    const item = diagnostic("KNOWLEDGE_DESTINATION_COUNTRY_RESOLVER_ERROR", "DestinationKnowledge country resolver failed and legacy fallback was used.", {
+      message: cleanText(error?.message)
+    });
+    emit(logger, item);
+    return { value: legacy, source: "legacy", diagnostics: [item] };
+  }
+}
+
 module.exports = {
-  resolveDestinationDisplayFromKnowledge
+  resolveDestinationDisplayFromKnowledge,
+  resolveDestinationCountryDisplayFromKnowledge
 };
