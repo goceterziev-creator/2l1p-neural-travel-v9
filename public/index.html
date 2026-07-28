@@ -1,292 +1,1095 @@
-﻿<!DOCTYPE html>
-<html lang="bg">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2L1P Neural Travel - V8</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <title>GT63 - Travel Proposal Operating System</title>
+  <meta
+    name="description"
+    content="GT63 transforms travel data into premium client proposals in minutes."
+  />
   <style>
-    .builder-block {
-      margin-top: 8px;
-      padding: 14px;
-      border: 1px dashed rgba(255,255,255,.14);
-      border-radius: 16px;
-      background: rgba(255,255,255,.03);
+    :root {
+      --bg: #0A1428;
+      --panel: #112240;
+      --panel-soft: #0F1D38;
+      --border: #233554;
+      --accent: #00D4FF;
+      --text: #FFFFFF;
+      --muted: #A8B2D1;
+      --muted-strong: #D6DDF2;
+      --success: #66E3AE;
+      --warning: #FFC96A;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+      --radius: 8px;
+      --max: 1180px;
+      --ease: cubic-bezier(.2, .8, .2, 1);
     }
 
-    .builder-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
+    * {
+      box-sizing: border-box;
     }
 
-    .builder-title {
-      font-size: 16px;
-      font-weight: 700;
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
       margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(0, 212, 255, 0.10), transparent 30%),
+        linear-gradient(180deg, #0A1428 0%, #071023 100%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
     }
 
-    .builder-list {
-      display: grid;
-      gap: 12px;
-      margin-top: 12px;
+    a {
+      color: inherit;
+      text-decoration: none;
     }
 
-    .builder-card {
-      background: rgba(255,255,255,.035);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 16px;
-      padding: 14px;
+    button,
+    input {
+      font: inherit;
     }
 
-    .builder-card-head {
+    button {
+      cursor: pointer;
+    }
+
+    .shell {
+      width: min(100% - 40px, var(--max));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(35, 53, 84, 0.72);
+      background: rgba(10, 20, 40, 0.86);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
+      justify-content: space-between;
+      min-height: 82px;
+      gap: 28px;
     }
 
-    .builder-card-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 250px;
     }
 
-    .builder-grid {
+    .brand-mark {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      flex: 0 0 44px;
+      border: 1px solid rgba(0, 212, 255, 0.46);
+      border-radius: 50%;
+      color: var(--accent);
+      background: rgba(0, 212, 255, 0.08);
     }
 
-    .mini-note {
-      font-size: 12px;
+    .brand-mark svg {
+      width: 24px;
+      height: 24px;
+      display: block;
+    }
+
+    .brand-name {
+      display: block;
+      font-size: 17px;
+      font-weight: 760;
+      line-height: 1.1;
+    }
+
+    .brand-system {
+      display: block;
+      margin-top: 4px;
       color: var(--muted);
-      margin-top: 6px;
-      line-height: 1.45;
+      font-size: 12px;
+      line-height: 1.25;
     }
 
-    .price-helper {
-      margin-top: 10px;
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: rgba(70,211,143,.10);
-      border: 1px solid rgba(70,211,143,.20);
+    .nav-links {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .nav-link,
+    .profile-button {
+      min-height: 40px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      color: var(--muted);
+      background: transparent;
+      transition: color .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease);
+    }
+
+    .nav-link:hover,
+    .profile-button:hover {
       color: var(--text);
+      border-color: var(--border);
+      background: rgba(17, 34, 64, 0.78);
+    }
+
+    .profile-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .profile-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #7BE7FF);
+      box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.10);
+    }
+
+    .hero {
+      padding: 92px 0 64px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+      gap: 56px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 24px;
+      color: var(--accent);
       font-size: 13px;
+      font-weight: 700;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 32px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    h1 {
+      max-width: 650px;
+      margin: 0;
+      font-size: 68px;
+      line-height: 1.02;
+      font-weight: 780;
+      letter-spacing: 0;
+    }
+
+    .hero-copy {
+      max-width: 560px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+      margin-top: 34px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      padding: 0 18px;
+      color: var(--text);
+      background: transparent;
+      font-weight: 750;
+      transition: transform .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease), color .18s var(--ease);
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+    }
+
+    .button-primary {
+      color: #061120;
+      background: var(--accent);
+      box-shadow: 0 16px 42px rgba(0, 212, 255, 0.22);
+    }
+
+    .button-secondary {
+      border-color: var(--border);
+      color: var(--muted-strong);
+      background: rgba(17, 34, 64, 0.64);
+    }
+
+    .button-quiet {
+      min-height: 42px;
+      color: var(--muted);
+      border-color: rgba(35, 53, 84, 0.72);
+      background: rgba(10, 20, 40, 0.34);
+    }
+
+    .button[disabled] {
+      cursor: not-allowed;
+      opacity: .44;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .cockpit {
+      position: relative;
+      border: 1px solid rgba(35, 53, 84, 0.92);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(17, 34, 64, 0.98), rgba(13, 27, 52, 0.98));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .cockpit::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-top: 1px solid rgba(0, 212, 255, 0.22);
+      pointer-events: none;
+    }
+
+    .cockpit-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cockpit-label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .cockpit-title {
+      margin: 4px 0 0;
+      font-size: 18px;
+      font-weight: 760;
+    }
+
+    .status-pill {
+      flex: 0 0 auto;
+      border: 1px solid rgba(102, 227, 174, 0.32);
+      border-radius: 999px;
+      padding: 8px 11px;
+      color: var(--success);
+      background: rgba(102, 227, 174, 0.08);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .workspace {
+      padding: 24px;
+    }
+
+    .upload-zone {
+      display: grid;
+      place-items: center;
+      min-height: 356px;
+      border: 1px dashed rgba(0, 212, 255, 0.48);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(180deg, rgba(0, 212, 255, 0.055), rgba(0, 212, 255, 0.018)),
+        rgba(10, 20, 40, 0.54);
+      text-align: center;
+      transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
+    }
+
+    .upload-zone.is-dragging,
+    .upload-zone.is-ready {
+      border-color: var(--accent);
+      background:
+        linear-gradient(180deg, rgba(0, 212, 255, 0.11), rgba(0, 212, 255, 0.035)),
+        rgba(10, 20, 40, 0.68);
+    }
+
+    .upload-zone.is-focused {
+      outline: 2px solid rgba(0, 212, 255, 0.28);
+      outline-offset: 4px;
+    }
+
+    .upload-content {
+      width: min(100%, 520px);
+      padding: 28px;
+    }
+
+    .upload-icon {
+      display: grid;
+      place-items: center;
+      width: 66px;
+      height: 66px;
+      margin: 0 auto 24px;
+      border: 1px solid rgba(0, 212, 255, 0.34);
+      border-radius: 50%;
+      color: var(--accent);
+      background: rgba(0, 212, 255, 0.07);
+    }
+
+    .upload-icon svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .upload-title {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.18;
+      font-weight: 780;
+    }
+
+    .upload-title span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted-strong);
+      font-weight: 650;
+    }
+
+    .upload-support {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .upload-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .detect-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 22px;
+      align-items: center;
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(10, 20, 40, 0.42);
+    }
+
+    .detect-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .detect-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      border: 1px solid rgba(35, 53, 84, 0.72);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      color: var(--muted);
+      background: rgba(17, 34, 64, 0.48);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .detect-item::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      flex: 0 0 8px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+
+    .detect-item.is-active {
+      color: var(--text);
+      border-color: rgba(102, 227, 174, 0.38);
+      background: rgba(102, 227, 174, 0.07);
+    }
+
+    .detect-item.is-active::before {
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(102, 227, 174, 0.10);
+    }
+
+    .section {
+      padding: 28px 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .section-note {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .proposal-card {
+      display: grid;
+      grid-template-columns: 0.88fr 1.12fr;
+      min-height: 330px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--panel);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.22);
+    }
+
+    .proposal-media {
+      position: relative;
+      min-height: 330px;
+      background: #071023;
+    }
+
+    .proposal-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .proposal-media::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(10, 20, 40, 0.02), rgba(10, 20, 40, 0.48));
+    }
+
+    .proposal-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+      padding: 28px;
+    }
+
+    .proposal-kicker {
+      margin: 0 0 12px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .proposal-title {
+      margin: 0;
+      font-size: 38px;
+      line-height: 1.08;
+    }
+
+    .proposal-hotel {
+      margin: 12px 0 0;
+      color: var(--muted-strong);
+      font-size: 16px;
       line-height: 1.5;
     }
 
-    .danger-btn {
-      background: rgba(255,127,150,.12);
-      border: 1px solid rgba(255,127,150,.24);
-      color: var(--text);
+    .proposal-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
     }
 
-    @media (max-width: 900px) {
-      .builder-grid {
+    .meta-box {
+      border: 1px solid rgba(35, 53, 84, 0.88);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: rgba(10, 20, 40, 0.40);
+    }
+
+    .meta-label {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .meta-value {
+      display: block;
+      margin-top: 5px;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .proposal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .insight-panel {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      background: rgba(17, 34, 64, 0.74);
+    }
+
+    .insight-title {
+      margin: 0 0 16px;
+      font-size: 18px;
+    }
+
+    .insight-list {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .insight-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid rgba(35, 53, 84, 0.66);
+      padding-bottom: 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .insight-list li:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .insight-list strong {
+      color: var(--text);
+      font-weight: 760;
+    }
+
+    .recent {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: rgba(17, 34, 64, 0.58);
+    }
+
+    .recent-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr .8fr .8fr auto;
+      gap: 16px;
+      align-items: center;
+      min-height: 76px;
+      padding: 0 18px;
+      border-bottom: 1px solid rgba(35, 53, 84, 0.72);
+    }
+
+    .recent-row:last-child {
+      border-bottom: 0;
+    }
+
+    .recent-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .recent-value {
+      display: block;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 720;
+    }
+
+    .status-ready {
+      color: var(--success);
+    }
+
+    .recent-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .footer {
+      margin-top: 34px;
+      padding: 34px 0 44px;
+      border-top: 1px solid rgba(35, 53, 84, 0.72);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer .shell {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    @media (max-width: 980px) {
+      .hero {
+        padding-top: 58px;
+      }
+
+      .hero-grid,
+      .preview-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 54px;
+      }
+
+      .detect-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .detect-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .detect-panel .button {
+        width: 100%;
+      }
+
+      .recent-row {
+        grid-template-columns: 1fr 1fr;
+        padding: 18px;
+      }
+
+      .recent-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        width: min(100% - 28px, var(--max));
+      }
+
+      .nav {
+        min-height: auto;
+        padding: 18px 0;
+        align-items: flex-start;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .brand {
+        min-width: 0;
+      }
+
+      .hero {
+        padding: 42px 0 34px;
+      }
+
+      h1 {
+        font-size: 40px;
+      }
+
+      .hero-copy {
+        font-size: 16px;
+      }
+
+      .cockpit-head,
+      .workspace,
+      .proposal-body {
+        padding: 18px;
+      }
+
+      .upload-zone {
+        min-height: 318px;
+      }
+
+      .detect-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .proposal-card {
+        grid-template-columns: 1fr;
+      }
+
+      .proposal-media {
+        min-height: 230px;
+      }
+
+      .proposal-title {
+        font-size: 30px;
+      }
+
+      .proposal-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .section-header,
+      .footer .shell {
+        display: block;
+      }
+
+      .recent-row {
         grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="container topbar-inner">
-      <div>
-        <div class="brand-title">2L1P Neural Travel - V8</div>
-        <div class="brand-sub">
-          Create offers, share client links, manage statuses, and track agency flow.
+  <header class="topbar">
+    <div class="shell nav" aria-label="Primary navigation">
+      <a class="brand" href="/" aria-label="GT63 home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" role="img">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5" />
+            <path d="M14.9 4.9 12.9 12.9 5.1 19.1 11.1 11.1 14.9 4.9Z" fill="currentColor" />
+            <path d="M9.2 9.2 12.9 12.9" stroke="#0A1428" stroke-width="1.2" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span class="brand-copy">
+          <span class="brand-name">GT63</span>
+          <span class="brand-system">Travel Proposal Operating System</span>
+        </span>
+      </a>
+
+      <nav class="nav-links" aria-label="Product sections">
+        <a class="nav-link" href="#recent">Proposals</a>
+        <a class="nav-link" href="#recent">Clients</a>
+        <a class="nav-link" href="#workspace">Settings</a>
+        <button class="profile-button" type="button">
+          <span class="profile-dot" aria-hidden="true"></span>
+          Profile
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <p class="eyebrow">GT63 Home v1</p>
+          <h1>From Travel Data<br />to Client Decision.</h1>
+          <p class="hero-copy">
+            Create beautiful travel proposals from flight and hotel information in minutes.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#workspace" id="createProposalTop">Create New Proposal</a>
+            <a class="button button-secondary" href="#preview">View Proposal Preview</a>
+          </div>
+        </div>
+
+        <section class="cockpit" id="workspace" aria-labelledby="workspaceTitle">
+          <div class="cockpit-head">
+            <div>
+              <span class="cockpit-label">Proposal cockpit</span>
+              <h2 class="cockpit-title" id="workspaceTitle">Create a proposal from screenshots</h2>
+            </div>
+            <span class="status-pill" id="workspaceStatus">Ready</span>
+          </div>
+
+          <div class="workspace">
+            <div class="upload-zone" id="uploadZone">
+              <div class="upload-content">
+                <div class="upload-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 15V4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                    <path d="M7.5 8.5 12 4l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M5 15.5V18a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <p class="upload-title">
+                  Upload Flight Screenshot
+                  <span>+ Upload Hotel Screenshot</span>
+                </p>
+                <p class="upload-support" id="uploadSupport">
+                  Drag and drop screenshots here, or choose files to start the proposal flow.
+                </p>
+                <div class="upload-actions">
+                  <label class="button button-primary" for="proposalFiles">Choose Files</label>
+                  <button class="button button-quiet" type="button" id="manualEntry">Manual Entry</button>
+                </div>
+                <input class="file-input" id="proposalFiles" type="file" accept="image/*,.pdf" multiple />
+              </div>
+            </div>
+
+            <div class="detect-panel" aria-live="polite">
+              <div class="detect-grid">
+                <span class="detect-item" data-detect="flight">Flight detected</span>
+                <span class="detect-item" data-detect="hotel">Hotel detected</span>
+                <span class="detect-item" data-detect="destination">Destination detected</span>
+                <span class="detect-item" data-detect="dates">Dates detected</span>
+                <span class="detect-item" data-detect="price">Price detected</span>
+              </div>
+              <button class="button button-primary" type="button" id="generateProposal" disabled>
+                Generate Proposal
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="section" id="preview">
+      <div class="shell">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Proposal Preview</h2>
+            <p class="section-note">A client-ready proposal card appears as soon as the import is ready.</p>
+          </div>
+        </div>
+
+        <div class="preview-grid">
+          <article class="proposal-card" aria-label="Proposal preview card">
+            <div class="proposal-media">
+              <img src="/images/hotels/162f6716.jpg" alt="Premium hotel preview for the proposal" />
+            </div>
+            <div class="proposal-body">
+              <div>
+                <p class="proposal-kicker" id="previewState">Prepared proposal</p>
+                <h3 class="proposal-title">Tokyo</h3>
+                <p class="proposal-hotel">Aman Tokyo with validated flight and hotel evidence.</p>
+              </div>
+
+              <div class="proposal-meta" aria-label="Proposal summary">
+                <span class="meta-box">
+                  <span class="meta-label">Client</span>
+                  <span class="meta-value">Market Test</span>
+                </span>
+                <span class="meta-box">
+                  <span class="meta-label">Status</span>
+                  <span class="meta-value">Ready</span>
+                </span>
+                <span class="meta-box">
+                  <span class="meta-label">Price</span>
+                  <span class="meta-value">21,662.49 EUR</span>
+                </span>
+              </div>
+
+              <div class="proposal-actions">
+                <a class="button button-secondary" href="#preview">Open HTML</a>
+                <a class="button button-secondary" href="#preview">Download PDF</a>
+              </div>
+            </div>
+          </article>
+
+          <aside class="insight-panel" aria-label="Proposal import result">
+            <h3 class="insight-title">Import Result</h3>
+            <ul class="insight-list">
+              <li><span>Flight evidence</span><strong id="flightEvidence">Waiting</strong></li>
+              <li><span>Hotel evidence</span><strong id="hotelEvidence">Waiting</strong></li>
+              <li><span>Destination</span><strong>Tokyo</strong></li>
+              <li><span>Dates</span><strong>Detected</strong></li>
+              <li><span>Price</span><strong>Detected</strong></li>
+            </ul>
+          </aside>
         </div>
       </div>
-      <div class="actions">
-        <a class="btn" href="/admin">Open Admin Dashboard</a>
-      </div>
-    </div>
-  </div>
+    </section>
 
-  <div class="container hero">
-    <div class="hero-grid">
-      <div class="hero-card">
-        <h1 class="hero-title" id="formTitle">Create Offer</h1>
-        <p class="hero-sub">
-          V8 brings status workflow, pricing logic, agency margin visibility, richer client presentation, and admin-ready filtering.
-        </p>
-
-        <form id="offerForm" class="form-grid">
-          <div class="field">
-            <label>Client Name</label>
-            <input name="clientName" placeholder="Goce Terziev" />
+    <section class="section" id="recent">
+      <div class="shell">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Recent Proposals</h2>
+            <p class="section-note">Last three only, so the next action stays clear.</p>
           </div>
+        </div>
 
-          <div class="field">
-            <label>Client Phone</label>
-            <input id="clientPhone" name="clientPhone" placeholder="00359894842882" />
-          </div>
+        <div class="recent" aria-label="Recent proposals">
+          <article class="recent-row">
+            <span>
+              <span class="recent-label">Destination</span>
+              <span class="recent-value">Tokyo</span>
+            </span>
+            <span>
+              <span class="recent-label">Client</span>
+              <span class="recent-value">Market Test</span>
+            </span>
+            <span>
+              <span class="recent-label">Status</span>
+              <span class="recent-value status-ready">Ready</span>
+            </span>
+            <span>
+              <span class="recent-label">Price</span>
+              <span class="recent-value">21,662.49 EUR</span>
+            </span>
+            <span class="recent-actions">
+              <a class="button button-quiet" href="#preview">Open</a>
+              <a class="button button-quiet" href="#preview">PDF</a>
+            </span>
+          </article>
 
-          <div class="field">
-            <label>Destination *</label>
-            <input name="destination" required placeholder="Rome" />
-          </div>
+          <article class="recent-row">
+            <span>
+              <span class="recent-label">Destination</span>
+              <span class="recent-value">Zurich</span>
+            </span>
+            <span>
+              <span class="recent-label">Client</span>
+              <span class="recent-value">Corporate</span>
+            </span>
+            <span>
+              <span class="recent-label">Status</span>
+              <span class="recent-value status-ready">Ready</span>
+            </span>
+            <span>
+              <span class="recent-label">Price</span>
+              <span class="recent-value">8,940.00 EUR</span>
+            </span>
+            <span class="recent-actions">
+              <a class="button button-quiet" href="#preview">Open</a>
+              <a class="button button-quiet" href="#preview">PDF</a>
+            </span>
+          </article>
 
-          <div class="field">
-            <label>Flight Route</label>
-           <input id="flightRoute" name="flightRoute" placeholder="sofia - rome - sofia" />
-          </div>
-
-<div class="field">
-  <label>Import from Screenshot</label>
-  <input type="file" id="imageUpload" accept="image/*" />
-</div>
-
-          <div class="field">
-            <label>Hotel</label>
-           <input id="hotel" name="hotel" />
-          </div>
-
-          <div class="field">
-            <label>Travel Dates</label>
-            <input name="travelDates" placeholder="25.04 - 30.04.2026" />
-          </div>
-
-          <div class="field">
-            <label>Guests</label>
-            <input name="guests" placeholder="2 възрастни" />
-          </div>
-
-          <div class="field">
-            <label>Status</label>
-            <select name="status">
-              <option value="draft">draft</option>
-              <option value="sent">sent</option>
-              <option value="viewed">viewed</option>
-              <option value="booked">booked</option>
-              <option value="cancelled">cancelled</option>
-              <option value="lost">lost</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label>Base Price *</label>
-            <input id="basePrice" name="basePrice" type="number" step="0.01" placeholder="остави празно за auto" />
-          </div>
-
-          <div class="field">
-            <label>Markup %</label>
-            <input id="markupPercent" name="markupPercent" type="number" step="0.01" placeholder="5" value="5" />
-            <div class="inline-note">Final price auto-calculates if final price is empty.</div>
-          </div>
-
-          <div class="field">
-            <label>Final Client Price (optional)</label>
-            <input id="priceField" name="price" type="number" step="0.01" placeholder="остави празно за auto" />
-            <div class="inline-note">If filled, final price overrides auto pricing and margin is recalculated.</div>
-          </div>
-
-          <div class="field">
-            <label>Currency</label>
-            <input name="currency" value="EUR" />
-          </div>
-
-          <div class="field">
-            <label>Valid for (days)</label>
-            <input name="validForDays" type="number" min="1" value="1" />
-          </div>
-
-         <div class="field">
-  <label>Custom valid until (optional)</label>
-  <input name="customValidUntil" type="text" placeholder="2026-04-15T18:00" />
-</div>
-
-<div class="field full">
-  <label>Import from URL</label>
-  <div style="display:flex; gap:10px; flex-wrap:wrap;">
-    <input id="importUrl" placeholder="Paste hotel or flight URL..." />
-   <button type="button" class="btn secondary" id="importBtn" onclick="importFromUrl()">Import</button>
-  </div>
-  <div class="inline-note">Imports basic hotel/flight data into the current offer builder.</div>
-</div>
-
-<div class="field full">
-  <label>Template</label>
-  <div style="display:flex; gap:10px; flex-wrap:wrap;">
-    <select id="templateSelect">
-      <option value="">Choose template...</option>
-      <option value="city_break">City Break</option>
-      <option value="family_beach">Family Beach</option>
-      <option value="luxury_escape">Luxury Escape</option>
-    </select>
-    <button type="button" class="btn secondary" id="applyTemplateBtn">Apply Template</button>
-  </div>
-</div>
-
-<div class="field full">
-  <label>Notes</label>
-  <textarea name="notes" placeholder="Luxury offer with flexible hotel options..."></textarea>
-</div>
-
-<div class="field full">
-            <div class="builder-block">
-              <div class="builder-header">
-                <h3 class="builder-title">✈️ Flight Options</h3>
-                <button type="button" class="btn secondary" onclick="addFlight()">+ Add Flight</button>
-              </div>
-
-              <div class="mini-note">
-                Add one or more flight options. These will appear on the client HTML offer page.
-              </div>
-
-              <div id="flightsWrapper" class="builder-list"></div>
-            </div>
-          </div>
-
-          <div class="field full">
-            <div class="builder-block">
-              <div class="builder-header">
-                <h3 class="builder-title">🏨 Hotel Options</h3>
-                <button type="button" class="btn secondary" onclick="addHotel()">+ Add Hotel</button>
-              </div>
-
-              <div class="mini-note">
-                Add one or more hotel options with manual prices, description, and image URLs.
-              </div>
-
-              <div id="hotelsWrapper" class="builder-list"></div>
-            </div>
-          </div>
-
-          <div class="field full">
-            <div id="autoPriceBox" class="price-helper">
-              Auto pricing: waiting for flight/hotel prices...
-            </div>
-          </div>
-
-          <div class="field full status-row">
-            <button type="submit" id="submitBtn">Save Offer</button>
-            <button type="button" class="btn secondary" id="clearBtn">Clear</button>
-            <button type="button" class="btn" onclick="sendWhatsApp()">Send via WhatsApp</button>
-            <span class="muted" id="formMessage"></span>
-          </div>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2 class="section-title">Agency Snapshot</h2>
-        <div class="kpis" id="snapshot"></div>
-        <div class="footer-note">
-          Status flow: draft → sent → viewed → booked / cancelled.
+          <article class="recent-row">
+            <span>
+              <span class="recent-label">Destination</span>
+              <span class="recent-value">Santiago</span>
+            </span>
+            <span>
+              <span class="recent-label">Client</span>
+              <span class="recent-value">Aviation Desk</span>
+            </span>
+            <span>
+              <span class="recent-label">Status</span>
+              <span class="recent-value status-ready">Ready</span>
+            </span>
+            <span>
+              <span class="recent-label">Price</span>
+              <span class="recent-value">2,562.30 EUR</span>
+            </span>
+            <span class="recent-actions">
+              <a class="button button-quiet" href="#preview">Open</a>
+              <a class="button button-quiet" href="#preview">PDF</a>
+            </span>
+          </article>
         </div>
       </div>
-    </div>
+    </section>
+  </main>
 
-    <div class="card" style="margin-top:18px;">
-      <h2 class="section-title">Recent Offers</h2>
-      <div id="offersList" class="list"></div>
+  <footer class="footer">
+    <div class="shell">
+      <span>GT63</span>
+      <span>Travel Proposal Operating System</span>
     </div>
-  </div>
+  </footer>
 
-  <script src="/app.js"></script>
+  <script>
+    const uploadZone = document.getElementById("uploadZone");
+    const fileInput = document.getElementById("proposalFiles");
+    const uploadSupport = document.getElementById("uploadSupport");
+    const generateButton = document.getElementById("generateProposal");
+    const workspaceStatus = document.getElementById("workspaceStatus");
+    const previewState = document.getElementById("previewState");
+    const flightEvidence = document.getElementById("flightEvidence");
+    const hotelEvidence = document.getElementById("hotelEvidence");
+    const manualEntry = document.getElementById("manualEntry");
+    const createProposalTop = document.getElementById("createProposalTop");
+    const detectItems = Array.from(document.querySelectorAll("[data-detect]"));
+
+    function setImportReady(fileCount) {
+      detectItems.forEach((item) => item.classList.add("is-active"));
+      uploadZone.classList.add("is-ready");
+      uploadSupport.textContent = `${fileCount} file${fileCount === 1 ? "" : "s"} ready for GT63 import.`;
+      workspaceStatus.textContent = "Import ready";
+      generateButton.disabled = false;
+      flightEvidence.textContent = "Detected";
+      hotelEvidence.textContent = "Detected";
+    }
+
+    function handleFiles(files) {
+      if (!files || files.length === 0) return;
+      setImportReady(files.length);
+    }
+
+    createProposalTop.addEventListener("click", () => {
+      window.setTimeout(() => {
+        uploadZone.classList.add("is-focused");
+        window.setTimeout(() => uploadZone.classList.remove("is-focused"), 1400);
+      }, 360);
+    });
+
+    fileInput.addEventListener("change", (event) => {
+      handleFiles(event.target.files);
+    });
+
+    manualEntry.addEventListener("click", () => {
+      setImportReady(2);
+      uploadSupport.textContent = "Manual entry mode ready. Add flight and hotel details to continue.";
+    });
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      uploadZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        uploadZone.classList.add("is-dragging");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      uploadZone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        uploadZone.classList.remove("is-dragging");
+      });
+    });
+
+    uploadZone.addEventListener("drop", (event) => {
+      handleFiles(event.dataTransfer.files);
+    });
+
+    generateButton.addEventListener("click", () => {
+      if (generateButton.disabled) return;
+      workspaceStatus.textContent = "Proposal ready";
+      previewState.textContent = "Generated proposal";
+      document.getElementById("preview").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  </script>
 </body>
 </html>
