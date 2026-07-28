@@ -215,6 +215,52 @@
       margin-top: 34px;
     }
 
+    .north-star-identity {
+      display: grid;
+      justify-items: center;
+      width: min(100%, 360px);
+      margin: 0 0 34px;
+      padding: 28px 20px;
+      border: 1px solid rgba(35, 53, 84, 0.72);
+      border-radius: var(--radius);
+      background: rgba(17, 34, 64, 0.36);
+    }
+
+    .north-star-symbol {
+      display: grid;
+      place-items: center;
+      width: 54px;
+      height: 54px;
+      margin-bottom: 12px;
+      color: var(--accent);
+    }
+
+    .north-star-symbol svg {
+      width: 54px;
+      height: 54px;
+      display: block;
+    }
+
+    .north-label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .north-name {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 820;
+    }
+
+    .north-system {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     .button {
       display: inline-flex;
       align-items: center;
@@ -386,6 +432,25 @@
       justify-content: center;
       gap: 12px;
       margin-top: 24px;
+    }
+
+    .input-pair {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 24px auto 0;
+      max-width: 390px;
+    }
+
+    .input-token {
+      min-height: 46px;
+      border: 1px solid rgba(35, 53, 84, 0.88);
+      border-radius: var(--radius);
+      padding: 12px;
+      color: var(--muted-strong);
+      background: rgba(17, 34, 64, 0.54);
+      font-size: 14px;
+      font-weight: 760;
     }
 
     .file-input {
@@ -613,48 +678,76 @@
     }
 
     .recent {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .recent-card {
+      display: grid;
+      grid-template-rows: 138px 1fr;
+      min-height: 314px;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
-      background: rgba(17, 34, 64, 0.58);
+      background: rgba(17, 34, 64, 0.72);
     }
 
-    .recent-row {
+    .recent-thumb {
+      position: relative;
+      background: #071023;
+      overflow: hidden;
+    }
+
+    .recent-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .recent-thumb::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(10, 20, 40, 0.04), rgba(10, 20, 40, 0.44));
+    }
+
+    .recent-body {
       display: grid;
-      grid-template-columns: 1.2fr 1fr .8fr .8fr auto;
       gap: 16px;
-      align-items: center;
-      min-height: 76px;
-      padding: 0 18px;
-      border-bottom: 1px solid rgba(35, 53, 84, 0.72);
+      padding: 18px;
     }
 
-    .recent-row:last-child {
-      border-bottom: 0;
+    .recent-destination {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.15;
     }
 
-    .recent-label {
-      display: block;
+    .recent-client {
+      margin: 6px 0 0;
       color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 4px;
+      font-size: 14px;
+      line-height: 1.45;
     }
 
-    .recent-value {
-      display: block;
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 720;
+    .recent-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--muted);
+      font-size: 13px;
     }
 
     .status-ready {
       color: var(--success);
+      font-weight: 760;
     }
 
     .recent-actions {
       display: flex;
-      gap: 8px;
-      justify-content: flex-end;
+      justify-content: flex-start;
     }
 
     .footer {
@@ -698,13 +791,14 @@
         width: 100%;
       }
 
-      .recent-row {
-        grid-template-columns: 1fr 1fr;
-        padding: 18px;
+      .recent {
+        grid-template-columns: 1fr;
       }
 
-      .recent-actions {
-        justify-content: flex-start;
+      .recent-card {
+        grid-template-columns: 170px 1fr;
+        grid-template-rows: auto;
+        min-height: 190px;
       }
     }
 
@@ -774,8 +868,13 @@
         display: block;
       }
 
-      .recent-row {
+      .input-pair,
+      .recent-card {
         grid-template-columns: 1fr;
+      }
+
+      .recent-card {
+        grid-template-rows: 180px 1fr;
       }
     }
   </style>
@@ -813,7 +912,18 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div>
-          <p class="eyebrow">GT63 Home v1</p>
+          <div class="north-star-identity" aria-label="GT63 North Star identity">
+            <span class="north-star-symbol" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path d="M32 3 38.8 25.2 61 32 38.8 38.8 32 61 25.2 38.8 3 32 25.2 25.2 32 3Z" stroke="currentColor" stroke-width="1.6" />
+                <path d="M32 16 35.9 28.1 48 32 35.9 35.9 32 48 28.1 35.9 16 32 28.1 28.1 32 16Z" fill="currentColor" />
+              </svg>
+            </span>
+            <p class="north-label">NORTH</p>
+            <p class="north-name">GT63</p>
+            <p class="north-system">Travel Proposal Operating System</p>
+          </div>
+          <p class="eyebrow">Market Test Edition</p>
           <h1>From Travel Data<br />to Client Decision.</h1>
           <p class="hero-copy">
             Create beautiful travel proposals from flight and hotel information in minutes.
@@ -828,7 +938,7 @@
           <div class="cockpit-head">
             <div>
               <span class="cockpit-label">Proposal cockpit</span>
-              <h2 class="cockpit-title" id="workspaceTitle">Create a proposal from screenshots</h2>
+              <h2 class="cockpit-title" id="workspaceTitle">Start Your Next Proposal</h2>
             </div>
             <span class="status-pill" id="workspaceStatus">Ready</span>
           </div>
@@ -844,14 +954,18 @@
                   </svg>
                 </div>
                 <p class="upload-title">
-                  Upload Flight Screenshot
-                  <span>+ Upload Hotel Screenshot</span>
+                  Start Your Next Proposal
+                  <span>Drop your travel data here.</span>
                 </p>
+                <div class="input-pair" aria-label="Required proposal inputs">
+                  <span class="input-token">Flight</span>
+                  <span class="input-token">Hotel</span>
+                </div>
                 <p class="upload-support" id="uploadSupport">
-                  Drag and drop screenshots here, or choose files to start the proposal flow.
+                  Add flight and hotel information. GT63 turns it into a client-ready proposal.
                 </p>
                 <div class="upload-actions">
-                  <label class="button button-primary" for="proposalFiles">Choose Files</label>
+                  <label class="button button-primary" for="proposalFiles">Start Proposal</label>
                   <button class="button button-quiet" type="button" id="manualEntry">Manual Entry</button>
                 </div>
                 <input class="file-input" id="proposalFiles" type="file" accept="image/*,.pdf" multiple />
@@ -918,8 +1032,8 @@
             </div>
           </article>
 
-          <aside class="insight-panel" aria-label="Proposal import result">
-            <h3 class="insight-title">Import Result</h3>
+          <aside class="insight-panel" aria-label="Detected travel details">
+            <h3 class="insight-title">Travel Details</h3>
             <ul class="insight-list">
               <li><span>Flight evidence</span><strong id="flightEvidence">Waiting</strong></li>
               <li><span>Hotel evidence</span><strong id="hotelEvidence">Waiting</strong></li>
@@ -942,73 +1056,61 @@
         </div>
 
         <div class="recent" aria-label="Recent proposals">
-          <article class="recent-row">
-            <span>
-              <span class="recent-label">Destination</span>
-              <span class="recent-value">Tokyo</span>
-            </span>
-            <span>
-              <span class="recent-label">Client</span>
-              <span class="recent-value">Market Test</span>
-            </span>
-            <span>
-              <span class="recent-label">Status</span>
-              <span class="recent-value status-ready">Ready</span>
-            </span>
-            <span>
-              <span class="recent-label">Price</span>
-              <span class="recent-value">21,662.49 EUR</span>
-            </span>
-            <span class="recent-actions">
-              <a class="button button-quiet" href="#preview">Open</a>
-              <a class="button button-quiet" href="#preview">PDF</a>
-            </span>
+          <article class="recent-card">
+            <div class="recent-thumb">
+              <img src="/images/hotels/162f6716.jpg" alt="Tokyo proposal thumbnail" />
+            </div>
+            <div class="recent-body">
+              <div>
+                <h3 class="recent-destination">Tokyo</h3>
+                <p class="recent-client">Market Test</p>
+              </div>
+              <div class="recent-meta">
+                <span class="status-ready">Ready</span>
+                <strong>21,662.49 EUR</strong>
+              </div>
+              <span class="recent-actions">
+                <a class="button button-quiet" href="#preview">Open</a>
+              </span>
+            </div>
           </article>
 
-          <article class="recent-row">
-            <span>
-              <span class="recent-label">Destination</span>
-              <span class="recent-value">Zurich</span>
-            </span>
-            <span>
-              <span class="recent-label">Client</span>
-              <span class="recent-value">Corporate</span>
-            </span>
-            <span>
-              <span class="recent-label">Status</span>
-              <span class="recent-value status-ready">Ready</span>
-            </span>
-            <span>
-              <span class="recent-label">Price</span>
-              <span class="recent-value">8,940.00 EUR</span>
-            </span>
-            <span class="recent-actions">
-              <a class="button button-quiet" href="#preview">Open</a>
-              <a class="button button-quiet" href="#preview">PDF</a>
-            </span>
+          <article class="recent-card">
+            <div class="recent-thumb">
+              <img src="/images/hotels/25475402.jpg" alt="Zurich proposal thumbnail" />
+            </div>
+            <div class="recent-body">
+              <div>
+                <h3 class="recent-destination">Zurich</h3>
+                <p class="recent-client">Corporate</p>
+              </div>
+              <div class="recent-meta">
+                <span class="status-ready">Ready</span>
+                <strong>8,940.00 EUR</strong>
+              </div>
+              <span class="recent-actions">
+                <a class="button button-quiet" href="#preview">Open</a>
+              </span>
+            </div>
           </article>
 
-          <article class="recent-row">
-            <span>
-              <span class="recent-label">Destination</span>
-              <span class="recent-value">Santiago</span>
-            </span>
-            <span>
-              <span class="recent-label">Client</span>
-              <span class="recent-value">Aviation Desk</span>
-            </span>
-            <span>
-              <span class="recent-label">Status</span>
-              <span class="recent-value status-ready">Ready</span>
-            </span>
-            <span>
-              <span class="recent-label">Price</span>
-              <span class="recent-value">2,562.30 EUR</span>
-            </span>
-            <span class="recent-actions">
-              <a class="button button-quiet" href="#preview">Open</a>
-              <a class="button button-quiet" href="#preview">PDF</a>
-            </span>
+          <article class="recent-card">
+            <div class="recent-thumb">
+              <img src="/images/hotels/25475413.jpg" alt="Santiago proposal thumbnail" />
+            </div>
+            <div class="recent-body">
+              <div>
+                <h3 class="recent-destination">Santiago</h3>
+                <p class="recent-client">Aviation Desk</p>
+              </div>
+              <div class="recent-meta">
+                <span class="status-ready">Ready</span>
+                <strong>2,562.30 EUR</strong>
+              </div>
+              <span class="recent-actions">
+                <a class="button button-quiet" href="#preview">Open</a>
+              </span>
+            </div>
           </article>
         </div>
       </div>
