@@ -751,6 +751,16 @@
     .recent-actions {
       display: flex;
       justify-content: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .showcase-empty {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      color: var(--muted);
+      background: rgba(17, 34, 64, 0.54);
     }
 
     .footer {
@@ -1070,69 +1080,12 @@
       <div class="shell">
         <div class="section-header">
           <div>
-            <h2 class="section-title">Recent Proposals</h2>
-            <p class="section-note">Last three only, so the next action stays clear.</p>
+            <h2 class="section-title">Explore Example Proposals</h2>
+            <p class="section-note">See exactly what your client receives before creating your first proposal.</p>
           </div>
         </div>
 
-        <div class="recent" aria-label="Recent proposals">
-          <article class="recent-card">
-            <div class="recent-thumb">
-              <img src="/images/hotels/162f6716.jpg" alt="Tokyo proposal thumbnail" />
-            </div>
-            <div class="recent-body">
-              <div>
-                <h3 class="recent-destination">Tokyo</h3>
-                <p class="recent-client">Market Test</p>
-              </div>
-              <div class="recent-meta">
-                <span class="status-ready">Ready</span>
-                <strong>21,662.49 EUR</strong>
-              </div>
-              <span class="recent-actions">
-                <a class="button button-quiet" href="#preview">Open</a>
-              </span>
-            </div>
-          </article>
-
-          <article class="recent-card">
-            <div class="recent-thumb">
-              <img src="/images/hotels/25475402.jpg" alt="Zurich proposal thumbnail" />
-            </div>
-            <div class="recent-body">
-              <div>
-                <h3 class="recent-destination">Zurich</h3>
-                <p class="recent-client">Corporate</p>
-              </div>
-              <div class="recent-meta">
-                <span class="status-ready">Ready</span>
-                <strong>8,940.00 EUR</strong>
-              </div>
-              <span class="recent-actions">
-                <a class="button button-quiet" href="#preview">Open</a>
-              </span>
-            </div>
-          </article>
-
-          <article class="recent-card">
-            <div class="recent-thumb">
-              <img src="/images/hotels/25475413.jpg" alt="Santiago proposal thumbnail" />
-            </div>
-            <div class="recent-body">
-              <div>
-                <h3 class="recent-destination">Santiago</h3>
-                <p class="recent-client">Aviation Desk</p>
-              </div>
-              <div class="recent-meta">
-                <span class="status-ready">Ready</span>
-                <strong>2,562.30 EUR</strong>
-              </div>
-              <span class="recent-actions">
-                <a class="button button-quiet" href="#preview">Open</a>
-              </span>
-            </div>
-          </article>
-        </div>
+        <div class="recent" id="showcaseGrid" aria-label="Example proposals"></div>
       </div>
     </section>
   </main>
@@ -1155,7 +1108,57 @@
     const hotelEvidence = document.getElementById("hotelEvidence");
     const manualEntry = document.getElementById("manualEntry");
     const createProposalTop = document.getElementById("createProposalTop");
+    const showcaseGrid = document.getElementById("showcaseGrid");
     const detectItems = Array.from(document.querySelectorAll("[data-detect]"));
+
+    const showcaseProposals = [
+      {
+        id: "tokyo-market-test",
+        destination: "Tokyo",
+        subtitle: "Luxury Japan Proposal",
+        status: "Ready",
+        price: "21,662.49 EUR",
+        image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf",
+        htmlUrl: "https://2l1p-neural-travel-v9-staging.up.railway.app/api/offers/view/OFF-1785253183892-pdm5q",
+        pdfUrl: "https://2l1p-neural-travel-v9-staging.up.railway.app/api/offers/OFF-1785253183892-pdm5q/pdf"
+      }
+    ];
+
+    function createShowcaseAction(label, url) {
+      if (!url) return "";
+      return `<a class="button button-quiet" href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+    }
+
+    function renderShowcaseProposals() {
+      const visibleProposals = showcaseProposals.filter((proposal) => proposal.htmlUrl || proposal.pdfUrl).slice(0, 3);
+
+      if (!visibleProposals.length) {
+        showcaseGrid.innerHTML = '<p class="showcase-empty">No verified example proposals are available yet.</p>';
+        return;
+      }
+
+      showcaseGrid.innerHTML = visibleProposals.map((proposal) => `
+        <article class="recent-card">
+          <div class="recent-thumb">
+            <img src="${proposal.image}" alt="${proposal.destination} proposal thumbnail" />
+          </div>
+          <div class="recent-body">
+            <div>
+              <h3 class="recent-destination">${proposal.destination}</h3>
+              <p class="recent-client">${proposal.subtitle}</p>
+            </div>
+            <div class="recent-meta">
+              <span class="status-ready">${proposal.status}</span>
+              <strong>${proposal.price}</strong>
+            </div>
+            <span class="recent-actions">
+              ${createShowcaseAction("View HTML", proposal.htmlUrl)}
+              ${createShowcaseAction("View PDF", proposal.pdfUrl)}
+            </span>
+          </div>
+        </article>
+      `).join("");
+    }
 
     function setImportReady(fileCount) {
       detectItems.forEach((item) => item.classList.add("is-active"));
@@ -1212,6 +1215,8 @@
       previewState.textContent = "Generated proposal";
       document.getElementById("preview").scrollIntoView({ behavior: "smooth", block: "start" });
     });
+
+    renderShowcaseProposals();
   </script>
 </body>
 </html>
