@@ -3,5 +3,6 @@
 module.exports = {
   ...require("./contracts/knowledge-types"),
   ...require("./contracts/knowledge-metadata"),
-  ...require("./contracts/canonical-entities")
+  ...require("./contracts/canonical-entities"),
+  ...require("./mappers/knowledge-mappers")
 };
