@@ -333,6 +333,9 @@ assert.match(serverJs, /new URL\(`\/api\/offers\/\$\{encodeURIComponent\(offer\.
 assert.match(serverJs, /page\.goto\(printUrl\.toString\(\)/, "PDF endpoint should load the dedicated Print HTML route in Puppeteer");
 assert.match(serverJs, /waitUntil:\s*"domcontentloaded"/, "PDF endpoint should not let slow images block navigation readiness");
 assert.equal(/networkidle0/.test(serverJs), false, "PDF endpoint must not wait for networkidle0 because slow images are handled locally");
+assert.match(serverJs, /html,\s*body\s*\{\s*background:\s*var\(--gt63-warm\);\s*\}/, "print media should preserve the Signature Proposal page mask/background");
+assert.match(serverJs, /\.gt63-print-shell\s*\{\s*width:\s*210mm;\s*margin:\s*0;\s*\}/, "print media should preserve the canonical A4 shell width");
+assert.match(serverJs, /preferCSSPageSize:\s*true/, "PDF generation should render the same CSS page contract as Signature Proposal HTML");
 assert.match(serverJs, /GT63_PRINT_IMAGE_DNS_TIMEOUT_MS\s*=\s*1500/, "PDF image DNS checks should be bounded");
 assert.match(serverJs, /GT63_PRINT_IMAGE_WAIT_MS\s*=\s*2000/, "PDF image completion wait should be bounded to 2000ms");
 assert.match(serverJs, /isGt63ApprovedLocalPrintImage/, "PDF image policy should allow only approved local static image paths");
