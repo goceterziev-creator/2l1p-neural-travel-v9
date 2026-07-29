@@ -31,6 +31,7 @@ const CHECK_TARGETS = [
   "scripts/knowledge-layer-country-adoption-regression.js",
   "scripts/knowledge-layer-location-adoption-regression.js",
   "scripts/smart-import-consumer-adapter-regression.js",
+  "scripts/gt63-final-product-integration-regression.js",
   "scripts/gt63-offer-engine-adapter-regression.js",
   "scripts/proposal-input-adapter-regression.js",
   "scripts/v9-smart-import-proposal-input-regression.js",
@@ -113,6 +114,7 @@ async function main() {
     await runNode(["scripts/provider-layer-openai-boundary-regression.js"]);
     await runNode(["scripts/provider-layer-serpapi-boundary-regression.js"]);
     await runNode(["scripts/render-determinism-regression.js"]);
+    await runNode(["scripts/gt63-final-product-integration-regression.js"]);
     await runNode(["scripts/knowledge-layer-contracts-regression.js"]);
     await runNode(["scripts/knowledge-layer-mapping-regression.js"]);
     await runNode(["scripts/knowledge-layer-shadow-adoption-regression.js"]);

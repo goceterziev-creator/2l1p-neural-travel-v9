@@ -594,6 +594,24 @@
       display: block;
     }
 
+    .proposal-media-placeholder {
+      position: absolute;
+      inset: 24px;
+      display: grid;
+      place-items: center;
+      z-index: 1;
+      border: 1px dashed rgba(168, 178, 209, 0.28);
+      border-radius: var(--radius);
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .proposal-media.has-image .proposal-media-placeholder {
+      display: none;
+    }
+
     .proposal-media::after {
       content: "";
       position: absolute;
@@ -629,9 +647,16 @@
       line-height: 1.5;
     }
 
+    .proposal-summary {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
     .proposal-meta {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 10px;
     }
 
@@ -991,7 +1016,7 @@
           </p>
           <div class="hero-actions">
             <a class="button button-primary" href="#workspace" id="createProposalTop">Create New Proposal</a>
-            <a class="button button-secondary" href="#preview" id="viewProposalPreview">View Proposal Preview</a>
+            <a class="button button-secondary is-disabled" href="#preview" id="viewProposalPreview" aria-disabled="true">View Proposal Preview</a>
           </div>
         </div>
 
@@ -1064,27 +1089,33 @@
         <div class="preview-grid">
           <article class="proposal-card" aria-label="Proposal preview card">
             <div class="proposal-media">
-              <img src="/images/hotels/162f6716.jpg" alt="Premium hotel preview for the proposal" />
+              <img id="previewHeroImage" alt="Current proposal preview image" hidden />
+              <span class="proposal-media-placeholder" id="previewHeroPlaceholder">Proposal image appears after generation</span>
             </div>
             <div class="proposal-body">
               <div>
-                <p class="proposal-kicker" id="previewState">Prepared proposal</p>
-                <h3 class="proposal-title">Tokyo</h3>
-                <p class="proposal-hotel">Aman Tokyo with validated flight and hotel evidence.</p>
+                <p class="proposal-kicker" id="previewState">Waiting for proposal</p>
+                <h3 class="proposal-title" id="previewDestination">Start with travel data</h3>
+                <p class="proposal-hotel" id="previewHotel">Your selected hotel will appear here after GT63 creates the proposal.</p>
+                <p class="proposal-summary" id="previewSummary">The preview uses the same offer data as the client HTML and PDF.</p>
               </div>
 
               <div class="proposal-meta" aria-label="Proposal summary">
                 <span class="meta-box">
                   <span class="meta-label">Client</span>
-                  <span class="meta-value">Market Test</span>
+                  <span class="meta-value" id="previewClient">Waiting</span>
                 </span>
                 <span class="meta-box">
                   <span class="meta-label">Status</span>
-                  <span class="meta-value">Ready</span>
+                  <span class="meta-value" id="previewStatus">Draft</span>
+                </span>
+                <span class="meta-box">
+                  <span class="meta-label">Dates</span>
+                  <span class="meta-value" id="previewDates">Waiting</span>
                 </span>
                 <span class="meta-box">
                   <span class="meta-label">Price</span>
-                  <span class="meta-value">21,662.49 EUR</span>
+                  <span class="meta-value" id="previewPrice">Waiting</span>
                 </span>
               </div>
 
@@ -1100,9 +1131,9 @@
             <ul class="insight-list">
               <li><span>Flight evidence</span><strong id="flightEvidence">Waiting</strong></li>
               <li><span>Hotel evidence</span><strong id="hotelEvidence">Waiting</strong></li>
-              <li><span>Destination</span><strong>Tokyo</strong></li>
-              <li><span>Dates</span><strong>Detected</strong></li>
-              <li><span>Price</span><strong>Detected</strong></li>
+              <li><span>Destination</span><strong id="detailDestination">Waiting</strong></li>
+              <li><span>Dates</span><strong id="detailDates">Waiting</strong></li>
+              <li><span>Price</span><strong id="detailPrice">Waiting</strong></li>
             </ul>
           </aside>
         </div>
@@ -1136,10 +1167,6 @@
   <script src="/gt63-proposal-flow.js"></script>
   <script>
     window.GT63ProposalFlow.init({
-      defaultPreview: {
-        htmlUrl: "https://2l1p-neural-travel-production.up.railway.app/api/offers/view/OFF-1784307526550-uyjy7",
-        pdfUrl: "https://2l1p-neural-travel-production.up.railway.app/api/offers/OFF-1784307526550-uyjy7/pdf"
-      },
       showcaseProposals: [
         {
           id: "tokyo",

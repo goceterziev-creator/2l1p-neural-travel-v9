@@ -56,6 +56,54 @@
     return values.map(cleanText).find(Boolean) || "";
   }
 
+  function formatMoney(value, currency = "EUR") {
+    const amount = toNumber(value, 0);
+    if (amount <= 0) return "";
+    return `${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency || "EUR"}`;
+  }
+
+  function selectedHotel(offer = {}) {
+    const hotels = safeArray(offer.hotels);
+    return hotels.find((hotel) => hotel?.selected) || hotels[0] || {};
+  }
+
+  function firstImageFromOffer(offer = {}) {
+    const hotel = selectedHotel(offer);
+    return safeArray(hotel.images || hotel.imageUrls)
+      .concat([hotel.heroImage, hotel.image, hotel.imageUrl, hotel.photo, hotel.thumbnail])
+      .map(cleanText)
+      .find(Boolean) || "";
+  }
+
+  function previewModelFromOffer(offer = {}) {
+    const hotel = selectedHotel(offer);
+    const flight = safeArray(offer.flights)[0] || {};
+    const destination = firstAvailable(
+      offer.destination,
+      offer.proposalInput?.destination?.name,
+      offer.proposalInput?.destination?.requested
+    );
+    const travelDates = firstAvailable(offer.travelDates, offer.proposalInput?.client?.travelDates);
+    const price = formatMoney(offer.finalPrice || offer.price, offer.currency);
+    const summary = firstAvailable(
+      offer.destinationDescription,
+      hotel.description,
+      flight.route ? `Flight route: ${flight.route}` : "",
+      "Client-ready proposal generated from the active offer."
+    );
+
+    return {
+      destination: destination || "Travel proposal",
+      hotel: firstAvailable(hotel.name, offer.hotel, "Hotel to confirm"),
+      client: firstAvailable(offer.clientName, offer.proposalInput?.client?.name, "Client to confirm"),
+      dates: travelDates || "Dates to confirm",
+      price: price || "Price to confirm",
+      status: firstAvailable(offer.status, "draft"),
+      summary,
+      image: firstImageFromOffer(offer)
+    };
+  }
+
   function hasMeaningfulObject(value, fields = []) {
     if (!value || typeof value !== "object") return false;
     return fields.some((field) => cleanText(value[field]) || toNumber(value[field], 0) > 0 || safeArray(value[field]).length > 0);
@@ -194,7 +242,8 @@
       hotelImportData: null,
       currentOfferId: "",
       currentHtmlUrl: "",
-      currentPdfUrl: ""
+      currentPdfUrl: "",
+      currentOffer: null
     };
 
     const uploadZone = $("uploadZone");
@@ -205,8 +254,20 @@
     const generateButton = $("generateProposal");
     const workspaceStatus = $("workspaceStatus");
     const previewState = $("previewState");
+    const previewDestination = $("previewDestination");
+    const previewHotel = $("previewHotel");
+    const previewSummary = $("previewSummary");
+    const previewClient = $("previewClient");
+    const previewStatus = $("previewStatus");
+    const previewDates = $("previewDates");
+    const previewPrice = $("previewPrice");
+    const previewHeroImage = $("previewHeroImage");
+    const previewHeroPlaceholder = $("previewHeroPlaceholder");
     const flightEvidence = $("flightEvidence");
     const hotelEvidence = $("hotelEvidence");
+    const detailDestination = $("detailDestination");
+    const detailDates = $("detailDates");
+    const detailPrice = $("detailPrice");
     const manualEntry = $("manualEntry");
     const createProposalTop = $("createProposalTop");
     const flightUploadButton = $("flightUploadButton");
@@ -242,6 +303,44 @@
         link.classList.remove("is-disabled");
         link.setAttribute("aria-disabled", "false");
       });
+    }
+
+    function setText(node, value) {
+      if (node) node.textContent = cleanText(value) || "Waiting";
+    }
+
+    function updateProposalPreview(offer) {
+      if (!offer || typeof offer !== "object") return;
+      state.currentOffer = offer;
+      const model = previewModelFromOffer(offer);
+
+      setText(previewState, "Generated proposal");
+      setText(previewDestination, model.destination);
+      setText(previewHotel, model.hotel);
+      setText(previewSummary, model.summary);
+      setText(previewClient, model.client);
+      setText(previewStatus, model.status);
+      setText(previewDates, model.dates);
+      setText(previewPrice, model.price);
+      setText(detailDestination, model.destination);
+      setText(detailDates, model.dates);
+      setText(detailPrice, model.price);
+
+      const media = previewHeroImage?.closest(".proposal-media");
+      if (previewHeroImage && model.image) {
+        previewHeroImage.src = model.image;
+        previewHeroImage.alt = `${model.destination} proposal image`;
+        previewHeroImage.hidden = false;
+        media?.classList.add("has-image");
+      } else if (previewHeroImage) {
+        previewHeroImage.removeAttribute("src");
+        previewHeroImage.alt = "";
+        previewHeroImage.hidden = true;
+        media?.classList.remove("has-image");
+      }
+      if (previewHeroPlaceholder) {
+        previewHeroPlaceholder.textContent = model.image ? "" : "Proposal image pending confirmation";
+      }
     }
 
     function focusWorkspace() {
@@ -335,7 +434,7 @@
           body: JSON.stringify(payload)
         });
         setGeneratedLinks(result.offer?.id, result.clientLink, result.pdfLink);
-        if (previewState) previewState.textContent = "Generated proposal";
+        updateProposalPreview(result.offer);
         setMessage("Proposal ready.", "info");
         document.getElementById("preview")?.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (error) {
@@ -425,10 +524,6 @@
     });
 
     renderShowcaseProposals();
-
-    if (config.defaultPreview) {
-      setGeneratedLinks("", config.defaultPreview.htmlUrl, config.defaultPreview.pdfUrl);
-    }
   }
 
   window.GT63ProposalFlow = { init };

@@ -6075,10 +6075,12 @@ function escapeGt63RegistryHtml(value) {
 
 function renderGt63RegistryOfferHtml(offer = {}, options = {}) {
   const proposalInput = normalizeProposalInputForOffer(offer.proposalInput);
-  if (!proposalInput || !offer.proposalTemplate?.selected) return "";
+  const proposalTemplate = normalizeProposalTemplateMetadata(offer.proposalTemplate || proposalInput?.proposalTemplate);
+  if (!proposalInput || !proposalTemplate?.selected) return "";
 
   const input = cloneJsonSafe(proposalInput);
   if (!input) return "";
+  input.proposalTemplate = proposalTemplate;
   input.contact = {
     ...(input.contact || {}),
     whatsappPhone: AGENCY_WHATSAPP_PHONE
