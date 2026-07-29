@@ -17,6 +17,7 @@ CONFIG/
 storage/generated/V10_AIRPORTS_TEST_CONFIG.json
 storage/generated/
 storage/media/
+storage/source-evidence/
 storage/drive_inspect/
 storage/github_inspect/
 storage/regression-library/
