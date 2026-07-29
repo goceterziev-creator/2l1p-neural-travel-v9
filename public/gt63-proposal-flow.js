@@ -268,6 +268,9 @@
     async function postFiles(route, files, limit = 8) {
       const selectedFiles = Array.from(files || []).slice(0, limit);
       if (!selectedFiles.length) return null;
+      if (window.location.protocol === "file:") {
+        throw new Error("Open GT63 through Railway staging or the local server before uploading files.");
+      }
       const formData = new FormData();
       selectedFiles.forEach((file) => formData.append("image", file));
       setMessage("Reading travel data...", "working");

@@ -453,14 +453,29 @@
     .input-token {
       appearance: none;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       min-height: 44px;
-      border: 1px solid rgba(0, 212, 255, 0.20);
+      border: 1px solid rgba(0, 212, 255, 0.38);
       border-radius: var(--radius);
       padding: 12px;
-      color: var(--muted-strong);
-      background: rgba(17, 34, 64, 0.42);
+      color: var(--text);
+      background: rgba(17, 34, 64, 0.78);
       font-size: 14px;
       font-weight: 760;
+      transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
+    }
+
+    .input-token:hover {
+      border-color: rgba(0, 212, 255, 0.72);
+      background: rgba(0, 212, 255, 0.10);
+      transform: translateY(-1px);
+    }
+
+    .input-token:focus-visible {
+      outline: 2px solid rgba(0, 212, 255, 0.42);
+      outline-offset: 3px;
     }
 
     .file-input {
