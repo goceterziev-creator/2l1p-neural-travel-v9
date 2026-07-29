@@ -7403,6 +7403,8 @@ async function renderOfferHtml(offer, options = {}) {
   }
 
   const destinationName = displayDestination(offer.destination);
+  const proposalSubtitle = cleanText(offer.proposalSubtitle || offer.tripSubtitle || offer.experienceType) ||
+    (destinationKey(offer.destination).includes("santiago") ? "City Discovery" : "Персонално пътуване");
   const flightSectionTitle = flights.length > 1
     ? "\u0412\u0430\u0448\u0438\u0442\u0435 \u043f\u043e\u043b\u0435\u0442\u0438"
     : "\u0412\u0430\u0448\u0438\u044f\u0442 \u043f\u043e\u043b\u0435\u0442";
@@ -7677,15 +7679,61 @@ h1 {
 .hero-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-  margin: 18px 0;
+  gap: 10px;
+  margin: 20px 0;
+  align-items: center;
 }
-.hero-meta div, .pill {
+.hero-fact {
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 132px;
+  border: 1px solid rgba(255,255,255,.24);
+  background: rgba(255,255,255,.12);
+  border-radius: 16px;
+  padding: 11px 14px;
+  box-shadow: 0 14px 34px rgba(0,0,0,.16);
+  backdrop-filter: blur(10px);
+}
+.hero-fact span {
+  color: rgba(255,255,255,.66);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  line-height: 1;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.hero-fact strong {
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.2;
+}
+.proposal-subtitle {
+  color: rgba(255,255,255,.88);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: -10px 0 18px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   border: 1px solid rgba(255,255,255,.24);
   background: rgba(255,255,255,.13);
   border-radius: 999px;
   padding: 9px 12px;
-  font-size: 14px;
+  color: rgba(255,255,255,.92);
+  font-size: 13px;
+  font-weight: 800;
+}
+.pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #d4af37;
+  box-shadow: 0 0 0 4px rgba(212,175,55,.14);
 }
 .price {
   font-size: 58px;
@@ -8176,9 +8224,23 @@ h1 {
     gap: 8px;
     margin: 12px 0;
   }
-  .hero-meta div, .pill {
+  .hero-fact, .pill {
     font-size: 11px;
     padding: 6px 9px;
+  }
+  .hero-fact {
+    min-width: 96px;
+  }
+  .hero-fact span {
+    font-size: 9px;
+    margin-bottom: 4px;
+  }
+  .hero-fact strong {
+    font-size: 11px;
+  }
+  .proposal-subtitle {
+    font-size: 15px;
+    margin: -6px 0 10px;
   }
   .price {
     font-size: 42px;
@@ -8217,12 +8279,13 @@ h1 {
       ${hasWarnings ? `<div class="warning" id="offerWarning">Някои елементи в офертата изискват допълнителна проверка преди изпращане.${validationWarnings.length ? `<ul>${validationWarnings.map((warning) => `<li>${escapeHtml(cleanText(displayValidationWarning(warning)))}</li>`).join("")}</ul>` : ""}${forPdf ? "" : `<button class="warning-close" type="button" aria-label="Скрий предупреждението" title="Скрий предупреждението" onclick="dismissOfferWarning()">×</button>`}</div>` : ""}
       <div class="eyebrow">AYA Travel - персонална оферта</div>
       <h1>${escapeHtml(destinationName || "Пътуване")}</h1>
+      <div class="proposal-subtitle">${escapeHtml(proposalSubtitle)}</div>
       <div class="hero-copy">
         ${heroParagraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
       </div>
       <div class="hero-meta">
-        <div><strong>Период:</strong> ${escapeHtml(offer.travelDates || "-")}</div>
-        <div><strong>Гости:</strong> ${escapeHtml(offer.guests || "-")}</div>
+        <div class="hero-fact"><span>Период</span><strong>${escapeHtml(offer.travelDates || "-")}</strong></div>
+        <div class="hero-fact"><span>Гости</span><strong>${escapeHtml(offer.guests || "-")}</strong></div>
       </div>
       <div class="price">${formatMoney(offer.finalPrice, offer.currency)}</div>
       <div class="included">
