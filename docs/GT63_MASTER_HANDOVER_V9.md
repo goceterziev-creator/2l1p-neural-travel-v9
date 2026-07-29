@@ -436,3 +436,16 @@ Maintain:
 For new chat:
 
 GT63 LOAD HANDOVER V9
+
+---
+
+# ENGINEERING GOVERNANCE UPDATE
+
+Engineering governance updated.
+
+Rule #21 protects all `LOCKED` architecture, execution contracts and product decisions.
+
+Reference:
+
+- `docs/GT63_ENGINEERING_RULES.md`
+- `docs/GT63_ASSISTANT_CONTRACT.md`

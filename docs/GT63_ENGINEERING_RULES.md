@@ -385,3 +385,68 @@ Agency Workflow -> Client Conversion
 Do not compete where the market is commoditizing.
 
 Move to the layer where differentiation remains.
+
+---
+
+## Rule #21 - LOCK MEANS LOCK
+
+A GT63 specification marked `LOCKED` is immutable until the Product Owner explicitly replaces it with a new `LOCKED` version.
+
+`LOCKED` means:
+
+- implementation path is frozen;
+- architecture is frozen;
+- product direction is frozen;
+- execution contract is frozen.
+
+`LOCKED` is not a recommendation. It is a binding engineering constraint.
+
+After a specification is marked `LOCKED`, there are only two valid outputs:
+
+1. Implementation exactly as specified.
+2. Hard Stop Report.
+
+A Hard Stop Report contains only:
+
+- blocker;
+- classification;
+- root cause;
+- affected components;
+- minimal correction.
+
+After `LOCKED`, it is forbidden to:
+
+- redesign;
+- reinterpret;
+- improve by changing direction;
+- invent a better architecture;
+- replace the solution;
+- change workflow;
+- expand scope;
+- silently evolve the specification.
+
+If a better idea appears after `LOCKED`, ignore it unless the Product Owner explicitly unlocks the specification.
+
+The question is never:
+
+```text
+What else can we build?
+```
+
+The only valid question is:
+
+```text
+Why does the locked solution not currently work?
+```
+
+Neither Codex nor any engineer may unlock a locked specification.
+
+If a deviation is detected:
+
+1. Identify the deviation.
+2. Return to the locked specification.
+3. Continue implementation inside the locked boundaries.
+
+The latest `LOCKED` specification remains the only source of truth until the Product Owner explicitly replaces it with a new `LOCKED` version.
+
+No implicit evolution is allowed.
