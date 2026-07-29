@@ -56,6 +56,11 @@
     return values.map(cleanText).find(Boolean) || "";
   }
 
+  function hasMeaningfulObject(value, fields = []) {
+    if (!value || typeof value !== "object") return false;
+    return fields.some((field) => cleanText(value[field]) || toNumber(value[field], 0) > 0 || safeArray(value[field]).length > 0);
+  }
+
   function normalizeHotelOption(hotel = {}, selected = false) {
     return {
       name: cleanText(hotel.name || hotel.hotelName),
@@ -273,12 +278,17 @@
       const data = await postFiles("/api/smart-import", files, 8);
       if (!data) return;
       state.smartImportData = data;
+      const importedFlight = data.offerFlight || data.flight || {};
+      const importedHotel = data.offerHotel || {};
+      const importedHotelOptions = safeArray(data.offerHotelOptions);
+      const hasFlight = hasMeaningfulObject(importedFlight, ["airline", "route", "departure", "arrival", "price", "segments"]);
+      const hasHotel = hasMeaningfulObject(importedHotel, ["name", "area", "city", "room", "meal", "price", "images"]) || importedHotelOptions.length > 0;
       setImportReady({
-        flight: Boolean(data.offerFlight || data.flight),
-        hotel: Boolean(data.offerHotel || safeArray(data.offerHotelOptions).length),
-        destination: Boolean(inferDestination(data, data.offerFlight || {}, data.offerHotel || {})),
-        dates: Boolean(data.offerFlight?.departure || data.offerFlight?.arrival),
-        price: Boolean(toNumber(data.offerFlight?.price, 0) || toNumber(data.offerHotel?.price, 0))
+        flight: hasFlight,
+        hotel: hasHotel,
+        destination: Boolean(inferDestination(data, importedFlight, importedHotel)),
+        dates: Boolean(importedFlight.departure || importedFlight.arrival),
+        price: Boolean(toNumber(importedFlight.price, 0) || toNumber(importedHotel.price, 0))
       });
     }
 
@@ -286,12 +296,13 @@
       const data = await postFiles("/api/import-image", files, 4);
       if (!data) return;
       state.flightImportData = data;
+      const importedFlight = data.flight || data.offerFlight || {};
       setImportReady({
-        flight: Boolean(data.flight || data.offerFlight),
+        flight: hasMeaningfulObject(importedFlight, ["airline", "route", "departure", "arrival", "price", "segments"]),
         hotel: Boolean(state.hotelImportData),
-        destination: Boolean(inferDestination({}, data.flight || data.offerFlight || {}, state.hotelImportData?.hotel || {})),
-        dates: Boolean(data.flight?.departure || data.flight?.arrival),
-        price: Boolean(toNumber(data.flight?.price, 0))
+        destination: Boolean(inferDestination({}, importedFlight, state.hotelImportData?.hotel || {})),
+        dates: Boolean(importedFlight.departure || importedFlight.arrival),
+        price: Boolean(toNumber(importedFlight.price, 0))
       });
     }
 
@@ -299,12 +310,13 @@
       const data = await postFiles("/api/import-hotel-image", files, 4);
       if (!data) return;
       state.hotelImportData = data;
+      const importedHotel = data.hotel || data.offerHotel || {};
       setImportReady({
         flight: Boolean(state.flightImportData),
-        hotel: Boolean(data.hotel || data.offerHotel),
-        destination: Boolean(inferDestination({}, state.flightImportData?.flight || {}, data.hotel || data.offerHotel || {})),
+        hotel: hasMeaningfulObject(importedHotel, ["name", "area", "city", "room", "meal", "price", "images"]),
+        destination: Boolean(inferDestination({}, state.flightImportData?.flight || {}, importedHotel)),
         dates: Boolean(state.flightImportData?.flight?.departure || state.flightImportData?.flight?.arrival),
-        price: Boolean(toNumber(data.hotel?.price, 0) || toNumber(state.flightImportData?.flight?.price, 0))
+        price: Boolean(toNumber(importedHotel.price, 0) || toNumber(state.flightImportData?.flight?.price, 0))
       });
     }
 
