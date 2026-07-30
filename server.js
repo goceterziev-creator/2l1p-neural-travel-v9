@@ -6099,6 +6099,9 @@ function renderGt63RegistryOfferHtml(offer = {}, options = {}) {
   const template = input.proposalTemplate?.selected || "cathedral";
   const clientLink = `${LIVE_BASE_URL}/api/offers/view/${offer.id}`;
   const pdfLink = `${LIVE_BASE_URL}/api/offers/${offer.id}/pdf`;
+  const isPreviewMode = options.previewMode === true;
+  const isPrintMode = options.printMode === true;
+  const shellMode = isPrintMode ? "print" : isPreviewMode ? "preview" : "client";
 
   return `<!doctype html>
 <html lang="bg">
@@ -6111,17 +6114,52 @@ function renderGt63RegistryOfferHtml(offer = {}, options = {}) {
     body { background: #e5e7eb; }
     .shell { width: min(1280px, calc(100% - 36px)); max-width: none; padding: 18px 0 34px; }
     .shell[data-proposal-template="multi-hotel"] { width: min(1480px, calc(100% - 44px)); }
+    .shell[data-gt63-shell-mode="preview"] { width: min(1480px, 100%); padding: 0; }
+    .shell[data-gt63-shell-mode="preview"] .gt63-client-actions { display: none; }
     @media (max-width: 860px) {
       .shell,
       .shell[data-proposal-template="multi-hotel"] { width: min(100% - 24px, 1180px); padding: 14px 0 24px; }
+      .shell[data-gt63-shell-mode="preview"] { width: 100%; padding: 0; }
     }
     .gt63-client-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; }
     .gt63-client-actions a { border: 1px solid rgba(148, 163, 184, 0.38); border-radius: 999px; color: #e5e7eb; padding: 8px 12px; text-decoration: none; }
+    @media print {
+      @page { size: A4; margin: 0; }
+      html, body { width: 210mm; margin: 0; background: #050816 !important; }
+      body::before, .gt63-client-actions, .v11-gallery-dialog { display: none !important; }
+      .shell,
+      .shell[data-proposal-template="multi-hotel"] {
+        width: 210mm !important;
+        max-width: none !important;
+        padding: 0 !important;
+      }
+      .multi-hotel-proposal {
+        gap: 8mm !important;
+      }
+      .multi-hotel-proposal .v11-hero,
+      .v11-card,
+      .v11-hotel-option,
+      .v11-selected-hotel-detail,
+      .v11-final-cta {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .multi-hotel-proposal .v11-hero {
+        min-height: 260mm;
+        border-radius: 0;
+      }
+      .v11-gallery-thumb img,
+      .v11-hotel-gallery img,
+      .v11-selected-hotel-gallery img {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+    }
   </style>
 </head>
 <body>
-  <main class="shell" data-proposal-template="${escapeGt63RegistryHtml(template)}">
-    <nav class="gt63-client-actions" aria-label="Client actions">
+  <main class="shell" data-proposal-template="${escapeGt63RegistryHtml(template)}" data-gt63-shell-mode="${escapeGt63RegistryHtml(shellMode)}">
+    <nav class="gt63-client-actions" aria-label="Client actions" ${isPrintMode || isPreviewMode ? "hidden" : ""}>
       <a href="${escapeGt63RegistryHtml(pdfLink)}">PDF</a>
       <a href="https://wa.me/${escapeGt63RegistryHtml(AGENCY_WHATSAPP_PHONE)}?text=${encodeURIComponent(clientLink)}" target="_blank" rel="noreferrer">WhatsApp</a>
     </nav>
@@ -6132,6 +6170,12 @@ function renderGt63RegistryOfferHtml(offer = {}, options = {}) {
 }
 
 function renderGt63PrintOfferHtml(offer = {}, options = {}) {
+  const registryHtml = renderGt63RegistryOfferHtml(offer, {
+    ...options,
+    printMode: true
+  });
+  if (registryHtml) return registryHtml;
+
   const proposalInput = normalizeProposalInputForOffer(offer.proposalInput);
   if (!proposalInput) {
     const error = new Error("Offer does not contain GT63 proposal input");
@@ -9099,7 +9143,17 @@ app.post("/api/import", requireCapability("imports.run"), (req, res) => {
 
 app.get("/api/offers/view/:id", async (req, res) => {
   let offerForRender;
+  const previewMode = req.query?.preview === "1";
   try {
+    if (previewMode) {
+      const db = readDb();
+      offerForRender = db.offers.find((o) => o.id === req.params.id);
+      if (!offerForRender) throw routeError("Offer not found", 404);
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("Content-Type", "text/html; charset=UTF-8");
+      return res.send(await renderOfferHtml(offerForRender, { previewMode: true }));
+    }
+
     await mutateDb((db) => {
       const offer = db.offers.find((o) => o.id === req.params.id);
       if (!offer) throw routeError("Offer not found", 404);
