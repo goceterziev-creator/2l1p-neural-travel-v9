@@ -36,7 +36,9 @@ assert(!proposalFlow.includes("function previewModelFromOffer"), "HOME flow must
 assert(proposalFlow.includes("updateProposalPreview(result.offer)"), "HOME flow must update preview from created offer response");
 assert(proposalFlow.includes("setGeneratedLinks(result.offer?.id, result.clientLink, result.pdfLink)"), "HOME flow must use canonical offer links");
 assert(proposalFlow.includes("?preview=1"), "HOME preview must reference the canonical Client HTML route in preview mode");
+assert(proposalFlow.includes('source: "home_signature_renderer"'), "HOME offers must use the canonical GT63 Signature Proposal renderer");
 assert(proposalFlow.includes('selected: "multi-hotel"'), "HOME offers with hotel options must select the canonical multi-hotel template");
+assert(!proposalFlow.includes("const proposalTemplate = hotels.length > 1"), "HOME renderer selection must not fall back to cathedral for single-hotel offers");
 assert(!proposalFlow.includes("config.defaultPreview"), "HOME flow must not install a default demo preview");
 
 assert(

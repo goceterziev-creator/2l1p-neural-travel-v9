@@ -165,12 +165,12 @@
         }
       : null;
 
-    const proposalTemplate = hotels.length > 1
+    const proposalTemplate = hotels.length
       ? {
           recommended: "multi-hotel",
           selected: "multi-hotel",
-          source: "home_hotel_options",
-          reason: "HOME import contains multiple hotel options for client comparison."
+          source: "home_signature_renderer",
+          reason: "HOME proposals use the canonical GT63 Signature Proposal renderer."
         }
       : undefined;
 
