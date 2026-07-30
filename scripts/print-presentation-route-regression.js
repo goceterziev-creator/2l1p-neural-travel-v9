@@ -343,6 +343,8 @@ assert.match(serverJs, /addresses\.every\(isGt63PublicIpAddress\)/, "PDF image p
 assert.match(serverJs, /request\.url\(\)/, "PDF image policy should be applied to each intercepted request, including redirects");
 assert.match(serverJs, /fetchGt63PrintImageForPdf\(request\.url\(\), printUrl\.origin\)/, "PDF endpoint should fetch images through the bounded safe policy");
 assert.match(serverJs, /gt63PrintImageFetchCache/, "PDF image fetch results should be cached in-process to avoid serial repeated waits");
+assert.match(serverJs, /readGt63ApprovedLocalPrintImageForPdf/, "PDF endpoint should read approved same-origin print images directly without self-fetching the local server");
+assert.match(serverJs, /resolveGt63ApprovedLocalPrintImagePath/, "PDF endpoint should resolve approved local print image paths before network fetch");
 assert.doesNotMatch(serverJs, /if \(request\.resourceType\(\) === "image"\) {\s*request\.abort\("blockedbyclient"\)/, "PDF endpoint must not blanket-abort all images before policy checks");
 assert.equal(/renderOfferHtml\(offer, \{ forPdf: true \}\)/.test(serverJs), false, "PDF endpoint must not use the interactive HTML pipeline");
 assert.match(serverJs, /\.gt63-print-closing[\s\S]*?break-inside:\s*avoid/, "Print CSS should keep closing/contact block together");

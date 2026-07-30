@@ -6191,12 +6191,6 @@ function renderGt63RegistryOfferHtml(offer = {}, options = {}) {
 }
 
 function renderGt63PrintOfferHtml(offer = {}, options = {}) {
-  const registryHtml = renderGt63RegistryOfferHtml(offer, {
-    ...options,
-    printMode: true
-  });
-  if (registryHtml) return registryHtml;
-
   const proposalInput = normalizeProposalInputForOffer(offer.proposalInput);
   if (!proposalInput) {
     const error = new Error("Offer does not contain GT63 proposal input");
@@ -6885,6 +6879,67 @@ function isGt63ApprovedLocalPrintImage(url, printOrigin) {
   return /^\/images\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]+\.(?:png|jpe?g|webp|gif|avif)$/i.test(url.pathname);
 }
 
+function gt63PrintImageContentTypeForPath(filePath = "") {
+  const ext = path.extname(String(filePath || "")).toLowerCase();
+  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
+  if (ext === ".webp") return "image/webp";
+  if (ext === ".gif") return "image/gif";
+  if (ext === ".avif") return "image/avif";
+  return "image/png";
+}
+
+function resolveGt63ApprovedLocalPrintImagePath(url, printOrigin) {
+  if (!isGt63ApprovedLocalPrintImage(url, printOrigin)) return "";
+
+  const evidenceMatch = url.pathname.match(/^\/api\/source-evidence\/offers\/([^/]+)\/original\/(source_\d+\.(?:png|jpe?g|webp|gif))$/i);
+  if (evidenceMatch) {
+    const intakeId = decodeURIComponent(evidenceMatch[1] || "");
+    const filename = path.basename(decodeURIComponent(evidenceMatch[2] || ""));
+    if (!intakeId || sanitizeRegressionPathPart(intakeId, "intake") !== intakeId) return "";
+    if (!/^source_\d+\.(?:png|jpe?g|webp|gif)$/i.test(filename)) return "";
+
+    const root = path.resolve(SOURCE_EVIDENCE_DIR);
+    const filePath = path.resolve(root, "offers", intakeId, "original", filename);
+    const relative = path.relative(root, filePath);
+    return relative.startsWith("..") || path.isAbsolute(relative) ? "" : filePath;
+  }
+
+  if (/^\/images\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]+\.(?:png|jpe?g|webp|gif|avif)$/i.test(url.pathname)) {
+    const root = path.resolve(PUBLIC_DIR);
+    const relativeUrlPath = decodeURIComponent(url.pathname.replace(/^\//, ""));
+    const filePath = path.resolve(root, relativeUrlPath);
+    const relative = path.relative(root, filePath);
+    return relative.startsWith("..") || path.isAbsolute(relative) ? "" : filePath;
+  }
+
+  return "";
+}
+
+async function readGt63ApprovedLocalPrintImageForPdf(rawUrl, printOrigin) {
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return null;
+  }
+
+  const filePath = resolveGt63ApprovedLocalPrintImagePath(url, printOrigin);
+  if (!filePath) return null;
+
+  try {
+    const stat = await fs.promises.stat(filePath);
+    if (!stat.isFile() || stat.size <= 0 || stat.size > GT63_PRINT_IMAGE_MAX_BYTES) return null;
+    const body = await fs.promises.readFile(filePath);
+    if (!body.length || body.length > GT63_PRINT_IMAGE_MAX_BYTES) return null;
+    return {
+      contentType: gt63PrintImageContentTypeForPath(filePath),
+      body
+    };
+  } catch {
+    return null;
+  }
+}
+
 function cacheGt63PrintImageVerdict(key, value) {
   if (gt63PrintImageVerdictCache.size >= GT63_PRINT_IMAGE_VERDICT_CACHE_LIMIT) {
     const firstKey = gt63PrintImageVerdictCache.keys().next().value;
@@ -6988,6 +7043,9 @@ async function fetchGt63PrintImageForPdfUncached(rawUrl, printOrigin, redirectDe
   } catch {
     return null;
   }
+
+  const localImage = await readGt63ApprovedLocalPrintImageForPdf(rawUrl, printOrigin);
+  if (localImage) return localImage;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), GT63_PRINT_IMAGE_WAIT_MS);
