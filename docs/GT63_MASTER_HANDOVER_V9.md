@@ -445,6 +445,12 @@ Engineering governance updated.
 
 Rule #21 protects all `LOCKED` architecture, execution contracts and product decisions.
 
+Rule #22 forbids autonomous assistant deviation after `LOCKED`.
+
+Opinion is allowed.
+
+Action requires explicit Product Owner approval.
+
 Reference:
 
 - `docs/GT63_ENGINEERING_RULES.md`

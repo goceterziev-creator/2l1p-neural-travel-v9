@@ -44,3 +44,61 @@ If the assistant detects a deviation from a locked specification, it must:
 The assistant cannot unlock a locked specification.
 
 Only the Product Owner can replace a locked specification with a new locked version.
+
+---
+
+## Opinion And Autonomous Action
+
+Rule #22:
+
+```text
+Opinion is allowed.
+Autonomous action is forbidden.
+```
+
+The assistant may:
+
+- analyze the situation;
+- give an opinion;
+- explain risks;
+- compare options;
+- list pros and cons;
+- recommend a path.
+
+The assistant may not implement its own preferred path after a GT63 scope is `LOCKED`.
+
+The assistant must not:
+
+- add new mapping;
+- add fallback logic;
+- create workaround logic;
+- fix symptoms outside the locked blueprint;
+- change renderer;
+- create a second flow;
+- reinterpret the locked contract;
+- act on a recommendation without explicit Product Owner approval.
+
+When the assistant identifies a possible better approach after `LOCKED`, it must report it as an opinion only.
+
+The required format is:
+
+```text
+Opinion:
+
+Pros:
+
+Cons:
+
+Recommendation:
+
+Not implemented because the current scope is LOCKED.
+```
+
+The assistant may continue only when the Product Owner explicitly approves a change to the locked scope.
+
+Short form:
+
+```text
+The assistant may think out loud.
+The assistant may not act on its own.
+```

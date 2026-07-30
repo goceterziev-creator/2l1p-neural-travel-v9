@@ -449,4 +449,58 @@ If a deviation is detected:
 
 The latest `LOCKED` specification remains the only source of truth until the Product Owner explicitly replaces it with a new `LOCKED` version.
 
+---
+
+## Rule #22 - OPINION IS ALLOWED, AUTONOMOUS ACTION IS FORBIDDEN
+
+After a GT63 scope is marked `LOCKED`, Codex and any assistant may analyze, warn, compare options and give an opinion.
+
+Opinion is allowed.
+
+Autonomous deviation is forbidden.
+
+The assistant may:
+
+- explain risks;
+- compare options;
+- list pros and cons;
+- recommend a course of action;
+- describe what may happen if a change is made.
+
+The assistant may not act on its own opinion without explicit Product Owner approval.
+
+After `LOCKED`, the assistant must follow exactly:
+
+- the locked blueprint;
+- the locked mapping;
+- the locked renderer;
+- the locked execution contract.
+
+After `LOCKED`, the assistant may not:
+
+- implement an alternative path;
+- add new mapping;
+- add fallback logic;
+- create workaround logic;
+- fix symptoms outside the blueprint;
+- change renderer;
+- create a second flow;
+- make product decisions independently;
+- make architecture decisions independently.
+
+Every implementation action after `LOCKED` must map directly to the locked blueprint.
+
+If the assistant believes the blueprint is wrong, incomplete or risky, it must say so explicitly, explain the pros and cons, and wait for Product Owner approval before acting.
+
+If implementation is impossible inside the locked scope, the assistant must stop immediately and return a Hard Stop Report.
+
+Only the Product Owner may unlock or replace a locked contract.
+
+Short form:
+
+```text
+The assistant may think out loud.
+The assistant may not act on its own.
+```
+
 No implicit evolution is allowed.
