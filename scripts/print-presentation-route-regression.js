@@ -16,6 +16,23 @@ const debugRoute = (...args) => {
 };
 const REGRESSION_HTTP_TIMEOUT_MS = 180000;
 const REGRESSION_HARD_WATCHDOG_MS = Number(process.env.GT63_PRINT_ROUTE_WATCHDOG_MS || 35 * 60 * 1000);
+const RUN_FULL_IMAGE_MATRIX = process.env.GT63_PRINT_ROUTE_FULL_IMAGE_MATRIX === "1";
+const DEFAULT_FALLBACK_IMAGE_CASES = [
+  "OFF-IMAGE-NOT-IMAGE"
+];
+const FULL_FALLBACK_IMAGE_CASES = [
+  "OFF-IMAGE-SLOW",
+  "OFF-IMAGE-404",
+  "OFF-IMAGE-INVALID",
+  "OFF-IMAGE-DNS",
+  "OFF-IMAGE-EMPTY",
+  "OFF-IMAGE-REDIRECT-PRIVATE",
+  "OFF-IMAGE-MIXED-DNS",
+  "OFF-IMAGE-DNS-TIMEOUT",
+  "OFF-IMAGE-IPV6-PRIVATE",
+  "OFF-IMAGE-SAME-ORIGIN-UNAPPROVED",
+  "OFF-IMAGE-NOT-IMAGE"
+];
 const harnessResources = {
   children: new Set(),
   servers: new Set(),
@@ -771,19 +788,11 @@ async function routeRegression() {
     assertValidPdf(slowPublicPdf.buffer, "several slow public images");
     });
 
-    for (const id of [
-      "OFF-IMAGE-SLOW",
-      "OFF-IMAGE-404",
-      "OFF-IMAGE-INVALID",
-      "OFF-IMAGE-DNS",
-      "OFF-IMAGE-EMPTY",
-      "OFF-IMAGE-REDIRECT-PRIVATE",
-      "OFF-IMAGE-MIXED-DNS",
-      "OFF-IMAGE-DNS-TIMEOUT",
-      "OFF-IMAGE-IPV6-PRIVATE",
-      "OFF-IMAGE-SAME-ORIGIN-UNAPPROVED",
-      "OFF-IMAGE-NOT-IMAGE"
-    ]) {
+    const fallbackImageCases = RUN_FULL_IMAGE_MATRIX
+      ? FULL_FALLBACK_IMAGE_CASES
+      : DEFAULT_FALLBACK_IMAGE_CASES;
+
+    for (const id of fallbackImageCases) {
       await runImagePdfCase(id, imageServer, async (imagePdf) => {
       const imagePdfText = assertValidPdf(imagePdf.buffer, id);
       assert.match(imagePdfText.compactText, /ImageResilienceHotel/, `${id} PDF text should still include selected hotel`);
