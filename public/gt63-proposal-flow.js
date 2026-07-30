@@ -56,6 +56,42 @@
     return values.map(cleanText).find(Boolean) || "";
   }
 
+  const AIRPORT_DESTINATIONS = {
+    BCN: "Barcelona",
+    BKK: "Bangkok",
+    CDG: "Paris",
+    FCO: "Rome",
+    HND: "Tokyo",
+    JFK: "New York",
+    LHR: "London",
+    LIS: "Lisbon",
+    NCE: "Saint-Tropez",
+    SCL: "Santiago",
+    ZRH: "Zurich"
+  };
+
+  function destinationFromFlightRoute(route = "") {
+    const parts = cleanText(route)
+      .split("/")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const outbound = parts[0] || cleanText(route);
+    const codes = outbound.match(/\b[A-Z]{3}\b/g) || [];
+    const destinationCode = codes[codes.length - 1] || "";
+    return AIRPORT_DESTINATIONS[destinationCode] || "";
+  }
+
+  function destinationFromHotelLocation(value = "") {
+    const text = cleanText(value);
+    if (!text) return "";
+    const countryMatch = text.match(/,\s*([^,]*?[A-Za-zÀ-ÿА-Яа-я][^,]*?)\s*,?\s*(?:Chile|Чили|Japan|Япония|France|Франция|Switzerland|Швейцария|Maldives|Малдиви|Italy|Италия|Spain|Испания)\s*$/i);
+    if (countryMatch) {
+      return cleanText(countryMatch[1]).replace(/^\d{4,8}\s+/, "");
+    }
+    const knownCity = Object.values(AIRPORT_DESTINATIONS).find((city) => new RegExp(`\\b${city}\\b`, "i").test(text));
+    return knownCity || "";
+  }
+
   function hasMeaningfulObject(value, fields = []) {
     if (!value || typeof value !== "object") return false;
     return fields.some((field) => cleanText(value[field]) || toNumber(value[field], 0) > 0 || safeArray(value[field]).length > 0);
@@ -81,6 +117,7 @@
     return {
       airline: cleanText(flight.airline),
       route: cleanText(flight.route),
+      destination: cleanText(flight.destination) || destinationFromFlightRoute(flight.route),
       departure: cleanText(flight.departure),
       arrival: cleanText(flight.arrival),
       baggage: cleanText(flight.baggage),
@@ -99,7 +136,7 @@
       flight.destination,
       hotel.destination,
       hotel.city,
-      hotel.area
+      destinationFromHotelLocation(hotel.location || hotel.area)
     );
   }
 

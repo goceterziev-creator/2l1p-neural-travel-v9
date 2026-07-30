@@ -12153,18 +12153,28 @@ app.post("/api/import-hotel-image", requireCapability("imports.run"), upload.arr
     if (!imageFiles.length) return res.status(400).json({ error: "No image uploaded" });
 
     const intakeId = `HOTEL-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
-    const evidence = buildSourceEvidenceForUploadedImages(imageFiles, intakeId, "hotel");
+    const evidence = {
+      intakeId,
+      ...buildSourceEvidenceForUploadedImages(imageFiles, intakeId, "hotel")
+    };
     const uploadedImageUrls = sourceEvidenceImageUrls(evidence, ["hotel"]);
     const result = await extractHotelHintWithSerpApi(imageFiles, {
       destination: req.body?.destination || "",
       archive: true,
       uploadedImageUrls
     });
+    const hotelOptions = safeArray(result.hotelOptions).map((hotel, index) => {
+      const existingImages = collectHotelImageAliases(hotel);
+      const uploadedImage = String(uploadedImageUrls[index] || "").trim();
+      const images = uniqueHotelImages(uploadedImage ? [...existingImages, uploadedImage] : existingImages, 3);
+      return images.length ? { ...hotel, images, imageUrls: images } : hotel;
+    });
+    const importedHotel = hotelOptions[0] || result.hotel;
 
     return res.json({
       success: true,
-      hotel: result.hotel,
-      hotelOptions: result.hotelOptions,
+      hotel: importedHotel,
+      hotelOptions,
       evidence,
       metadata: result.metadata,
       source: result.source,

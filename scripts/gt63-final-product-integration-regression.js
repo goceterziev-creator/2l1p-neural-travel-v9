@@ -55,9 +55,14 @@ assert(serverJs.includes('/api/source-evidence/offers/:intakeId/original/:filena
 assert(serverJs.includes("function sourceEvidenceImageUrls"), "Server must expose uploaded evidence image URLs for canonical offer data");
 assert(serverJs.includes("uploadedImageUrls"), "Hotel import must bind uploaded hotel screenshots before provider images");
 assert(serverJs.includes("const mergedImages = uniqueHotelImages([...existingImages, ...imageUrls], 3);"), "Uploaded hotel images must win over provider fallback images");
-assert(serverJs.includes("hotelOptions: result.hotelOptions"), "Hotel import endpoint must return canonical hotel options");
+assert(serverJs.includes("hotelOptions,"), "Hotel import endpoint must return canonical hotel options");
 assert(serverJs.includes("evidence,"), "Hotel import endpoint must return source evidence for HOME offer persistence");
+assert(serverJs.includes("intakeId,"), "Hotel import evidence must include the intake id for stable source-image references");
+assert(serverJs.includes("const hotelOptions = safeArray(result.hotelOptions).map"), "Hotel import must preserve uploaded evidence images on every hotel option");
 assert(proposalFlow.includes("state.hotelImportData?.hotelOptions"), "HOME payload must use hotel import options when Smart Import options are absent");
 assert(proposalFlow.includes("state.hotelImportData?.evidence"), "HOME payload must persist hotel import evidence when Smart Import evidence is absent");
+assert(proposalFlow.includes("function destinationFromFlightRoute"), "HOME flow must infer destination from the flight route instead of hotel address");
+assert(proposalFlow.includes("destinationFromHotelLocation(hotel.location || hotel.area)"), "HOME flow must extract a city label from hotel location fallback");
+assert(!proposalFlow.includes("hotel.city,\n      hotel.area"), "HOME flow must not use raw hotel area/address as proposal destination");
 
 console.log("GT63 final product integration regression PASS");
