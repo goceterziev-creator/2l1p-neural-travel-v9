@@ -93,3 +93,40 @@ If GT63 is LOCKED:
 execute the blueprint exactly,
 or stop with a Hard Stop Report.
 ```
+
+## User-Assisted Verification
+
+When the user can verify something faster through a browser, Railway, GitHub, a UI screen, a terminal already open on their machine, or a logged-in session, the assistant should ask for a small user-assisted check instead of guessing or expanding scope.
+
+The assistant may ask the user for help with:
+
+- Railway deployment commit/status checks;
+- GitHub repository or branch screenshots;
+- browser console output;
+- local server restart confirmation;
+- UI behavior confirmation;
+- HTML/PDF visual checks;
+- short terminal command output.
+
+The assistant must keep these requests small and concrete.
+
+Preferred format:
+
+```text
+Task for you:
+1. Open ...
+2. Check ...
+3. Send me only ...
+```
+
+The user may answer:
+
+```text
+I can.
+I cannot.
+Here is the result.
+```
+
+The assistant must not treat user-assisted verification as permission to change scope.
+
+If a locked task requires information the assistant cannot obtain reliably, the assistant must request that specific information or return a Hard Stop Report.
