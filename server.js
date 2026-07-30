@@ -146,6 +146,27 @@ app.use("/media", express.static(MEDIA_DIR, {
   index: false,
   maxAge: IS_PRODUCTION ? "1h" : 0
 }));
+app.get("/api/source-evidence/offers/:intakeId/original/:filename", (req, res) => {
+  const intakeId = String(req.params.intakeId || "");
+  const filename = path.basename(String(req.params.filename || ""));
+  if (!intakeId || sanitizeRegressionPathPart(intakeId, "intake") !== intakeId) {
+    return res.status(404).send("Evidence not found");
+  }
+  if (!/^source_\d+\.(?:png|jpe?g|webp|gif)$/i.test(filename)) {
+    return res.status(404).send("Evidence not found");
+  }
+
+  const root = path.resolve(SOURCE_EVIDENCE_DIR);
+  const filePath = path.resolve(root, "offers", intakeId, "original", filename);
+  const relative = path.relative(root, filePath);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    return res.status(404).send("Evidence not found");
+  }
+
+  res.sendFile(filePath, (error) => {
+    if (error && !res.headersSent) res.status(error.statusCode || 404).send("Evidence not found");
+  });
+});
 app.use(express.static(PUBLIC_DIR));
 
 validateRuntimeIsolation();
@@ -6860,6 +6881,7 @@ function isGt63PublicIpAddress(address) {
 
 function isGt63ApprovedLocalPrintImage(url, printOrigin) {
   if (!printOrigin || url.origin !== printOrigin) return false;
+  if (/^\/api\/source-evidence\/offers\/[^/]+\/original\/source_\d+\.(?:png|jpe?g|webp|gif)$/i.test(url.pathname)) return true;
   return /^\/images\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]+\.(?:png|jpe?g|webp|gif|avif)$/i.test(url.pathname);
 }
 
@@ -10197,6 +10219,42 @@ function archiveUniversalSourceEvidenceSafe({ files = [], intakeId = "", sources
   }
 }
 
+function sourceEvidencePublicUrl(storedPath = "") {
+  const root = path.resolve(SOURCE_EVIDENCE_DIR);
+  const absolute = path.resolve(String(storedPath || ""));
+  const relative = path.relative(root, absolute);
+  if (!storedPath || relative.startsWith("..") || path.isAbsolute(relative)) return "";
+  const parts = relative.split(path.sep);
+  if (parts.length !== 4 || parts[0] !== "offers" || parts[2] !== "original") return "";
+  const intakeId = parts[1];
+  const filename = parts[3];
+  if (sanitizeRegressionPathPart(intakeId, "intake") !== intakeId) return "";
+  if (!/^source_\d+\.(?:png|jpe?g|webp|gif)$/i.test(filename)) return "";
+  return `${LIVE_BASE_URL}/api/source-evidence/offers/${encodeURIComponent(intakeId)}/original/${encodeURIComponent(filename)}`;
+}
+
+function sourceEvidenceImageUrls(evidence = {}, allowedTypes = ["hotel", "mixed"]) {
+  const allowed = new Set(allowedTypes);
+  return uniqueHotelImages(safeArray(evidence.sources)
+    .filter((source) => allowed.has(String(source.sourceType || "").trim()))
+    .filter((source) => /^image\//i.test(String(source.mimeType || "")))
+    .map((source) => sourceEvidencePublicUrl(source.storedPath))
+    .filter(Boolean), 8);
+}
+
+function buildSourceEvidenceForUploadedImages(files = [], intakeId = "", sourceType = "hotel") {
+  const sources = safeArray(files).map((file, index) => ({
+    sourceId: `SRC-${index + 1}`,
+    sourceType,
+    originalFilename: file?.originalname || `source_${index + 1}.png`,
+    mimeType: file?.mimetype || "image/png",
+    uploadedAt: new Date().toISOString(),
+    confidence: 1,
+    reason: "Uploaded by operator"
+  }));
+  return archiveUniversalSourceEvidenceSafe({ files, intakeId, sources });
+}
+
 function createUniversalIntakeRequestId() {
   return `UI-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
 }
@@ -11061,7 +11119,7 @@ async function buildSmartImportHotelOption(hotel = {}, parsed = {}, destination 
     3
   );
   const existingImages = collectHotelImageAliases(option);
-  const mergedImages = uniqueHotelImages([...imageUrls, ...existingImages], 3);
+  const mergedImages = uniqueHotelImages([...existingImages, ...imageUrls], 3);
   if (mergedImages.length) {
     option.images = mergedImages;
     option.imageUrls = mergedImages;
@@ -11076,10 +11134,11 @@ async function buildSmartImportHotelOption(hotel = {}, parsed = {}, destination 
   return option;
 }
 
-async function extractHotelHintWithSerpApi(imageFiles = [], { destination = "", archive = true } = {}) {
+async function extractHotelHintWithSerpApi(imageFiles = [], { destination = "", archive = true, uploadedImageUrls = [] } = {}) {
   const parsedHotels = [];
   const rawParsedHotels = [];
-  for (const file of imageFiles) {
+  for (let index = 0; index < imageFiles.length; index += 1) {
+    const file = imageFiles[index];
     const parsed = await callVisionJson({
       imageBuffer: file.buffer,
       mimeType: file.mimetype || "image/png",
@@ -11114,11 +11173,17 @@ Rules:
 `
     });
     rawParsedHotels.push(parsed);
-    parsedHotels.push(enrichHotelImportFallbacks(
+    const hotel = enrichHotelImportFallbacks(
       normalizeHotelTextToBulgarian(parsed),
       parsed,
       destination || ""
-    ));
+    );
+    const uploadedImage = String(uploadedImageUrls[index] || "").trim();
+    if (uploadedImage) {
+      hotel.images = uniqueHotelImages([uploadedImage, ...collectHotelImageAliases(hotel)], 3);
+      hotel.imageUrls = hotel.images;
+    }
+    parsedHotels.push(hotel);
   }
 
   const hotelOptions = uniqueImportedHotelOptions(await Promise.all(parsedHotels.map((hotel, index) => (
@@ -11317,6 +11382,7 @@ app.post("/api/smart-import", requireCapability("imports.run"), upload.array("im
     }));
     const evidence = archiveUniversalSourceEvidenceSafe({ files: imageFiles, intakeId, sources });
     const nextSources = evidence.sources || sources;
+    const hotelUploadedImageUrls = sourceEvidenceImageUrls(evidence, ["hotel", "mixed"]);
 
     const flightFiles = imageFiles.filter((_, index) => ["flight", "mixed"].includes(classifications[index]?.sourceType));
     const hotelFiles = imageFiles.filter((_, index) => ["hotel", "mixed"].includes(classifications[index]?.sourceType));
@@ -11340,7 +11406,7 @@ app.post("/api/smart-import", requireCapability("imports.run"), upload.array("im
     let hotelResult = null;
     if (hotelFiles.length) {
       try {
-        hotelResult = await extractHotelHintWithSerpApi(hotelFiles, { destination, archive: false });
+        hotelResult = await extractHotelHintWithSerpApi(hotelFiles, { destination, archive: false, uploadedImageUrls: hotelUploadedImageUrls });
         offerHotel = hotelResult.hotel || {};
         offerHotelOptions = safeArray(hotelResult.hotelOptions);
         warnings.push(...safeArray(hotelResult.operatorWarnings));
@@ -12086,14 +12152,20 @@ app.post("/api/import-hotel-image", requireCapability("imports.run"), upload.arr
     const imageFiles = getUploadedImageFiles(req);
     if (!imageFiles.length) return res.status(400).json({ error: "No image uploaded" });
 
+    const intakeId = `HOTEL-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
+    const evidence = buildSourceEvidenceForUploadedImages(imageFiles, intakeId, "hotel");
+    const uploadedImageUrls = sourceEvidenceImageUrls(evidence, ["hotel"]);
     const result = await extractHotelHintWithSerpApi(imageFiles, {
       destination: req.body?.destination || "",
-      archive: true
+      archive: true,
+      uploadedImageUrls
     });
 
     return res.json({
       success: true,
       hotel: result.hotel,
+      hotelOptions: result.hotelOptions,
+      evidence,
       metadata: result.metadata,
       source: result.source,
       missingFields: result.missingFields,

@@ -49,5 +49,13 @@ assert(serverJs.includes("printMode: true"), "Canonical PDF path must render reg
 assert(serverJs.includes("const printUrl = new URL(`/api/offers/${encodeURIComponent(offer.id)}/print`, LIVE_BASE_URL);"), "PDF route must render from canonical print HTML");
 assert(serverJs.includes("preferCSSPageSize: true"), "PDF route must preserve canonical print CSS page contract");
 assert(serverJs.includes("@page { size: A4; margin: 0; }"), "Canonical registry renderer must define the print page contract");
+assert(serverJs.includes('/api/source-evidence/offers/:intakeId/original/:filename'), "Uploaded source evidence images must have a safe public route");
+assert(serverJs.includes("function sourceEvidenceImageUrls"), "Server must expose uploaded evidence image URLs for canonical offer data");
+assert(serverJs.includes("uploadedImageUrls"), "Hotel import must bind uploaded hotel screenshots before provider images");
+assert(serverJs.includes("const mergedImages = uniqueHotelImages([...existingImages, ...imageUrls], 3);"), "Uploaded hotel images must win over provider fallback images");
+assert(serverJs.includes("hotelOptions: result.hotelOptions"), "Hotel import endpoint must return canonical hotel options");
+assert(serverJs.includes("evidence,"), "Hotel import endpoint must return source evidence for HOME offer persistence");
+assert(proposalFlow.includes("state.hotelImportData?.hotelOptions"), "HOME payload must use hotel import options when Smart Import options are absent");
+assert(proposalFlow.includes("state.hotelImportData?.evidence"), "HOME payload must persist hotel import evidence when Smart Import evidence is absent");
 
 console.log("GT63 final product integration regression PASS");

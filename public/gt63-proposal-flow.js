@@ -120,6 +120,8 @@
 
     const hotelOptionsSource = safeArray(smartImport.offerHotelOptions).length
       ? smartImport.offerHotelOptions
+      : safeArray(state.hotelImportData?.hotelOptions).length
+      ? state.hotelImportData.hotelOptions
       : selectedHotelSource.name
       ? [selectedHotelSource]
       : [];
@@ -148,6 +150,8 @@
 
     const sourceEvidence = smartImport.evidence && typeof smartImport.evidence === "object"
       ? smartImport.evidence
+      : state.hotelImportData?.evidence && typeof state.hotelImportData.evidence === "object"
+      ? state.hotelImportData.evidence
       : null;
 
     const importContext = smartImport.mode || smartImport.intakeId
@@ -351,9 +355,10 @@
       if (!data) return;
       state.hotelImportData = data;
       const importedHotel = data.hotel || data.offerHotel || {};
+      const importedHotelOptions = safeArray(data.hotelOptions || data.offerHotelOptions);
       setImportReady({
         flight: Boolean(state.flightImportData),
-        hotel: hasMeaningfulObject(importedHotel, ["name", "area", "city", "room", "meal", "price", "images"]),
+        hotel: hasMeaningfulObject(importedHotel, ["name", "area", "city", "room", "meal", "price", "images"]) || importedHotelOptions.length > 0,
         destination: Boolean(inferDestination({}, state.flightImportData?.flight || {}, importedHotel)),
         dates: Boolean(state.flightImportData?.flight?.departure || state.flightImportData?.flight?.arrival),
         price: Boolean(toNumber(importedHotel.price, 0) || toNumber(state.flightImportData?.flight?.price, 0))
