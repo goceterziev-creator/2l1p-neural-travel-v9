@@ -4,6 +4,10 @@ Status: ACTIVE
 
 Purpose: provide the first architectural reading path before working in GT63 code.
 
+Highest governance document:
+
+- `docs/GT63_CONSTITUTION_V1.md`
+
 ## 1. Vision
 
 GT63 is a Travel Proposal Operating System.

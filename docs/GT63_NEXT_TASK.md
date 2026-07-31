@@ -17,6 +17,7 @@ Do not start a new feature implementation from this file alone.
 
 Before any next milestone:
 
+- read `docs/GT63_CONSTITUTION_V1.md`;
 - read `docs/GT63_MASTER_ARCHITECTURE.md`;
 - read `docs/GT63_CANONICAL_CONTEXT.md`;
 - read `docs/GT63_CURRENT_STATE.md`;

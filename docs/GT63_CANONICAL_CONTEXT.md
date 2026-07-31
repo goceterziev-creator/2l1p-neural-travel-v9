@@ -1,5 +1,9 @@
 # GT63 Canonical Context
 
+Governed by:
+
+- `docs/GT63_CONSTITUTION_V1.md`
+
 ## Product Identity
 
 - 2L1P Neural Travel is the Lab / Engine.

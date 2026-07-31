@@ -12,6 +12,12 @@ GT63 Architecture Line
 
 ## Architecture Governance
 
+GT63 Constitution v1.0 is the highest governance document in the repository.
+
+Reference:
+
+- docs/GT63_CONSTITUTION_V1.md
+
 GT63 Architecture Law #22 - One Product. One Truth is active and locked.
 
 Reference:
