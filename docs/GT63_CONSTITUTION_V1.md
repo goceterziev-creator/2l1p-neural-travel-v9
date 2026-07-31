@@ -116,6 +116,12 @@ It recognizes the authorities below.
 
 It does not duplicate them.
 
+The Constitution defines GT63 identity and decision-making.
+
+The recognized authorities define product realization.
+
+Together, they preserve GT63 identity while enabling implementation to evolve.
+
 ### Architecture Laws
 
 Architecture Laws define product-level constraints that protect GT63 from architectural drift.
