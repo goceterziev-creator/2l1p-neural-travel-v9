@@ -504,3 +504,70 @@ The assistant may not act on its own.
 ```
 
 No implicit evolution is allowed.
+
+---
+
+## Architecture Law #22 - One Product. One Truth.
+
+GT63 may expose multiple user experiences, including HOME, Admin, OCR Import, Email Import, API and future integrations.
+
+These interfaces exist to optimize different operator workflows.
+
+They do not define different business behavior.
+
+Law:
+
+```text
+Different interfaces may create different experiences.
+They must never create different business truths.
+```
+
+There is only one canonical product model.
+
+There is only one canonical proposal.
+
+There is only one canonical offer.
+
+Every entry point must converge into the same business contract:
+
+```text
+HOME
+      \
+ADMIN ----\
+OCR ------- \
+EMAIL -------> Canonical Business Layer
+API ------- /
+Future ----/
+```
+
+No interface owns its own business rules.
+
+No interface owns its own persistence contract.
+
+No interface owns its own canonical payload.
+
+Required behavior:
+
+1. Stop.
+2. Extract.
+3. Share.
+4. Reuse.
+5. Continue.
+
+Never solve duplication by copying code.
+
+Solve it by protecting the canonical contract.
+
+North Star:
+
+```text
+Many experiences.
+One engine.
+One truth.
+```
+
+Full contract:
+
+```text
+docs/architecture/GT63_ARCHITECTURE_LAW_22_ONE_PRODUCT_ONE_TRUTH.md
+```

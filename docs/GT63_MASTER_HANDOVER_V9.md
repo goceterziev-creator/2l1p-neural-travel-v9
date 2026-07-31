@@ -10,6 +10,19 @@ GT63 Architecture Line
 
 # CURRENT STATUS
 
+## Architecture Governance
+
+GT63 Architecture Law #22 - One Product. One Truth is active and locked.
+
+Reference:
+
+- docs/architecture/GT63_ARCHITECTURE_LAW_22_ONE_PRODUCT_ONE_TRUTH.md
+- docs/GT63_MASTER_ARCHITECTURE.md
+
+Principle:
+
+Many experiences. One engine. One truth.
+
 ## V8
 
 V8.18.1 = RELEASE_CANDIDATE_LOCK

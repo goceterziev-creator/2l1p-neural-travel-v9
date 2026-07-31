@@ -17,8 +17,10 @@ Do not start a new feature implementation from this file alone.
 
 Before any next milestone:
 
+- read `docs/GT63_MASTER_ARCHITECTURE.md`;
 - read `docs/GT63_CANONICAL_CONTEXT.md`;
 - read `docs/GT63_CURRENT_STATE.md`;
+- read `docs/architecture/GT63_ARCHITECTURE_LAW_22_ONE_PRODUCT_ONE_TRUTH.md`;
 - inspect git status, current branch, latest commits and remote alignment;
 - inspect the relevant source and regression files for the requested task;
 - stop and report any mismatch between documentation, code and git history before implementation.
@@ -35,6 +37,8 @@ Approved Proposal Model
 
 Rules:
 
+- Many experiences. One engine. One truth.
+- No interface owns its own business rules, persistence contract or canonical payload.
 - Interactive HTML remains the primary product artifact.
 - Print HTML is a dedicated route.
 - Puppeteer prints the dedicated Print HTML route.

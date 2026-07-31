@@ -70,6 +70,14 @@ State:
 
 ## Engineering Laws
 
+Architecture Law #22 - One Product. One Truth
+
+GT63 may have multiple interfaces, but every interface must converge into one canonical business contract. HOME, Admin, OCR Import, API and future integrations may create different experiences, but they must never create different business truths.
+
+Reference:
+
+- `docs/architecture/GT63_ARCHITECTURE_LAW_22_ONE_PRODUCT_ONE_TRUTH.md`
+
 RULE #17 - Proactive Better Path
 
 If a faster, safer, simpler or more valuable path appears, state it immediately.
