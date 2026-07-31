@@ -3424,10 +3424,20 @@ console.log("SAVE PAYLOAD WARNINGS:", payload.validationWarnings);
     const wasEditing = Boolean(editingOfferId);
     const editId = editingOfferId;
 
-    const result = await fetchJson(wasEditing ? `/api/offers/${editId}` : "/api/offers", {
+    const offerService = window.GT63CanonicalOfferService;
+    if (!offerService?.saveCanonicalOffer) {
+      throw new Error("GT63 canonical offer creation service is unavailable.");
+    }
+
+    const result = await offerService.saveCanonicalOffer(payload, {
+      offerId: wasEditing ? editId : "",
       method: wasEditing ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      flights: flights.map(normalizeFlightFields),
+      hotels: dedupeHotelOptionImages(hotels),
+      fetch: window.fetch.bind(window),
+      onUnauthorized: () => {
+        window.location.href = "/login";
+      }
     });
 
     alert(wasEditing ? `Offer updated: ${result.offer.id}` : `Offer saved: ${result.offer.id}`);

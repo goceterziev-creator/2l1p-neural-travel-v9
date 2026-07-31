@@ -140,7 +140,7 @@
     );
   }
 
-  function buildOfferPayloadFromFlow(state) {
+  function buildHomeOfferInputFromFlow(state) {
     const smartImport = state.smartImportData || {};
     const flight = normalizeFlight(
       smartImport.offerFlight ||
@@ -407,11 +407,13 @@
       try {
         generateButton.disabled = true;
         setMessage("Generating proposal...", "working");
-        const payload = buildOfferPayloadFromFlow(state);
-        const result = await fetchJson("/api/offers", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+        const offerService = window.GT63CanonicalOfferService;
+        if (!offerService?.saveCanonicalOffer) {
+          throw new Error("GT63 canonical offer creation service is unavailable.");
+        }
+        const payload = buildHomeOfferInputFromFlow(state);
+        const result = await offerService.saveCanonicalOffer(payload, {
+          requireMeaningfulContent: true
         });
         setGeneratedLinks(result.offer?.id, result.clientLink, result.pdfLink);
         updateProposalPreview(result.offer);

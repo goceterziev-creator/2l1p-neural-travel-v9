@@ -12,7 +12,11 @@ function read(relativePath) {
 
 const indexHtml = read("public/index.html");
 const proposalFlow = read("public/gt63-proposal-flow.js");
+const adminHtml = read("public/admin.html");
+const adminJs = read("public/admin.js");
+const offerService = read("public/canonical-offer-service.js");
 const serverJs = read("server.js");
+const printRenderer = read("gt63-core/renderers/print-presentation.js");
 
 [
   "Aman Tokyo",
@@ -46,11 +50,11 @@ assert(
   "Client HTML must accept canonical proposalInput proposal template metadata"
 );
 assert(serverJs.includes("res.send(await renderOfferHtml(offerForRender))"), "Client HTML route must render the canonical offer");
-assert(serverJs.includes("renderGt63RegistryOfferHtml(offer, {"), "Print route must try the canonical registry renderer before legacy fallback");
-assert(serverJs.includes("printMode: true"), "Canonical PDF path must render registry HTML in print mode");
+assert(serverJs.includes("gt63PrintPresentationRenderer.renderPrintProposal(input, {"), "Print route must use the dedicated premium print presentation renderer");
 assert(serverJs.includes("const printUrl = new URL(`/api/offers/${encodeURIComponent(offer.id)}/print`, LIVE_BASE_URL);"), "PDF route must render from canonical print HTML");
 assert(serverJs.includes("preferCSSPageSize: true"), "PDF route must preserve canonical print CSS page contract");
-assert(serverJs.includes("@page { size: A4; margin: 0; }"), "Canonical registry renderer must define the print page contract");
+assert(printRenderer.includes("function renderPrintProposal"), "Premium PDF must be generated from the dedicated print presentation renderer");
+assert(serverJs.includes("@page { size: A4; margin: 0; }") || printRenderer.includes("@page { size: A4; margin: 0; }"), "Canonical print presentation must define the print page contract");
 assert(serverJs.includes('/api/source-evidence/offers/:intakeId/original/:filename'), "Uploaded source evidence images must have a safe public route");
 assert(serverJs.includes("function sourceEvidenceImageUrls"), "Server must expose uploaded evidence image URLs for canonical offer data");
 assert(serverJs.includes("uploadedImageUrls"), "Hotel import must bind uploaded hotel screenshots before provider images");
@@ -64,5 +68,12 @@ assert(proposalFlow.includes("state.hotelImportData?.evidence"), "HOME payload m
 assert(proposalFlow.includes("function destinationFromFlightRoute"), "HOME flow must infer destination from the flight route instead of hotel address");
 assert(proposalFlow.includes("destinationFromHotelLocation(hotel.location || hotel.area)"), "HOME flow must extract a city label from hotel location fallback");
 assert(!proposalFlow.includes("hotel.city,\n      hotel.area"), "HOME flow must not use raw hotel area/address as proposal destination");
+
+assert(adminHtml.indexOf("/canonical-offer-service.js") < adminHtml.indexOf("/admin.js"), "Admin must load the canonical offer service before admin.js");
+assert(indexHtml.indexOf("/canonical-offer-service.js") < indexHtml.indexOf("/gt63-proposal-flow.js"), "HOME must load the canonical offer service before gt63-proposal-flow.js");
+assert(offerService.includes("saveCanonicalOffer"), "One canonical browser offer save service must exist");
+assert(adminJs.includes("GT63CanonicalOfferService"), "Admin save must delegate to the canonical offer service");
+assert(proposalFlow.includes("GT63CanonicalOfferService"), "HOME save must delegate to the canonical offer service");
+assert(!proposalFlow.includes('fetchJson("/api/offers"'), "HOME must not own a direct /api/offers save path");
 
 console.log("GT63 final product integration regression PASS");
