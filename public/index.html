@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GT63 - Travel Proposal Operating System</title>
+  <link rel="icon" href="data:," />
   <meta
     name="description"
     content="GT63 transforms travel data into premium client proposals in minutes."
@@ -269,6 +270,9 @@
       color: var(--text);
       background: transparent;
       font-weight: 750;
+      text-align: center;
+      white-space: normal;
+      overflow-wrap: anywhere;
       transition: transform .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease), color .18s var(--ease);
     }
 
@@ -311,6 +315,196 @@
       border-color: rgba(35, 53, 84, 0.62);
       background: rgba(17, 34, 64, 0.42);
       box-shadow: none;
+    }
+
+    .home-context {
+      display: grid;
+      gap: 26px;
+      min-width: 0;
+    }
+
+    .home-date {
+      margin: 0 0 12px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .home-greeting {
+      margin: 0;
+      font-size: clamp(42px, 5vw, 68px);
+      line-height: 1;
+      font-weight: 840;
+      overflow-wrap: anywhere;
+    }
+
+    .home-promise {
+      max-width: 520px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    .home-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .command-surface {
+      display: grid;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .next-action-card,
+    .readiness-card,
+    .continue-card {
+      min-width: 0;
+      border: 1px solid rgba(35, 53, 84, 0.92);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(17, 34, 64, 0.96), rgba(11, 23, 45, 0.96));
+      box-shadow: var(--shadow);
+    }
+
+    .next-action-card {
+      padding: 24px;
+      border-color: rgba(0, 212, 255, 0.34);
+    }
+
+    .surface-label {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 820;
+      text-transform: uppercase;
+    }
+
+    .next-action-title {
+      margin: 0;
+      font-size: clamp(28px, 3.2vw, 42px);
+      line-height: 1.08;
+      overflow-wrap: anywhere;
+    }
+
+    .next-action-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .state-chip,
+    .effort-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      border: 1px solid rgba(35, 53, 84, 0.82);
+      border-radius: 999px;
+      padding: 7px 11px;
+      color: var(--muted-strong);
+      background: rgba(10, 20, 40, 0.48);
+      font-size: 12px;
+      font-weight: 780;
+    }
+
+    .state-chip.is-ready {
+      color: var(--success);
+      border-color: rgba(102, 227, 174, 0.34);
+      background: rgba(102, 227, 174, 0.08);
+    }
+
+    .state-chip.is-review,
+    .state-chip.is-blocked {
+      color: var(--warning);
+      border-color: rgba(255, 201, 106, 0.34);
+      background: rgba(255, 201, 106, 0.08);
+    }
+
+    .next-action-reason {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .next-action-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 24px;
+      min-width: 0;
+    }
+
+    .readiness-card,
+    .continue-card {
+      padding: 18px;
+    }
+
+    .readiness-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .readiness-item {
+      min-width: 0;
+      min-height: 88px;
+      border: 1px solid rgba(35, 53, 84, 0.72);
+      border-radius: var(--radius);
+      padding: 13px;
+      background: rgba(10, 20, 40, 0.38);
+    }
+
+    .readiness-item span {
+      display: block;
+      min-height: 34px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .readiness-item strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .continue-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .continue-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      border: 1px solid rgba(35, 53, 84, 0.68);
+      border-radius: var(--radius);
+      padding: 13px;
+      background: rgba(10, 20, 40, 0.36);
+    }
+
+    .continue-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .continue-meta {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
     }
 
     .cockpit {
@@ -695,98 +889,6 @@
       font-weight: 760;
     }
 
-    .recent {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .recent-card {
-      display: grid;
-      grid-template-rows: 122px 1fr;
-      min-height: 274px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      background: rgba(17, 34, 64, 0.72);
-    }
-
-    .recent-thumb {
-      position: relative;
-      background: #071023;
-      overflow: hidden;
-    }
-
-    .recent-thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .recent-thumb::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(10, 20, 40, 0.04), rgba(10, 20, 40, 0.44));
-    }
-
-    .recent-body {
-      display: grid;
-      gap: 16px;
-      padding: 18px;
-    }
-
-    .recent-destination {
-      margin: 0;
-      font-size: 20px;
-      line-height: 1.15;
-    }
-
-    .recent-client {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.45;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .recent-meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .status-ready {
-      color: var(--success);
-      font-weight: 760;
-    }
-
-    .recent-actions {
-      display: flex;
-      justify-content: flex-start;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .showcase-empty {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 22px;
-      color: var(--muted);
-      background: rgba(17, 34, 64, 0.54);
-    }
-
-    .showcase-cta {
-      display: flex;
-      justify-content: center;
-      margin-top: 22px;
-    }
-
     .footer {
       margin-top: 34px;
       padding: 34px 0 44px;
@@ -816,6 +918,10 @@
         font-size: 54px;
       }
 
+      .readiness-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
       .detect-grid {
         grid-template-columns: repeat(3, 1fr);
       }
@@ -828,15 +934,6 @@
         width: 100%;
       }
 
-      .recent {
-        grid-template-columns: 1fr;
-      }
-
-      .recent-card {
-        grid-template-columns: 170px 1fr;
-        grid-template-rows: auto;
-        min-height: 168px;
-      }
     }
 
     @media (max-width: 720px) {
@@ -873,10 +970,30 @@
         line-height: 1.55;
       }
 
+      .next-action-footer,
+      .cockpit-head,
+      .workspace,
+      .proposal-body {
+        display: block;
+      }
+
+      .next-action-footer .button {
+        width: 100%;
+        margin-top: 16px;
+      }
+
       .cockpit-head,
       .workspace,
       .proposal-body {
         padding: 16px;
+      }
+
+      .readiness-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .continue-item {
+        grid-template-columns: 1fr;
       }
 
       .upload-zone {
@@ -908,13 +1025,12 @@
         display: block;
       }
 
-      .input-pair,
-      .recent-card {
+      .input-pair {
         grid-template-columns: 1fr;
       }
 
-      .recent-card {
-        grid-template-rows: 136px 1fr;
+      .readiness-grid {
+        grid-template-columns: 1fr;
       }
 
       .north-star-identity {
@@ -951,9 +1067,9 @@
       </a>
 
       <nav class="nav-links" aria-label="Product sections">
-        <a class="nav-link" href="#recent">Proposals</a>
-        <a class="nav-link" href="#recent">Clients</a>
-        <a class="nav-link" href="#workspace">Settings</a>
+        <a class="nav-link" href="#home">Home</a>
+        <a class="nav-link" href="#workspace">Workspace</a>
+        <a class="nav-link" href="#preview">Proposal</a>
         <button class="profile-button" type="button">
           <span class="profile-dot" aria-hidden="true"></span>
           Profile
@@ -963,9 +1079,9 @@
   </header>
 
   <main>
-    <section class="hero">
+    <section class="hero" id="home">
       <div class="shell hero-grid">
-        <div>
+        <div class="home-context">
           <div class="north-star-identity" aria-label="GT63 North Star identity">
             <span class="north-star-symbol" aria-hidden="true">
               <svg viewBox="0 0 64 64" fill="none">
@@ -977,21 +1093,69 @@
             <p class="north-name">GT63</p>
             <p class="north-system">Travel Proposal Operating System</p>
           </div>
-          <p class="eyebrow">Market Test Edition</p>
-          <h1>From Travel Data<br />to Client Decision.</h1>
-          <p class="hero-copy">
-            Create beautiful travel proposals from flight and hotel information in minutes.
-          </p>
-          <div class="hero-actions">
-            <a class="button button-primary" href="#workspace" id="createProposalTop">Create New Proposal</a>
+          <div>
+            <p class="home-date" id="homeDate">Today</p>
+            <h1 class="home-greeting" id="homeGreeting">Good morning, Goce.</h1>
+            <p class="home-promise">
+              GT63 shows which proposal work deserves your attention before the day turns into email.
+            </p>
+          </div>
+          <div class="home-actions">
+            <a class="button button-primary" href="#workspace" id="createProposalTop">New Proposal</a>
             <a class="button button-secondary is-disabled" href="#preview" id="viewProposalPreview" aria-disabled="true">View Proposal Preview</a>
           </div>
         </div>
 
-        <section class="cockpit" id="workspace" aria-labelledby="workspaceTitle">
+        <section class="command-surface" aria-labelledby="nextActionTitle">
+          <article class="next-action-card">
+            <span class="surface-label">Next best action</span>
+            <h2 class="next-action-title" id="nextActionTitle">Start your next proposal</h2>
+            <div class="next-action-meta">
+              <span class="state-chip" id="nextActionState">Drafts in Progress</span>
+              <span class="effort-chip" id="nextActionEffort">Estimated: 2 minutes</span>
+            </div>
+            <p class="next-action-reason" id="nextActionReason">
+              No proposal needs attention yet. Start with flight and hotel information when you are ready.
+            </p>
+            <div class="next-action-footer">
+              <span class="section-note" id="nextActionContext">What deserves your attention today.</span>
+              <a class="button button-primary" href="#workspace" id="nextActionButton">New Proposal</a>
+            </div>
+          </article>
+
+          <article class="readiness-card" aria-labelledby="readinessTitle">
+            <span class="surface-label" id="readinessTitle">Proposal readiness</span>
+            <div class="readiness-grid" aria-label="Canonical proposal states">
+              <div class="readiness-item"><span>Ready to Send</span><strong id="readyToSendCount">0</strong></div>
+              <div class="readiness-item"><span>Needs Review</span><strong id="needsReviewCount">0</strong></div>
+              <div class="readiness-item"><span>Waiting for Client</span><strong id="waitingClientCount">0</strong></div>
+              <div class="readiness-item"><span>Drafts in Progress</span><strong id="draftsCount">0</strong></div>
+              <div class="readiness-item"><span>Blocked</span><strong id="blockedCount">0</strong></div>
+            </div>
+          </article>
+
+          <article class="continue-card" aria-labelledby="continueTitle">
+            <span class="surface-label" id="continueTitle">Continue work</span>
+            <div class="continue-list" id="continueList">
+              <div class="continue-item">
+                <div>
+                  <p class="continue-title">No active proposal work yet</p>
+                  <p class="continue-meta">Start a proposal to create your first GT63 work item.</p>
+                </div>
+                <a class="button button-quiet" href="#workspace">Open Workspace</a>
+              </div>
+            </div>
+          </article>
+        </section>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="workspaceTitle">
+      <div class="shell">
+        <section class="cockpit" id="workspace">
           <div class="cockpit-head">
             <div>
-              <span class="cockpit-label">Proposal cockpit</span>
+              <span class="cockpit-label">Proposal workspace</span>
               <h2 class="cockpit-title" id="workspaceTitle">Start Your Next Proposal</h2>
             </div>
             <span class="status-pill" id="workspaceStatus">Ready</span>
@@ -1086,21 +1250,6 @@
       </div>
     </section>
 
-    <section class="section" id="recent">
-      <div class="shell">
-        <div class="section-header">
-          <div>
-            <h2 class="section-title">See What Your Clients Will Receive</h2>
-            <p class="section-note">Every proposal below was generated by GT63 and delivered as a premium HTML page and PDF.</p>
-          </div>
-        </div>
-
-        <div class="recent" id="showcaseGrid" aria-label="Example proposals"></div>
-        <div class="showcase-cta">
-          <a class="button button-primary" href="#workspace" id="showcaseCreateProposal">Create Your Own Proposal</a>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="footer">
@@ -1113,40 +1262,7 @@
   <script src="/canonical-offer-service.js"></script>
   <script src="/gt63-proposal-flow.js"></script>
   <script>
-    window.GT63ProposalFlow.init({
-      showcaseProposals: [
-        {
-          id: "tokyo",
-          destination: "Tokyo",
-          subtitle: "Multi-city Journey",
-          offerId: "OFF-1784307526550-uyjy7",
-          status: "Ready",
-          image: "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/46/42/fb/caption.jpg?w=900&h=-1&s=1",
-          htmlUrl: "https://2l1p-neural-travel-production.up.railway.app/api/offers/view/OFF-1784307526550-uyjy7",
-          pdfUrl: "https://2l1p-neural-travel-production.up.railway.app/api/offers/OFF-1784307526550-uyjy7/pdf"
-        },
-        {
-          id: "saint-tropez",
-          destination: "Saint-Tropez",
-          subtitle: "Luxury Escape",
-          offerId: "OFF-1784719008988-ockd6",
-          status: "Ready",
-          image: "https://cf.bstatic.com/xdata/images/hotel/max1024x768/267650738.jpg?k=c3cab04d61e63e71c05ea630186705c08c866e4b8dcfd89dc79664c2105d58c7&o=",
-          htmlUrl: "https://2l1p-neural-travel-production.up.railway.app/api/offers/view/OFF-1784719008988-ockd6",
-          pdfUrl: "https://2l1p-neural-travel-production.up.railway.app/api/offers/OFF-1784719008988-ockd6/pdf"
-        },
-        {
-          id: "santiago",
-          destination: "Santiago",
-          subtitle: "City Discovery",
-          offerId: "OFF-1784320719557-nmrmo",
-          status: "Ready",
-          image: "https://digital.ihg.com/is/image/ihg/holiday-inn-santiago-9184790434-4x3",
-          htmlUrl: "https://2l1p-neural-travel-production.up.railway.app/api/offers/view/OFF-1784320719557-nmrmo",
-          pdfUrl: "https://2l1p-neural-travel-production.up.railway.app/api/offers/OFF-1784320719557-nmrmo/pdf"
-        }
-      ]
-    });
+    window.GT63ProposalFlow.init();
   </script>
 </body>
 </html>

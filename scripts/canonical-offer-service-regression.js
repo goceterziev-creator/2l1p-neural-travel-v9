@@ -100,7 +100,7 @@ assert.throws(
   assert(!/fetchJson\(\s*wasEditing\s*\?/.test(saveOfferBody), "Admin saveOffer must not own the canonical /api/offers request");
 
   assert(homeSource.includes("GT63CanonicalOfferService"), "HOME generateProposal must delegate to the shared service");
-  assert(!homeSource.includes('fetchJson("/api/offers"'), "HOME must not directly POST /api/offers");
+  assert(!/fetchJson\(\s*["']\/api\/offers["']\s*,\s*\{[^}]*method:\s*["']POST["']/s.test(homeSource), "HOME must not directly POST /api/offers");
   assert(!homeSource.includes("function buildOfferPayloadFromFlow"), "HOME must not expose a second canonical payload builder");
   assert(homeSource.includes("function buildHomeOfferInputFromFlow"), "HOME may keep a thin input adapter");
 

@@ -229,16 +229,103 @@
     };
   }
 
-  function createShowcaseAction(label, url) {
-    if (!url) return "";
-    return `<a class="button button-quiet" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
-  }
-
   function createPreviewAction(label, id) {
     return `<a class="button button-secondary is-disabled" id="${escapeAttr(id)}" href="#" aria-disabled="true">${escapeHtml(label)}</a>`;
   }
 
-  function init(config = {}) {
+  const HOME_STATES = {
+    ready: {
+      label: "Ready to Send",
+      action: "Open Proposal",
+      reason: "Complete enough for delivery.",
+      href: (offer) => `/api/offers/view/${encodeURIComponent(offer.id || "")}`,
+      tone: "ready"
+    },
+    review: {
+      label: "Needs Review",
+      action: "Review in Workspace",
+      reason: "Useful data exists, but operator confirmation is needed.",
+      href: () => "/admin",
+      tone: "review"
+    },
+    waiting: {
+      label: "Waiting for Client",
+      action: "Open Client Proposal",
+      reason: "Shared proposal is waiting for client choice or response.",
+      href: (offer) => `/api/offers/view/${encodeURIComponent(offer.id || "")}`,
+      tone: "waiting"
+    },
+    draft: {
+      label: "Drafts in Progress",
+      action: "Continue in Workspace",
+      reason: "Proposal exists and can be continued.",
+      href: () => "/admin",
+      tone: "draft"
+    },
+    blocked: {
+      label: "Blocked",
+      action: "Resolve in Workspace",
+      reason: "Missing data or an operator decision is preventing progress.",
+      href: () => "/admin",
+      tone: "blocked"
+    },
+    delivered: {
+      label: "Delivered",
+      action: "Open History",
+      reason: "Proposal has already been delivered or completed.",
+      href: (offer) => `/api/offers/view/${encodeURIComponent(offer.id || "")}`,
+      tone: "delivered"
+    }
+  };
+
+  const HOME_STATE_PRIORITY = ["ready", "review", "blocked", "waiting", "draft", "delivered"];
+  const HOME_VISIBLE_STATES = ["ready", "review", "waiting", "draft", "blocked"];
+
+  function offerWarnings(offer = {}) {
+    return safeArray(offer.validationWarnings).filter(Boolean);
+  }
+
+  function offerTimestamp(offer = {}) {
+    return Date.parse(offer.updatedAt || offer.createdAt || "") || 0;
+  }
+
+  function classifyHomeProposalState(offer = {}) {
+    const status = cleanText(offer.status || "draft").toLowerCase();
+    const hasWarnings = offerWarnings(offer).length > 0;
+    const hasDestination = Boolean(cleanText(offer.destination));
+    const hasPrice = toNumber(offer.finalPrice || offer.price || offer.flightPrice || offer.hotelPrice, 0) > 0;
+
+    if (["booked", "delivered", "complete", "completed", "lost", "cancelled", "expired"].includes(status)) return "delivered";
+    if (["sent", "viewed", "waiting"].includes(status)) return "waiting";
+    if (status === "review" || hasWarnings) return "review";
+    if (!hasDestination) return "blocked";
+    if (hasDestination && !hasPrice) return "draft";
+    if (status === "draft") return "ready";
+    return "draft";
+  }
+
+  function proposalDisplayName(offer = {}) {
+    return firstAvailable(offer.destination, offer.clientName, offer.id, "Untitled proposal");
+  }
+
+  function proposalMeta(offer = {}) {
+    const pieces = [
+      cleanText(offer.clientName) || "No client",
+      cleanText(offer.travelDates) || "Dates to confirm"
+    ].filter(Boolean);
+    return pieces.join(" · ");
+  }
+
+  function nextActionTitle(offer = {}, stateKey = "draft") {
+    const destination = proposalDisplayName(offer);
+    if (stateKey === "ready") return `Send ${destination} proposal`;
+    if (stateKey === "review") return `Review ${destination} proposal`;
+    if (stateKey === "blocked") return `Resolve ${destination} blocker`;
+    if (stateKey === "waiting") return `Check ${destination} client response`;
+    return `Continue ${destination} proposal`;
+  }
+
+  function init() {
     const state = {
       smartImportData: null,
       flightImportData: null,
@@ -268,12 +355,35 @@
     const createProposalTop = $("createProposalTop");
     const flightUploadButton = $("flightUploadButton");
     const hotelUploadButton = $("hotelUploadButton");
-    const showcaseGrid = $("showcaseGrid");
-    const showcaseCta = $("showcaseCreateProposal");
     const previewHtmlLink = $("previewHtmlLink");
     const previewPdfLink = $("previewPdfLink");
     const viewProposalPreview = $("viewProposalPreview");
+    const homeDate = $("homeDate");
+    const nextActionTitleNode = $("nextActionTitle");
+    const nextActionState = $("nextActionState");
+    const nextActionEffort = $("nextActionEffort");
+    const nextActionReason = $("nextActionReason");
+    const nextActionContext = $("nextActionContext");
+    const nextActionButton = $("nextActionButton");
+    const continueList = $("continueList");
+    const readinessCounts = {
+      ready: $("readyToSendCount"),
+      review: $("needsReviewCount"),
+      waiting: $("waitingClientCount"),
+      draft: $("draftsCount"),
+      blocked: $("blockedCount")
+    };
     const detectItems = Array.from(document.querySelectorAll("[data-detect]"));
+
+    function setHomeDate() {
+      if (!homeDate) return;
+      const formatted = new Intl.DateTimeFormat("en-US", {
+        weekday: "long",
+        day: "numeric",
+        month: "long"
+      }).format(new Date());
+      homeDate.textContent = formatted;
+    }
 
     function setMessage(message, mode = "info") {
       if (uploadSupport) uploadSupport.textContent = message;
@@ -341,6 +451,113 @@
       const complete = Boolean((state.smartImportData && (flight || hotel)) || (state.flightImportData && state.hotelImportData));
       if (generateButton) generateButton.disabled = !complete;
       setMessage(complete ? "Travel data is ready. Generate the proposal when you are ready." : "Travel data received. Add the remaining required input.", "info");
+    }
+
+    function renderEmptyHomeCommand() {
+      Object.values(readinessCounts).forEach((node) => {
+        if (node) node.textContent = "0";
+      });
+      if (nextActionTitleNode) nextActionTitleNode.textContent = "Start your next proposal";
+      if (nextActionState) {
+        nextActionState.textContent = HOME_STATES.draft.label;
+        nextActionState.className = "state-chip";
+      }
+      if (nextActionEffort) nextActionEffort.textContent = "Estimated: 2 minutes";
+      if (nextActionReason) {
+        nextActionReason.textContent = "No proposal needs attention yet. Start with flight and hotel information when you are ready.";
+      }
+      if (nextActionContext) nextActionContext.textContent = "What deserves your attention today.";
+      if (nextActionButton) {
+        nextActionButton.textContent = "New Proposal";
+        nextActionButton.href = "#workspace";
+        nextActionButton.removeAttribute("target");
+        nextActionButton.removeAttribute("rel");
+      }
+      if (continueList) {
+        continueList.innerHTML = `
+          <div class="continue-item">
+            <div>
+              <p class="continue-title">No active proposal work yet</p>
+              <p class="continue-meta">Start a proposal to create your first GT63 work item.</p>
+            </div>
+            <a class="button button-quiet" href="#workspace">Open Workspace</a>
+          </div>
+        `;
+      }
+    }
+
+    function renderHomeCommand(offers = []) {
+      const items = safeArray(offers)
+        .map((offer) => ({ offer, stateKey: classifyHomeProposalState(offer) }))
+        .sort((left, right) => {
+          const priority = HOME_STATE_PRIORITY.indexOf(left.stateKey) - HOME_STATE_PRIORITY.indexOf(right.stateKey);
+          return priority || offerTimestamp(right.offer) - offerTimestamp(left.offer);
+        });
+
+      const counts = Object.fromEntries(HOME_VISIBLE_STATES.map((stateKey) => [stateKey, 0]));
+      items.forEach((item) => {
+        if (counts[item.stateKey] !== undefined) counts[item.stateKey] += 1;
+      });
+      Object.entries(readinessCounts).forEach(([stateKey, node]) => {
+        if (node) node.textContent = String(counts[stateKey] || 0);
+      });
+
+      const next = items.find((item) => item.stateKey !== "delivered");
+      if (!next) {
+        renderEmptyHomeCommand();
+        return;
+      }
+
+      const state = HOME_STATES[next.stateKey] || HOME_STATES.draft;
+      const href = state.href(next.offer);
+      if (nextActionTitleNode) nextActionTitleNode.textContent = nextActionTitle(next.offer, next.stateKey);
+      if (nextActionState) {
+        nextActionState.textContent = state.label;
+        nextActionState.className = `state-chip is-${state.tone}`;
+      }
+      if (nextActionEffort) nextActionEffort.textContent = next.stateKey === "ready" ? "Estimated: 1 minute" : "Estimated: 2 minutes";
+      if (nextActionReason) nextActionReason.textContent = state.reason;
+      if (nextActionContext) nextActionContext.textContent = proposalMeta(next.offer);
+      if (nextActionButton) {
+        nextActionButton.textContent = state.action;
+        nextActionButton.href = href;
+        if (href.startsWith("/api/offers/view/")) {
+          nextActionButton.target = "_blank";
+          nextActionButton.rel = "noopener noreferrer";
+        } else {
+          nextActionButton.removeAttribute("target");
+          nextActionButton.removeAttribute("rel");
+        }
+      }
+
+      const activeItems = items.filter((item) => item.stateKey !== "delivered").slice(0, 3);
+      if (continueList) {
+        continueList.innerHTML = activeItems.map(({ offer, stateKey }) => {
+          const itemState = HOME_STATES[stateKey] || HOME_STATES.draft;
+          const itemHref = itemState.href(offer);
+          const linkAttrs = itemHref.startsWith("/api/offers/view/")
+            ? ' target="_blank" rel="noopener noreferrer"'
+            : "";
+          return `
+            <div class="continue-item">
+              <div>
+                <p class="continue-title">${escapeHtml(proposalDisplayName(offer))}</p>
+                <p class="continue-meta">${escapeHtml(itemState.label)} · ${escapeHtml(proposalMeta(offer))}</p>
+              </div>
+              <a class="button button-quiet" href="${escapeAttr(itemHref)}"${linkAttrs}>${escapeHtml(itemState.action)}</a>
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    async function loadProposalWork() {
+      try {
+        const data = await fetchJson("/api/offers");
+        renderHomeCommand(data.offers || []);
+      } catch {
+        renderEmptyHomeCommand();
+      }
     }
 
     async function postFiles(route, files, limit = 8) {
@@ -418,6 +635,7 @@
         setGeneratedLinks(result.offer?.id, result.clientLink, result.pdfLink);
         updateProposalPreview(result.offer);
         setMessage("Proposal ready.", "info");
+        loadProposalWork();
         document.getElementById("preview")?.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (error) {
         setMessage(error.message || "Proposal generation failed.", "error");
@@ -429,42 +647,7 @@
       window.location.href = "/admin";
     }
 
-    function renderShowcaseProposals() {
-      if (!showcaseGrid) return;
-      const proposals = safeArray(config.showcaseProposals).filter((proposal) => proposal.htmlUrl || proposal.pdfUrl).slice(0, 3);
-      if (!proposals.length) {
-        showcaseGrid.innerHTML = '<p class="showcase-empty">No verified example proposals are available yet.</p>';
-        return;
-      }
-      showcaseGrid.innerHTML = proposals.map((proposal) => `
-        <article class="recent-card">
-          <div class="recent-thumb">
-            <img src="${escapeAttr(proposal.image)}" alt="${escapeAttr(proposal.destination)} proposal thumbnail" />
-          </div>
-          <div class="recent-body">
-            <div>
-              <h3 class="recent-destination">${escapeHtml(proposal.destination)}</h3>
-              <p class="recent-client">${escapeHtml(proposal.subtitle)}</p>
-            </div>
-            <div class="recent-meta">
-              <span class="status-ready">${escapeHtml(proposal.status || "Ready")}</span>
-              <strong>${escapeHtml(proposal.offerId || "")}</strong>
-            </div>
-            <span class="recent-actions">
-              ${createShowcaseAction("View HTML", proposal.htmlUrl)}
-              ${createShowcaseAction("View PDF", proposal.pdfUrl)}
-            </span>
-          </div>
-        </article>
-      `).join("");
-    }
-
     createProposalTop?.addEventListener("click", (event) => {
-      event.preventDefault();
-      focusWorkspace();
-    });
-
-    showcaseCta?.addEventListener("click", (event) => {
       event.preventDefault();
       focusWorkspace();
     });
@@ -505,7 +688,9 @@
       runSmartImport(event.dataTransfer.files).catch((error) => setMessage(error.message, "error"));
     });
 
-    renderShowcaseProposals();
+    setHomeDate();
+    renderEmptyHomeCommand();
+    loadProposalWork();
   }
 
   window.GT63ProposalFlow = { init };

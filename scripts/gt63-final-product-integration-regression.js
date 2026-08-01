@@ -74,6 +74,6 @@ assert(indexHtml.indexOf("/canonical-offer-service.js") < indexHtml.indexOf("/gt
 assert(offerService.includes("saveCanonicalOffer"), "One canonical browser offer save service must exist");
 assert(adminJs.includes("GT63CanonicalOfferService"), "Admin save must delegate to the canonical offer service");
 assert(proposalFlow.includes("GT63CanonicalOfferService"), "HOME save must delegate to the canonical offer service");
-assert(!proposalFlow.includes('fetchJson("/api/offers"'), "HOME must not own a direct /api/offers save path");
+assert(!/fetchJson\(\s*["']\/api\/offers["']\s*,\s*\{[^}]*method:\s*["']POST["']/s.test(proposalFlow), "HOME must not own a direct /api/offers save path");
 
 console.log("GT63 final product integration regression PASS");
