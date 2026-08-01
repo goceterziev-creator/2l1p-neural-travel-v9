@@ -11,17 +11,19 @@
   />
   <style>
     :root {
-      --bg: #0A1428;
-      --panel: #112240;
-      --panel-soft: #0F1D38;
-      --border: #233554;
+      --bg: #070D1B;
+      --panel: #0D1A31;
+      --panel-soft: #0A162B;
+      --border: #1C3154;
       --accent: #00D4FF;
       --text: #FFFFFF;
-      --muted: #A8B2D1;
+      --muted: #96A4C4;
       --muted-strong: #D6DDF2;
       --success: #66E3AE;
       --warning: #FFC96A;
-      --shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+      --danger: #FF5F73;
+      --shadow: 0 30px 90px rgba(0, 0, 0, 0.38);
+      --shadow-soft: 0 18px 56px rgba(0, 0, 0, 0.24);
       --radius: 8px;
       --max: 1180px;
       --ease: cubic-bezier(.2, .8, .2, 1);
@@ -33,17 +35,21 @@
 
     html {
       scroll-behavior: smooth;
+      background: var(--bg);
     }
 
     body {
       margin: 0;
       min-height: 100vh;
       background:
-        radial-gradient(circle at 20% 0%, rgba(0, 212, 255, 0.10), transparent 30%),
-        linear-gradient(180deg, #0A1428 0%, #071023 100%);
+        radial-gradient(circle at 12% -8%, rgba(0, 212, 255, 0.14), transparent 30%),
+        radial-gradient(circle at 82% 4%, rgba(92, 85, 255, 0.10), transparent 28%),
+        linear-gradient(180deg, #081123 0%, #060B17 100%);
       color: var(--text);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
     }
 
     a {
@@ -61,7 +67,7 @@
     }
 
     .shell {
-      width: min(100% - 40px, var(--max));
+      width: min(100% - 48px, var(--max));
       margin: 0 auto;
     }
 
@@ -69,9 +75,9 @@
       position: sticky;
       top: 0;
       z-index: 20;
-      border-bottom: 1px solid rgba(35, 53, 84, 0.72);
-      background: rgba(10, 20, 40, 0.86);
-      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(38, 58, 92, 0.58);
+      background: rgba(6, 13, 27, 0.78);
+      backdrop-filter: blur(22px);
     }
 
     .nav {
@@ -95,10 +101,13 @@
       width: 44px;
       height: 44px;
       flex: 0 0 44px;
-      border: 1px solid rgba(0, 212, 255, 0.46);
+      border: 1px solid rgba(0, 212, 255, 0.54);
       border-radius: 50%;
       color: var(--accent);
-      background: rgba(0, 212, 255, 0.08);
+      background:
+        radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.22), transparent 56%),
+        rgba(0, 212, 255, 0.07);
+      box-shadow: 0 0 30px rgba(0, 212, 255, 0.16);
     }
 
     .brand-mark svg {
@@ -134,7 +143,7 @@
     .nav-link,
     .profile-button {
       min-height: 40px;
-      border: 1px solid transparent;
+      border: 1px solid rgba(255, 255, 255, 0);
       border-radius: var(--radius);
       padding: 10px 12px;
       color: var(--muted);
@@ -145,8 +154,8 @@
     .nav-link:hover,
     .profile-button:hover {
       color: var(--text);
-      border-color: var(--border);
-      background: rgba(17, 34, 64, 0.78);
+      border-color: rgba(0, 212, 255, 0.18);
+      background: rgba(13, 26, 49, 0.82);
     }
 
     .profile-button {
@@ -164,14 +173,144 @@
     }
 
     .hero {
-      padding: 70px 0 46px;
+      position: relative;
+      overflow: hidden;
+      padding: 38px 0 54px;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: -20% -10% auto;
+      height: 380px;
+      background:
+        radial-gradient(circle at 72% 38%, rgba(0, 212, 255, 0.16), transparent 26%),
+        radial-gradient(circle at 45% 18%, rgba(93, 108, 255, 0.10), transparent 22%);
+      pointer-events: none;
+    }
+
+    .hero-shell {
+      position: relative;
+      display: grid;
+      gap: 22px;
+    }
+
+    .hero-banner {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 0.82fr);
+      align-items: center;
+      min-height: 142px;
+      overflow: hidden;
+      border: 1px solid rgba(40, 64, 104, 0.72);
+      border-radius: calc(var(--radius) + 2px);
+      padding: 26px 30px;
+      background:
+        linear-gradient(90deg, rgba(7, 13, 27, 0.92), rgba(9, 18, 39, 0.72)),
+        radial-gradient(circle at 72% 50%, rgba(0, 212, 255, 0.18), transparent 30%),
+        linear-gradient(180deg, rgba(13, 26, 49, 0.96), rgba(7, 13, 27, 0.96));
+      box-shadow: var(--shadow-soft);
+    }
+
+    .hero-banner::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(90deg, transparent, #000 18%, #000 72%, transparent);
+      opacity: 0.32;
+      pointer-events: none;
+    }
+
+    .hero-banner::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.46), transparent);
+    }
+
+    .banner-copy {
+      position: relative;
+      z-index: 1;
+    }
+
+    .banner-line,
+    .banner-accent {
+      margin: 0;
+      font-size: clamp(22px, 2.4vw, 32px);
+      line-height: 1.22;
+      font-weight: 820;
+    }
+
+    .banner-accent {
+      margin-top: 6px;
+      color: var(--accent);
+      text-shadow: 0 0 28px rgba(0, 212, 255, 0.26);
+    }
+
+    .banner-note {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .direction-trail {
+      position: relative;
+      z-index: 1;
+      min-height: 92px;
+    }
+
+    .direction-trail svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .trail-glow {
+      filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.72));
+      opacity: 0.95;
+      stroke-dasharray: 420;
+      stroke-dashoffset: 110;
+      animation: trail-breathe 5.8s var(--ease) infinite;
+    }
+
+    .trail-dot {
+      filter: drop-shadow(0 0 16px rgba(0, 212, 255, 0.9));
+      animation: dot-breathe 5.8s var(--ease) infinite;
+    }
+
+    @keyframes trail-breathe {
+      0%, 100% { opacity: 0.58; stroke-dashoffset: 118; }
+      50% { opacity: 1; stroke-dashoffset: 70; }
+    }
+
+    @keyframes dot-breathe {
+      0%, 100% { opacity: 0.72; transform: scale(0.96); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
     }
 
     .hero-grid {
       display: grid;
-      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
-      gap: 44px;
-      align-items: center;
+      grid-template-columns: minmax(0, 0.86fr) minmax(420px, 1.14fr);
+      gap: 22px;
+      align-items: stretch;
     }
 
     .eyebrow {
@@ -220,22 +359,23 @@
       display: grid;
       justify-items: start;
       width: min(100%, 320px);
-      margin: 0 0 26px;
+      margin: 0 0 6px;
       padding: 0;
     }
 
     .north-star-symbol {
       display: grid;
       place-items: center;
-      width: 48px;
-      height: 48px;
-      margin-bottom: 10px;
+      width: 54px;
+      height: 54px;
+      margin-bottom: 12px;
       color: var(--accent);
+      filter: drop-shadow(0 0 18px rgba(0, 212, 255, 0.28));
     }
 
     .north-star-symbol svg {
-      width: 48px;
-      height: 48px;
+      width: 54px;
+      height: 54px;
       display: block;
     }
 
@@ -264,7 +404,7 @@
       align-items: center;
       justify-content: center;
       min-height: 48px;
-      border: 1px solid transparent;
+      border: 1px solid rgba(255, 255, 255, 0);
       border-radius: var(--radius);
       padding: 0 18px;
       color: var(--text);
@@ -273,7 +413,8 @@
       text-align: center;
       white-space: normal;
       overflow-wrap: anywhere;
-      transition: transform .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease), color .18s var(--ease);
+      box-shadow: none;
+      transition: transform .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease), color .18s var(--ease), box-shadow .18s var(--ease);
     }
 
     .button:hover {
@@ -282,21 +423,31 @@
 
     .button-primary {
       color: #061120;
-      background: var(--accent);
-      box-shadow: 0 16px 42px rgba(0, 212, 255, 0.22);
+      background: linear-gradient(180deg, #5CEAFF 0%, var(--accent) 100%);
+      box-shadow: 0 18px 46px rgba(0, 212, 255, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.44);
     }
 
     .button-secondary {
-      border-color: var(--border);
+      border-color: rgba(45, 68, 108, 0.78);
       color: var(--muted-strong);
-      background: rgba(17, 34, 64, 0.64);
+      background: rgba(13, 26, 49, 0.62);
     }
 
     .button-quiet {
       min-height: 42px;
       color: var(--muted);
-      border-color: rgba(35, 53, 84, 0.72);
-      background: rgba(10, 20, 40, 0.34);
+      border-color: rgba(45, 68, 108, 0.62);
+      background: rgba(7, 13, 27, 0.34);
+    }
+
+    .button-primary:hover {
+      box-shadow: 0 22px 54px rgba(0, 212, 255, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.54);
+    }
+
+    .button-secondary:hover,
+    .button-quiet:hover {
+      border-color: rgba(0, 212, 255, 0.26);
+      background: rgba(16, 32, 59, 0.78);
     }
 
     .button[disabled] {
@@ -319,8 +470,15 @@
 
     .home-context {
       display: grid;
-      gap: 26px;
+      align-content: stretch;
+      gap: 20px;
       min-width: 0;
+      border: 1px solid rgba(40, 64, 104, 0.62);
+      border-radius: calc(var(--radius) + 2px);
+      padding: 28px;
+      background:
+        linear-gradient(180deg, rgba(13, 26, 49, 0.64), rgba(7, 13, 27, 0.64));
+      box-shadow: var(--shadow-soft);
     }
 
     .home-date {
@@ -329,12 +487,13 @@
       font-size: 12px;
       font-weight: 800;
       text-transform: uppercase;
+      letter-spacing: .08em;
     }
 
     .home-greeting {
       margin: 0;
-      font-size: clamp(42px, 5vw, 68px);
-      line-height: 1;
+      font-size: clamp(40px, 4.4vw, 62px);
+      line-height: 0.98;
       font-weight: 840;
       overflow-wrap: anywhere;
     }
@@ -343,7 +502,7 @@
       max-width: 520px;
       margin: 18px 0 0;
       color: var(--muted);
-      font-size: 18px;
+      font-size: 17px;
       line-height: 1.6;
     }
 
@@ -364,27 +523,45 @@
     .readiness-card,
     .continue-card {
       min-width: 0;
-      border: 1px solid rgba(35, 53, 84, 0.92);
-      border-radius: var(--radius);
-      background: linear-gradient(180deg, rgba(17, 34, 64, 0.96), rgba(11, 23, 45, 0.96));
-      box-shadow: var(--shadow);
+      border: 1px solid rgba(40, 64, 104, 0.68);
+      border-radius: calc(var(--radius) + 2px);
+      background:
+        linear-gradient(180deg, rgba(14, 28, 52, 0.96), rgba(8, 16, 31, 0.96));
+      box-shadow: var(--shadow-soft);
     }
 
     .next-action-card {
-      padding: 24px;
-      border-color: rgba(0, 212, 255, 0.34);
+      position: relative;
+      overflow: hidden;
+      padding: 26px;
+      border-color: rgba(0, 212, 255, 0.30);
+    }
+
+    .next-action-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 92% 8%, rgba(0, 212, 255, 0.12), transparent 28%),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.08), transparent 32%);
+      pointer-events: none;
     }
 
     .surface-label {
+      position: relative;
+      z-index: 1;
       display: block;
       margin-bottom: 12px;
       color: var(--accent);
       font-size: 12px;
       font-weight: 820;
       text-transform: uppercase;
+      letter-spacing: .08em;
     }
 
     .next-action-title {
+      position: relative;
+      z-index: 1;
       margin: 0;
       font-size: clamp(28px, 3.2vw, 42px);
       line-height: 1.08;
@@ -392,6 +569,8 @@
     }
 
     .next-action-meta {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
@@ -403,11 +582,11 @@
       display: inline-flex;
       align-items: center;
       min-height: 34px;
-      border: 1px solid rgba(35, 53, 84, 0.82);
+      border: 1px solid rgba(45, 68, 108, 0.82);
       border-radius: 999px;
       padding: 7px 11px;
       color: var(--muted-strong);
-      background: rgba(10, 20, 40, 0.48);
+      background: rgba(7, 13, 27, 0.52);
       font-size: 12px;
       font-weight: 780;
     }
@@ -426,6 +605,8 @@
     }
 
     .next-action-reason {
+      position: relative;
+      z-index: 1;
       margin: 18px 0 0;
       color: var(--muted);
       font-size: 15px;
@@ -433,6 +614,8 @@
     }
 
     .next-action-footer {
+      position: relative;
+      z-index: 1;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -443,7 +626,7 @@
 
     .readiness-card,
     .continue-card {
-      padding: 18px;
+      padding: 20px;
     }
 
     .readiness-grid {
@@ -453,12 +636,35 @@
     }
 
     .readiness-item {
+      position: relative;
       min-width: 0;
-      min-height: 88px;
-      border: 1px solid rgba(35, 53, 84, 0.72);
+      min-height: 104px;
+      border: 1px solid rgba(45, 68, 108, 0.58);
       border-radius: var(--radius);
-      padding: 13px;
-      background: rgba(10, 20, 40, 0.38);
+      padding: 14px;
+      background: rgba(7, 13, 27, 0.42);
+      overflow: hidden;
+      transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
+    }
+
+    .readiness-item:hover {
+      transform: translateY(-1px);
+      border-color: rgba(0, 212, 255, 0.24);
+      background: rgba(10, 22, 42, 0.62);
+    }
+
+    .readiness-item::before {
+      content: "";
+      display: block;
+      width: 28px;
+      height: 28px;
+      margin-bottom: 13px;
+      border: 1px solid rgba(0, 212, 255, 0.22);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.22), transparent 58%),
+        rgba(0, 212, 255, 0.06);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.08);
     }
 
     .readiness-item span {
@@ -471,8 +677,8 @@
 
     .readiness-item strong {
       display: block;
-      margin-top: 8px;
-      font-size: 26px;
+      margin-top: 10px;
+      font-size: 30px;
       line-height: 1;
     }
 
@@ -487,10 +693,17 @@
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 14px;
       align-items: center;
-      border: 1px solid rgba(35, 53, 84, 0.68);
+      border: 1px solid rgba(45, 68, 108, 0.58);
       border-radius: var(--radius);
-      padding: 13px;
-      background: rgba(10, 20, 40, 0.36);
+      padding: 14px;
+      background: rgba(7, 13, 27, 0.40);
+      transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
+    }
+
+    .continue-item:hover {
+      transform: translateY(-1px);
+      border-color: rgba(0, 212, 255, 0.22);
+      background: rgba(10, 22, 42, 0.62);
     }
 
     .continue-title {
@@ -909,6 +1122,15 @@
         padding-top: 58px;
       }
 
+      .hero-banner {
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+
+      .direction-trail {
+        min-height: 72px;
+      }
+
       .hero-grid,
       .preview-grid {
         grid-template-columns: 1fr;
@@ -938,7 +1160,7 @@
 
     @media (max-width: 720px) {
       .shell {
-        width: min(100% - 28px, var(--max));
+        width: min(100% - 24px, var(--max));
       }
 
       .nav {
@@ -956,11 +1178,40 @@
       }
 
       .hero {
-        padding: 30px 0 28px;
+        padding: 24px 0 24px;
+      }
+
+      .hero-shell {
+        gap: 14px;
+      }
+
+      .hero-banner {
+        min-height: 0;
+        padding: 18px;
+      }
+
+      .banner-line,
+      .banner-accent {
+        font-size: 22px;
+      }
+
+      .banner-note {
+        font-size: 12px;
+      }
+
+      .direction-trail {
+        min-height: 42px;
+      }
+
+      .home-context,
+      .next-action-card,
+      .readiness-card,
+      .continue-card {
+        padding: 16px;
       }
 
       h1 {
-        font-size: 34px;
+        font-size: 32px;
         line-height: 1.08;
       }
 
@@ -982,6 +1233,14 @@
         margin-top: 16px;
       }
 
+      .next-action-title {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        font-size: 26px;
+      }
+
       .cockpit-head,
       .workspace,
       .proposal-body {
@@ -990,6 +1249,26 @@
 
       .readiness-grid {
         grid-template-columns: 1fr 1fr;
+      }
+
+      .readiness-item {
+        min-height: 84px;
+        padding: 12px;
+      }
+
+      .readiness-item::before {
+        width: 22px;
+        height: 22px;
+        margin-bottom: 10px;
+      }
+
+      .readiness-item span {
+        min-height: 0;
+        font-size: 11px;
+      }
+
+      .readiness-item strong {
+        font-size: 24px;
       }
 
       .continue-item {
@@ -1030,7 +1309,11 @@
       }
 
       .readiness-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .readiness-item {
+        min-height: 92px;
       }
 
       .north-star-identity {
@@ -1080,73 +1363,97 @@
 
   <main>
     <section class="hero" id="home">
-      <div class="shell hero-grid">
-        <div class="home-context">
-          <div class="north-star-identity" aria-label="GT63 North Star identity">
-            <span class="north-star-symbol" aria-hidden="true">
-              <svg viewBox="0 0 64 64" fill="none">
-                <path d="M32 3 38.8 25.2 61 32 38.8 38.8 32 61 25.2 38.8 3 32 25.2 25.2 32 3Z" stroke="currentColor" stroke-width="1.6" />
-                <path d="M32 16 35.9 28.1 48 32 35.9 35.9 32 48 28.1 35.9 16 32 28.1 28.1 32 16Z" fill="currentColor" />
-              </svg>
-            </span>
-            <p class="north-label">NORTH</p>
-            <p class="north-name">GT63</p>
-            <p class="north-system">Travel Proposal Operating System</p>
+      <div class="shell hero-shell">
+        <section class="hero-banner" aria-label="GT63 direction banner">
+          <div class="banner-copy">
+            <p class="banner-line">Great proposals do not happen by chance.</p>
+            <p class="banner-accent">They happen by direction.</p>
+            <p class="banner-note">Calm proposal work, guided by one GT63 truth.</p>
           </div>
-          <div>
-            <p class="home-date" id="homeDate">Today</p>
-            <h1 class="home-greeting" id="homeGreeting">Good morning, Goce.</h1>
-            <p class="home-promise">
-              GT63 shows which proposal work deserves your attention before the day turns into email.
-            </p>
+          <div class="direction-trail" aria-hidden="true">
+            <svg viewBox="0 0 420 120" preserveAspectRatio="none">
+              <path d="M8 88 C92 26 172 102 246 44 S354 18 410 34" stroke="rgba(0, 212, 255, 0.16)" stroke-width="18" stroke-linecap="round" fill="none" />
+              <path class="trail-glow" d="M8 88 C92 26 172 102 246 44 S354 18 410 34" stroke="url(#trailGradient)" stroke-width="4" stroke-linecap="round" fill="none" />
+              <circle class="trail-dot" cx="410" cy="34" r="7" fill="#5CEAFF" />
+              <defs>
+                <linearGradient id="trailGradient" x1="0" y1="0" x2="420" y2="0" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="rgba(0, 212, 255, 0)" />
+                  <stop offset="0.46" stop-color="#00D4FF" />
+                  <stop offset="1" stop-color="#79F1FF" />
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
-          <div class="home-actions">
-            <a class="button button-primary" href="#workspace" id="createProposalTop">New Proposal</a>
-            <a class="button button-secondary is-disabled" href="#preview" id="viewProposalPreview" aria-disabled="true">View Proposal Preview</a>
-          </div>
-        </div>
-
-        <section class="command-surface" aria-labelledby="nextActionTitle">
-          <article class="next-action-card">
-            <span class="surface-label">Next best action</span>
-            <h2 class="next-action-title" id="nextActionTitle">Start your next proposal</h2>
-            <div class="next-action-meta">
-              <span class="state-chip" id="nextActionState">Drafts in Progress</span>
-              <span class="effort-chip" id="nextActionEffort">Estimated: 2 minutes</span>
-            </div>
-            <p class="next-action-reason" id="nextActionReason">
-              No proposal needs attention yet. Start with flight and hotel information when you are ready.
-            </p>
-            <div class="next-action-footer">
-              <span class="section-note" id="nextActionContext">What deserves your attention today.</span>
-              <a class="button button-primary" href="#workspace" id="nextActionButton">New Proposal</a>
-            </div>
-          </article>
-
-          <article class="readiness-card" aria-labelledby="readinessTitle">
-            <span class="surface-label" id="readinessTitle">Proposal readiness</span>
-            <div class="readiness-grid" aria-label="Canonical proposal states">
-              <div class="readiness-item"><span>Ready to Send</span><strong id="readyToSendCount">0</strong></div>
-              <div class="readiness-item"><span>Needs Review</span><strong id="needsReviewCount">0</strong></div>
-              <div class="readiness-item"><span>Waiting for Client</span><strong id="waitingClientCount">0</strong></div>
-              <div class="readiness-item"><span>Drafts in Progress</span><strong id="draftsCount">0</strong></div>
-              <div class="readiness-item"><span>Blocked</span><strong id="blockedCount">0</strong></div>
-            </div>
-          </article>
-
-          <article class="continue-card" aria-labelledby="continueTitle">
-            <span class="surface-label" id="continueTitle">Continue work</span>
-            <div class="continue-list" id="continueList">
-              <div class="continue-item">
-                <div>
-                  <p class="continue-title">No active proposal work yet</p>
-                  <p class="continue-meta">Start a proposal to create your first GT63 work item.</p>
-                </div>
-                <a class="button button-quiet" href="#workspace">Open Workspace</a>
-              </div>
-            </div>
-          </article>
         </section>
+
+        <div class="hero-grid">
+          <div class="home-context">
+            <div class="north-star-identity" aria-label="GT63 North Star identity">
+              <span class="north-star-symbol" aria-hidden="true">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <path d="M32 3 38.8 25.2 61 32 38.8 38.8 32 61 25.2 38.8 3 32 25.2 25.2 32 3Z" stroke="currentColor" stroke-width="1.6" />
+                  <path d="M32 16 35.9 28.1 48 32 35.9 35.9 32 48 28.1 35.9 16 32 28.1 28.1 32 16Z" fill="currentColor" />
+                </svg>
+              </span>
+              <p class="north-label">NORTH</p>
+              <p class="north-name">GT63</p>
+              <p class="north-system">Travel Proposal Operating System</p>
+            </div>
+            <div>
+              <p class="home-date" id="homeDate">Today</p>
+              <h1 class="home-greeting" id="homeGreeting">Good morning, Goce.</h1>
+              <p class="home-promise">
+                GT63 shows which proposal work deserves your attention before the day turns into email.
+              </p>
+            </div>
+            <div class="home-actions">
+              <a class="button button-primary" href="#workspace" id="createProposalTop">New Proposal</a>
+              <a class="button button-secondary is-disabled" href="#preview" id="viewProposalPreview" aria-disabled="true">View Proposal Preview</a>
+            </div>
+          </div>
+
+          <section class="command-surface" aria-labelledby="nextActionTitle">
+            <article class="next-action-card">
+              <span class="surface-label">Next best action</span>
+              <h2 class="next-action-title" id="nextActionTitle">Start your next proposal</h2>
+              <div class="next-action-meta">
+                <span class="state-chip" id="nextActionState">Drafts in Progress</span>
+                <span class="effort-chip" id="nextActionEffort">Estimated: 2 minutes</span>
+              </div>
+              <p class="next-action-reason" id="nextActionReason">
+                No proposal needs attention yet. Start with flight and hotel information when you are ready.
+              </p>
+              <div class="next-action-footer">
+                <span class="section-note" id="nextActionContext">What deserves your attention today.</span>
+                <a class="button button-primary" href="#workspace" id="nextActionButton">New Proposal</a>
+              </div>
+            </article>
+
+            <article class="readiness-card" aria-labelledby="readinessTitle">
+              <span class="surface-label" id="readinessTitle">Proposal readiness</span>
+              <div class="readiness-grid" aria-label="Canonical proposal states">
+                <div class="readiness-item"><span>Ready to Send</span><strong id="readyToSendCount">0</strong></div>
+                <div class="readiness-item"><span>Needs Review</span><strong id="needsReviewCount">0</strong></div>
+                <div class="readiness-item"><span>Waiting for Client</span><strong id="waitingClientCount">0</strong></div>
+                <div class="readiness-item"><span>Drafts in Progress</span><strong id="draftsCount">0</strong></div>
+                <div class="readiness-item"><span>Blocked</span><strong id="blockedCount">0</strong></div>
+              </div>
+            </article>
+
+            <article class="continue-card" aria-labelledby="continueTitle">
+              <span class="surface-label" id="continueTitle">Continue work</span>
+              <div class="continue-list" id="continueList">
+                <div class="continue-item">
+                  <div>
+                    <p class="continue-title">No active proposal work yet</p>
+                    <p class="continue-meta">Start a proposal to create your first GT63 work item.</p>
+                  </div>
+                  <a class="button button-quiet" href="#workspace">Open Workspace</a>
+                </div>
+              </div>
+            </article>
+          </section>
+        </div>
       </div>
     </section>
 
