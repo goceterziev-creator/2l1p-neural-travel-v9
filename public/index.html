@@ -26,6 +26,11 @@
       --shadow-soft: 0 18px 56px rgba(0, 0, 0, 0.24);
       --hairline: rgba(92, 118, 165, 0.22);
       --radius: 8px;
+      --radius-card: 14px;
+      --surface-border: rgba(86, 113, 166, 0.30);
+      --surface-border-soft: rgba(86, 113, 166, 0.20);
+      --surface-shadow: 0 28px 86px rgba(0, 0, 0, 0.32);
+      --surface-shadow-soft: 0 18px 54px rgba(0, 0, 0, 0.22);
       --max: 1180px;
       --ease: cubic-bezier(.2, .8, .2, 1);
     }
@@ -43,9 +48,9 @@
       margin: 0;
       min-height: 100vh;
       background:
-        radial-gradient(circle at 12% -8%, rgba(0, 212, 255, 0.10), transparent 30%),
-        radial-gradient(circle at 82% 4%, rgba(92, 85, 255, 0.08), transparent 28%),
-        linear-gradient(180deg, #081123 0%, #060B17 100%);
+        radial-gradient(circle at 12% -8%, rgba(0, 212, 255, 0.09), transparent 30%),
+        radial-gradient(circle at 82% 4%, rgba(92, 85, 255, 0.07), transparent 28%),
+        linear-gradient(180deg, #081123 0%, #050A15 100%);
       color: var(--text);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       letter-spacing: 0;
@@ -193,25 +198,25 @@
     .hero-shell {
       position: relative;
       display: grid;
-      gap: 24px;
+      gap: 28px;
     }
 
     .hero-banner {
       position: relative;
       display: grid;
-      grid-template-columns: minmax(0, 0.9fr) minmax(340px, 1fr);
+      grid-template-columns: minmax(390px, 0.96fr) minmax(390px, 1.04fr);
       align-items: center;
-      min-height: 176px;
+      min-height: 204px;
       overflow: hidden;
-      border: 1px solid rgba(65, 87, 132, 0.36);
-      border-radius: 12px;
-      padding: 34px 38px;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-card);
+      padding: 40px 46px;
       background:
-        linear-gradient(90deg, rgba(7, 13, 27, 0.96), rgba(9, 18, 39, 0.78)),
-        radial-gradient(circle at 80% 44%, rgba(0, 212, 255, 0.13), transparent 34%),
-        radial-gradient(circle at 55% 100%, rgba(93, 108, 255, 0.08), transparent 36%),
-        linear-gradient(180deg, rgba(12, 24, 46, 0.98), rgba(6, 12, 25, 0.98));
-      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+        radial-gradient(circle at 86% 38%, rgba(0, 212, 255, 0.17), transparent 28%),
+        radial-gradient(circle at 64% 112%, rgba(93, 108, 255, 0.10), transparent 34%),
+        linear-gradient(90deg, rgba(7, 13, 27, 0.98), rgba(9, 18, 39, 0.82)),
+        linear-gradient(180deg, rgba(13, 25, 49, 0.98), rgba(5, 10, 21, 0.98));
+      box-shadow: var(--surface-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.045);
     }
 
     .hero-banner::before {
@@ -219,11 +224,11 @@
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(90deg, rgba(255, 255, 255, 0.040) 1px, transparent 1px),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.032) 1px, transparent 1px);
-      background-size: 48px 48px;
-      mask-image: linear-gradient(90deg, transparent, #000 18%, #000 72%, transparent);
-      opacity: 0.26;
+        linear-gradient(90deg, rgba(255, 255, 255, 0.030) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.024) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: linear-gradient(90deg, transparent, #000 16%, #000 68%, transparent);
+      opacity: 0.18;
       pointer-events: none;
     }
 
@@ -232,7 +237,7 @@
       position: absolute;
       inset: auto 0 0;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.34), transparent);
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.42), transparent);
     }
 
     .banner-copy {
@@ -243,8 +248,8 @@
     .banner-line,
     .banner-accent {
       margin: 0;
-      font-size: clamp(25px, 2.7vw, 38px);
-      line-height: 1.18;
+      font-size: clamp(27px, 2.45vw, 36px);
+      line-height: 1.16;
       font-weight: 820;
     }
 
@@ -258,13 +263,13 @@
       margin: 14px 0 0;
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
     .direction-trail {
       position: relative;
       z-index: 1;
-      min-height: 118px;
+      min-height: 142px;
     }
 
     .direction-trail svg {
@@ -275,27 +280,59 @@
       overflow: visible;
     }
 
-    .trail-glow {
-      filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.54));
-      opacity: 0.86;
+    .trail-aura {
+      filter: blur(6px);
+      opacity: 0.34;
+    }
+
+    .trail-foundation {
+      opacity: 0.22;
+    }
+
+    .trail-glow,
+    .trail-core {
       stroke-dasharray: 420;
       stroke-dashoffset: 96;
-      animation: trail-breathe 7.2s var(--ease) infinite;
+      animation: trail-breathe 8.8s var(--ease) infinite;
+    }
+
+    .trail-glow {
+      filter: drop-shadow(0 0 14px rgba(0, 212, 255, 0.48));
+      opacity: 0.82;
+    }
+
+    .trail-core {
+      filter: drop-shadow(0 0 7px rgba(115, 242, 255, 0.40));
+      opacity: 0.92;
     }
 
     .trail-dot {
-      filter: drop-shadow(0 0 18px rgba(0, 212, 255, 0.78));
-      animation: dot-breathe 7.2s var(--ease) infinite;
+      filter: drop-shadow(0 0 22px rgba(0, 212, 255, 0.72));
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: dot-breathe 8.8s var(--ease) infinite;
+    }
+
+    .trail-ring {
+      opacity: 0.24;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: ring-breathe 8.8s var(--ease) infinite;
     }
 
     @keyframes trail-breathe {
-      0%, 100% { opacity: 0.48; stroke-dashoffset: 116; }
-      50% { opacity: 0.92; stroke-dashoffset: 64; }
+      0%, 100% { opacity: 0.54; stroke-dashoffset: 112; }
+      50% { opacity: 0.96; stroke-dashoffset: 58; }
     }
 
     @keyframes dot-breathe {
       0%, 100% { opacity: 0.72; transform: scale(0.96); }
       50% { opacity: 1; transform: scale(1.04); }
+    }
+
+    @keyframes ring-breathe {
+      0%, 100% { opacity: 0.16; transform: scale(0.86); }
+      50% { opacity: 0.30; transform: scale(1.08); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -420,6 +457,14 @@
       transition: transform .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease), color .18s var(--ease), box-shadow .18s var(--ease);
     }
 
+    .button:focus-visible,
+    .nav-link:focus-visible,
+    .profile-button:focus-visible,
+    .continue-item:focus-visible {
+      outline: 2px solid rgba(0, 212, 255, 0.72);
+      outline-offset: 3px;
+    }
+
     .button:hover {
       transform: translateY(-1px);
     }
@@ -477,11 +522,12 @@
       gap: 20px;
       min-width: 0;
       border: 1px solid rgba(65, 87, 132, 0.34);
-      border-radius: 12px;
+      border-radius: var(--radius-card);
       padding: 30px;
       background:
-        linear-gradient(180deg, rgba(12, 25, 48, 0.70), rgba(7, 13, 27, 0.66));
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.025);
+        radial-gradient(circle at 0% 0%, rgba(0, 212, 255, 0.06), transparent 34%),
+        linear-gradient(180deg, rgba(12, 25, 48, 0.76), rgba(7, 13, 27, 0.70));
+      box-shadow: var(--surface-shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.03);
     }
 
     .home-date {
@@ -526,18 +572,18 @@
     .readiness-card,
     .continue-card {
       min-width: 0;
-      border: 1px solid rgba(65, 87, 132, 0.34);
-      border-radius: 12px;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-card);
       background:
-        linear-gradient(180deg, rgba(13, 26, 49, 0.90), rgba(7, 13, 27, 0.94));
-      box-shadow: 0 22px 64px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.025);
+        linear-gradient(180deg, rgba(13, 26, 49, 0.88), rgba(7, 13, 27, 0.94));
+      box-shadow: var(--surface-shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.03);
     }
 
     .next-action-card {
       position: relative;
       overflow: hidden;
-      padding: 28px;
-      border-color: rgba(0, 212, 255, 0.28);
+      padding: 30px;
+      border-color: rgba(0, 212, 255, 0.24);
     }
 
     .next-action-card::before {
@@ -545,8 +591,9 @@
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(circle at 92% 8%, rgba(0, 212, 255, 0.10), transparent 30%),
-        linear-gradient(90deg, rgba(0, 212, 255, 0.06), transparent 36%);
+        radial-gradient(circle at 92% 8%, rgba(0, 212, 255, 0.12), transparent 30%),
+        radial-gradient(circle at 4% 16%, rgba(117, 241, 255, 0.06), transparent 26%),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.055), transparent 38%);
       pointer-events: none;
     }
 
@@ -559,14 +606,14 @@
       font-size: 12px;
       font-weight: 820;
       text-transform: uppercase;
-      letter-spacing: .08em;
+      letter-spacing: .10em;
     }
 
     .next-action-title {
       position: relative;
       z-index: 1;
       margin: 0;
-      font-size: clamp(28px, 3.2vw, 42px);
+      font-size: clamp(28px, 3vw, 38px);
       line-height: 1.08;
       overflow-wrap: anywhere;
     }
@@ -587,9 +634,9 @@
       min-height: 34px;
       border: 1px solid rgba(65, 87, 132, 0.46);
       border-radius: 999px;
-      padding: 7px 11px;
+      padding: 7px 12px;
       color: var(--muted-strong);
-      background: rgba(7, 13, 27, 0.48);
+      background: rgba(7, 13, 27, 0.54);
       font-size: 12px;
       font-weight: 780;
     }
@@ -642,10 +689,10 @@
       position: relative;
       min-width: 0;
       min-height: 108px;
-      border: 1px solid rgba(65, 87, 132, 0.34);
-      border-radius: var(--radius);
-      padding: 14px;
-      background: rgba(7, 13, 27, 0.34);
+      border: 1px solid var(--surface-border-soft);
+      border-radius: 10px;
+      padding: 15px;
+      background: rgba(7, 13, 27, 0.38);
       overflow: hidden;
       transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
     }
@@ -653,7 +700,7 @@
     .readiness-item:hover {
       transform: translateY(-1px);
       border-color: rgba(0, 212, 255, 0.20);
-      background: rgba(10, 22, 42, 0.52);
+      background: rgba(10, 22, 42, 0.56);
     }
 
     .readiness-item::before {
@@ -662,7 +709,7 @@
       width: 28px;
       height: 28px;
       margin-bottom: 13px;
-      border: 1px solid rgba(0, 212, 255, 0.18);
+      border: 1px solid rgba(0, 212, 255, 0.16);
       border-radius: 50%;
       background:
         radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.18), transparent 58%),
@@ -675,7 +722,7 @@
       min-height: 34px;
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.35;
+      line-height: 1.4;
     }
 
     .readiness-item strong {
@@ -696,10 +743,10 @@
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 14px;
       align-items: center;
-      border: 1px solid rgba(65, 87, 132, 0.34);
-      border-radius: var(--radius);
+      border: 1px solid var(--surface-border-soft);
+      border-radius: 10px;
       padding: 14px;
-      background: rgba(7, 13, 27, 0.32);
+      background: rgba(7, 13, 27, 0.36);
       transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
     }
 
@@ -1375,14 +1422,27 @@
           </div>
           <div class="direction-trail" aria-hidden="true">
             <svg viewBox="0 0 420 120" preserveAspectRatio="none">
-              <path d="M8 88 C92 26 172 102 246 44 S354 18 410 34" stroke="rgba(0, 212, 255, 0.16)" stroke-width="18" stroke-linecap="round" fill="none" />
-              <path class="trail-glow" d="M8 88 C92 26 172 102 246 44 S354 18 410 34" stroke="url(#trailGradient)" stroke-width="4" stroke-linecap="round" fill="none" />
+              <path class="trail-aura" d="M8 88 C92 26 172 102 246 44 S354 18 410 34" stroke="url(#trailAura)" stroke-width="26" stroke-linecap="round" fill="none" />
+              <path class="trail-foundation" d="M8 88 C92 26 172 102 246 44 S354 18 410 34" stroke="rgba(0, 212, 255, 0.32)" stroke-width="15" stroke-linecap="round" fill="none" />
+              <path class="trail-glow" d="M8 88 C92 26 172 102 246 44 S354 18 410 34" stroke="url(#trailGradient)" stroke-width="5" stroke-linecap="round" fill="none" />
+              <path class="trail-core" d="M8 88 C92 26 172 102 246 44 S354 18 410 34" stroke="url(#trailCore)" stroke-width="1.6" stroke-linecap="round" fill="none" />
+              <circle class="trail-ring" cx="410" cy="34" r="15" fill="none" stroke="#72F0FF" stroke-width="1.2" />
               <circle class="trail-dot" cx="410" cy="34" r="7" fill="#5CEAFF" />
               <defs>
+                <linearGradient id="trailAura" x1="0" y1="0" x2="420" y2="0" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="rgba(0, 212, 255, 0)" />
+                  <stop offset="0.50" stop-color="rgba(0, 212, 255, 0.28)" />
+                  <stop offset="1" stop-color="rgba(121, 241, 255, 0.54)" />
+                </linearGradient>
                 <linearGradient id="trailGradient" x1="0" y1="0" x2="420" y2="0" gradientUnits="userSpaceOnUse">
                   <stop offset="0" stop-color="rgba(0, 212, 255, 0)" />
-                  <stop offset="0.46" stop-color="#00D4FF" />
+                  <stop offset="0.42" stop-color="#00D4FF" />
                   <stop offset="1" stop-color="#79F1FF" />
+                </linearGradient>
+                <linearGradient id="trailCore" x1="0" y1="0" x2="420" y2="0" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stop-color="rgba(255, 255, 255, 0)" />
+                  <stop offset="0.62" stop-color="rgba(255, 255, 255, 0.78)" />
+                  <stop offset="1" stop-color="#EAFDFF" />
                 </linearGradient>
               </defs>
             </svg>
