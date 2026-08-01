@@ -4,6 +4,8 @@
 
 GT63 PRINT PRESENTATION MODE V1 = PASS / PRODUCTION VERIFIED / LOCKED
 
+GT63 HOME v1 = DESIGN REVIEW COMPLETE / PROPOSAL STATES CONTRACT LOCKED / IMPLEMENTATION NOT STARTED
+
 The Print V1 implementation is complete and locked at:
 
 - ed311a5 - GT63 Print V1 shared presentation view model foundation
@@ -20,6 +22,7 @@ Before any next milestone:
 - read `docs/GT63_CONSTITUTION_V1.md`;
 - read `docs/GT63_MASTER_ARCHITECTURE.md`;
 - read `docs/GT63_CANONICAL_CONTEXT.md`;
+- read `docs/product/GT63_HOME_PROPOSAL_STATES_CONTRACT.md` for HOME work;
 - read `docs/GT63_CURRENT_STATE.md`;
 - read `docs/architecture/GT63_ARCHITECTURE_LAW_22_ONE_PRODUCT_ONE_TRUTH.md`;
 - inspect git status, current branch, latest commits and remote alignment;

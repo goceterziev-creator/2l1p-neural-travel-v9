@@ -82,6 +82,14 @@ The operator lands on HOME.
 
 No dashboard overload.
 
+HOME v1 is governed by:
+
+```text
+docs/product/GT63_HOME_PROPOSAL_STATES_CONTRACT.md
+```
+
+That contract defines HOME as a calm proposal command surface organized around proposal readiness and next best action.
+
 Opening copy:
 
 ```text
@@ -90,13 +98,14 @@ Good morning, Goce.
 What shall we create today?
 ```
 
-Three primary actions only:
+Primary actions:
 
 - New Proposal;
-- Continue Proposal;
-- Agency Overview.
+- Continue Proposal.
 
-Everything else is secondary.
+Agency Overview is not a primary HOME v1 action.
+
+Everything else is secondary or outside HOME v1 scope.
 
 ## Active Workspace Principle
 
