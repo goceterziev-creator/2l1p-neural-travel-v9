@@ -12,8 +12,8 @@
   <link rel="stylesheet" href="/gt63-design-system.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="shell nav" aria-label="Primary navigation">
+  <div class="gt63-app-shell">
+    <aside class="gt63-nav-rail" aria-label="GT63 navigation">
       <a class="brand" href="/" aria-label="GT63 home">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" role="img">
@@ -29,20 +29,38 @@
       </a>
 
       <nav class="nav-links" aria-label="Product sections">
-        <a class="nav-link" href="#home">Home</a>
-        <a class="nav-link" href="#workspace">Workspace</a>
-        <a class="nav-link" href="#preview">Proposal</a>
+        <a class="nav-link is-active" href="#home">Home <span>Command Center</span></a>
+        <a class="nav-link" href="#workspace">Workspace <span>Proposal Work</span></a>
+        <a class="nav-link" href="#preview">Proposal <span>Client Preview</span></a>
+      </nav>
+
+      <div class="rail-motto" aria-label="GT63 product promise">
+        <span class="north-star-symbol rail-star" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none">
+            <path d="M32 3 38.8 25.2 61 32 38.8 38.8 32 61 25.2 38.8 3 32 25.2 25.2 32 3Z" stroke="currentColor" stroke-width="1.6" />
+            <path d="M32 16 35.9 28.1 48 32 35.9 35.9 32 48 28.1 35.9 16 32 28.1 28.1 32 16Z" fill="currentColor" />
+          </svg>
+        </span>
+        <p>Direction.</p>
+        <p>Confidence.</p>
+        <p>Better Decisions.</p>
+      </div>
+
+      <p class="rail-version">GT63 v1.0</p>
+    </aside>
+
+    <div class="gt63-app-main">
+      <header class="gt63-command-topbar" aria-label="Command bar">
+        <span>Travel Proposal Operating System</span>
         <button class="profile-button" type="button">
           <span class="profile-dot" aria-hidden="true"></span>
           Profile
         </button>
-      </nav>
-    </div>
-  </header>
+      </header>
 
-  <main>
-    <section class="hero" id="home">
-      <div class="shell hero-shell">
+      <main>
+        <section class="hero gt63-command-center" id="home">
+          <div class="gt63-command-canvas">
         <section class="hero-banner" aria-label="GT63 direction banner">
           <div class="banner-copy">
             <p class="banner-line">Great proposals do not happen by chance.</p>
@@ -155,11 +173,24 @@
             </article>
           </section>
         </div>
-      </div>
-    </section>
+          </div>
 
-    <section class="section" aria-labelledby="workspaceTitle">
-      <div class="shell">
+          <aside class="gt63-status-rail" aria-label="GT63 current proposal status">
+            <aside class="insight-panel" aria-label="Detected travel details">
+              <h3 class="insight-title">Travel Details</h3>
+              <ul class="insight-list">
+                <li><span>Flight evidence</span><strong id="flightEvidence">Waiting</strong></li>
+                <li><span>Hotel evidence</span><strong id="hotelEvidence">Waiting</strong></li>
+                <li><span>Destination</span><strong id="detailDestination">Waiting</strong></li>
+                <li><span>Dates</span><strong id="detailDates">Waiting</strong></li>
+                <li><span>Price</span><strong id="detailPrice">Waiting</strong></li>
+              </ul>
+            </aside>
+          </aside>
+        </section>
+
+        <section class="section gt63-workspace-section" aria-labelledby="workspaceTitle">
+      <div class="gt63-section-shell">
         <section class="cockpit" id="workspace">
           <div class="cockpit-head">
             <div>
@@ -215,10 +246,10 @@
           </div>
         </section>
       </div>
-    </section>
+        </section>
 
-    <section class="section" id="preview">
-      <div class="shell">
+        <section class="section gt63-preview-section" id="preview">
+      <div class="gt63-section-shell">
         <div class="section-header">
           <div>
             <h2 class="section-title">Proposal Preview</h2>
@@ -243,29 +274,17 @@
               </div>
             </div>
           </article>
-
-          <aside class="insight-panel" aria-label="Detected travel details">
-            <h3 class="insight-title">Travel Details</h3>
-            <ul class="insight-list">
-              <li><span>Flight evidence</span><strong id="flightEvidence">Waiting</strong></li>
-              <li><span>Hotel evidence</span><strong id="hotelEvidence">Waiting</strong></li>
-              <li><span>Destination</span><strong id="detailDestination">Waiting</strong></li>
-              <li><span>Dates</span><strong id="detailDates">Waiting</strong></li>
-              <li><span>Price</span><strong id="detailPrice">Waiting</strong></li>
-            </ul>
-          </aside>
         </div>
       </div>
-    </section>
+        </section>
+      </main>
 
-  </main>
-
-  <footer class="footer">
-    <div class="shell">
-      <span>GT63</span>
-      <span>Travel Proposal Operating System</span>
+      <footer class="footer">
+        <span>GT63</span>
+        <span>Travel Proposal Operating System</span>
+      </footer>
     </div>
-  </footer>
+  </div>
 
   <script src="/canonical-offer-service.js"></script>
   <script src="/gt63-design-system.js"></script>
