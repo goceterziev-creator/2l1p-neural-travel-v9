@@ -292,8 +292,7 @@
     .trail-glow,
     .trail-core {
       stroke-dasharray: 420;
-      stroke-dashoffset: 96;
-      animation: trail-breathe 8.8s var(--ease) infinite;
+      stroke-dashoffset: 72;
     }
 
     .trail-glow {
@@ -310,19 +309,47 @@
       filter: drop-shadow(0 0 22px rgba(0, 212, 255, 0.72));
       transform-box: fill-box;
       transform-origin: center;
-      animation: dot-breathe 8.8s var(--ease) infinite;
     }
 
     .trail-ring {
       opacity: 0.24;
       transform-box: fill-box;
       transform-origin: center;
-      animation: ring-breathe 8.8s var(--ease) infinite;
     }
 
-    @keyframes trail-breathe {
-      0%, 100% { opacity: 0.54; stroke-dashoffset: 112; }
-      50% { opacity: 0.96; stroke-dashoffset: 58; }
+    body[data-gt63-pulse="ai"] .trail-glow,
+    body[data-gt63-pulse="proposal"] .trail-glow,
+    body[data-gt63-pulse="ai"] .trail-core,
+    body[data-gt63-pulse="proposal"] .trail-core {
+      animation: navigation-pulse 2.8s var(--ease) infinite;
+    }
+
+    body[data-gt63-pulse="ocr"] .trail-glow,
+    body[data-gt63-pulse="ocr"] .trail-core {
+      animation: navigation-pulse 3s var(--ease) infinite;
+    }
+
+    body[data-gt63-pulse="ai"] .trail-dot,
+    body[data-gt63-pulse="proposal"] .trail-dot,
+    body[data-gt63-pulse="ocr"] .trail-dot {
+      animation: dot-breathe 2.8s var(--ease) infinite;
+    }
+
+    body[data-gt63-pulse-finish="true"] .trail-glow,
+    body[data-gt63-pulse-finish="true"] .trail-core {
+      animation: navigation-finish .58s var(--ease) 1;
+    }
+
+    body[data-gt63-pulse-finish="true"] .trail-dot,
+    body[data-gt63-pulse-finish="true"] .trail-ring,
+    body[data-gt63-pulse-finish="true"] .north-star-symbol {
+      animation: compass-ready .58s var(--ease) 1;
+    }
+
+    @keyframes navigation-pulse {
+      0% { opacity: 0.28; stroke-dashoffset: 156; }
+      45% { opacity: 0.96; stroke-dashoffset: 54; }
+      100% { opacity: 0.40; stroke-dashoffset: -18; }
     }
 
     @keyframes dot-breathe {
@@ -330,9 +357,20 @@
       50% { opacity: 1; transform: scale(1.04); }
     }
 
-    @keyframes ring-breathe {
-      0%, 100% { opacity: 0.16; transform: scale(0.86); }
-      50% { opacity: 0.30; transform: scale(1.08); }
+    @keyframes compass-ripple {
+      0% { opacity: 0; transform: scale(0.72); }
+      28% { opacity: 0.20; }
+      100% { opacity: 0; transform: scale(1.64); }
+    }
+
+    @keyframes navigation-finish {
+      0% { opacity: 0.42; stroke-dashoffset: 128; }
+      100% { opacity: 1; stroke-dashoffset: 0; }
+    }
+
+    @keyframes compass-ready {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.08); filter: drop-shadow(0 0 26px rgba(0, 212, 255, 0.58)); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -406,11 +444,33 @@
     .north-star-symbol {
       display: grid;
       place-items: center;
+      position: relative;
       width: 54px;
       height: 54px;
       margin-bottom: 12px;
       color: var(--accent);
       filter: drop-shadow(0 0 18px rgba(0, 212, 255, 0.28));
+    }
+
+    .north-star-symbol::before,
+    .north-star-symbol::after {
+      content: "";
+      position: absolute;
+      inset: -12px;
+      border: 1px solid rgba(0, 212, 255, 0);
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    body[data-gt63-pulse="ocr"] .north-star-symbol::before,
+    body[data-gt63-pulse="ocr"] .north-star-symbol::after {
+      border-color: rgba(0, 212, 255, 0.28);
+      animation: compass-ripple 2.6s var(--ease) infinite;
+    }
+
+    body[data-gt63-pulse="ocr"] .north-star-symbol::after {
+      animation-delay: .52s;
     }
 
     .north-star-symbol svg {
@@ -1630,6 +1690,39 @@
   </footer>
 
   <script src="/canonical-offer-service.js"></script>
+  <script>
+    window.GT63Pulse = (() => {
+      const activeModes = new Set(["ai", "ocr", "proposal"]);
+      let finishTimer = 0;
+
+      function clearFinish() {
+        window.clearTimeout(finishTimer);
+        document.body?.removeAttribute("data-gt63-pulse-finish");
+      }
+
+      function start(mode = "ai") {
+        const nextMode = activeModes.has(mode) ? mode : "ai";
+        clearFinish();
+        document.body?.setAttribute("data-gt63-pulse", nextMode);
+      }
+
+      function stop() {
+        clearFinish();
+        document.body?.removeAttribute("data-gt63-pulse");
+      }
+
+      function finish() {
+        clearFinish();
+        document.body?.removeAttribute("data-gt63-pulse");
+        document.body?.setAttribute("data-gt63-pulse-finish", "true");
+        finishTimer = window.setTimeout(() => {
+          document.body?.removeAttribute("data-gt63-pulse-finish");
+        }, 640);
+      }
+
+      return { start, finish, stop };
+    })();
+  </script>
   <script src="/gt63-proposal-flow.js"></script>
   <script>
     window.GT63ProposalFlow.init();

@@ -392,6 +392,18 @@
       }
     }
 
+    function startPulse(mode) {
+      window.GT63Pulse?.start?.(mode);
+    }
+
+    function finishPulse() {
+      window.GT63Pulse?.finish?.();
+    }
+
+    function stopPulse() {
+      window.GT63Pulse?.stop?.();
+    }
+
     function setGeneratedLinks(offerId, htmlUrl, pdfUrl) {
       state.currentOfferId = offerId || "";
       state.currentHtmlUrl = htmlUrl || (offerId ? `/api/offers/view/${encodeURIComponent(offerId)}` : "");
@@ -568,61 +580,90 @@
       }
       const formData = new FormData();
       selectedFiles.forEach((file) => formData.append("image", file));
+      startPulse("ocr");
       setMessage("Reading travel data...", "working");
       return fetchJson(route, { method: "POST", body: formData });
     }
 
     async function runSmartImport(files) {
-      const data = await postFiles("/api/smart-import", files, 8);
-      if (!data) return;
-      state.smartImportData = data;
-      const importedFlight = data.offerFlight || data.flight || {};
-      const importedHotel = data.offerHotel || {};
-      const importedHotelOptions = safeArray(data.offerHotelOptions);
-      const hasFlight = hasMeaningfulObject(importedFlight, ["airline", "route", "departure", "arrival", "price", "segments"]);
-      const hasHotel = hasMeaningfulObject(importedHotel, ["name", "area", "city", "room", "meal", "price", "images"]) || importedHotelOptions.length > 0;
-      setImportReady({
-        flight: hasFlight,
-        hotel: hasHotel,
-        destination: Boolean(inferDestination(data, importedFlight, importedHotel)),
-        dates: Boolean(importedFlight.departure || importedFlight.arrival),
-        price: Boolean(toNumber(importedFlight.price, 0) || toNumber(importedHotel.price, 0))
-      });
+      try {
+        const data = await postFiles("/api/smart-import", files, 8);
+        if (!data) {
+          stopPulse();
+          return;
+        }
+        state.smartImportData = data;
+        const importedFlight = data.offerFlight || data.flight || {};
+        const importedHotel = data.offerHotel || {};
+        const importedHotelOptions = safeArray(data.offerHotelOptions);
+        const hasFlight = hasMeaningfulObject(importedFlight, ["airline", "route", "departure", "arrival", "price", "segments"]);
+        const hasHotel = hasMeaningfulObject(importedHotel, ["name", "area", "city", "room", "meal", "price", "images"]) || importedHotelOptions.length > 0;
+        setImportReady({
+          flight: hasFlight,
+          hotel: hasHotel,
+          destination: Boolean(inferDestination(data, importedFlight, importedHotel)),
+          dates: Boolean(importedFlight.departure || importedFlight.arrival),
+          price: Boolean(toNumber(importedFlight.price, 0) || toNumber(importedHotel.price, 0))
+        });
+        finishPulse();
+      } catch (error) {
+        stopPulse();
+        throw error;
+      }
     }
 
     async function runFlightImport(files) {
-      const data = await postFiles("/api/import-image", files, 4);
-      if (!data) return;
-      state.flightImportData = data;
-      const importedFlight = data.flight || data.offerFlight || {};
-      setImportReady({
-        flight: hasMeaningfulObject(importedFlight, ["airline", "route", "departure", "arrival", "price", "segments"]),
-        hotel: Boolean(state.hotelImportData),
-        destination: Boolean(inferDestination({}, importedFlight, state.hotelImportData?.hotel || {})),
-        dates: Boolean(importedFlight.departure || importedFlight.arrival),
-        price: Boolean(toNumber(importedFlight.price, 0))
-      });
+      try {
+        const data = await postFiles("/api/import-image", files, 4);
+        if (!data) {
+          stopPulse();
+          return;
+        }
+        state.flightImportData = data;
+        const importedFlight = data.flight || data.offerFlight || {};
+        setImportReady({
+          flight: hasMeaningfulObject(importedFlight, ["airline", "route", "departure", "arrival", "price", "segments"]),
+          hotel: Boolean(state.hotelImportData),
+          destination: Boolean(inferDestination({}, importedFlight, state.hotelImportData?.hotel || {})),
+          dates: Boolean(importedFlight.departure || importedFlight.arrival),
+          price: Boolean(toNumber(importedFlight.price, 0))
+        });
+        finishPulse();
+      } catch (error) {
+        stopPulse();
+        throw error;
+      }
     }
 
     async function runHotelImport(files) {
-      const data = await postFiles("/api/import-hotel-image", files, 4);
-      if (!data) return;
-      state.hotelImportData = data;
-      const importedHotel = data.hotel || data.offerHotel || {};
-      const importedHotelOptions = safeArray(data.hotelOptions || data.offerHotelOptions);
-      setImportReady({
-        flight: Boolean(state.flightImportData),
-        hotel: hasMeaningfulObject(importedHotel, ["name", "area", "city", "room", "meal", "price", "images"]) || importedHotelOptions.length > 0,
-        destination: Boolean(inferDestination({}, state.flightImportData?.flight || {}, importedHotel)),
-        dates: Boolean(state.flightImportData?.flight?.departure || state.flightImportData?.flight?.arrival),
-        price: Boolean(toNumber(importedHotel.price, 0) || toNumber(state.flightImportData?.flight?.price, 0))
-      });
+      try {
+        const data = await postFiles("/api/import-hotel-image", files, 4);
+        if (!data) {
+          stopPulse();
+          return;
+        }
+        state.hotelImportData = data;
+        const importedHotel = data.hotel || data.offerHotel || {};
+        const importedHotelOptions = safeArray(data.hotelOptions || data.offerHotelOptions);
+        setImportReady({
+          flight: Boolean(state.flightImportData),
+          hotel: hasMeaningfulObject(importedHotel, ["name", "area", "city", "room", "meal", "price", "images"]) || importedHotelOptions.length > 0,
+          destination: Boolean(inferDestination({}, state.flightImportData?.flight || {}, importedHotel)),
+          dates: Boolean(state.flightImportData?.flight?.departure || state.flightImportData?.flight?.arrival),
+          price: Boolean(toNumber(importedHotel.price, 0) || toNumber(state.flightImportData?.flight?.price, 0))
+        });
+        finishPulse();
+      } catch (error) {
+        stopPulse();
+        throw error;
+      }
     }
 
     async function generateProposal() {
       if (!generateButton || generateButton.disabled) return;
       try {
         generateButton.disabled = true;
+        startPulse("proposal");
         setMessage("Generating proposal...", "working");
         const offerService = window.GT63CanonicalOfferService;
         if (!offerService?.saveCanonicalOffer) {
@@ -635,9 +676,11 @@
         setGeneratedLinks(result.offer?.id, result.clientLink, result.pdfLink);
         updateProposalPreview(result.offer);
         setMessage("Proposal ready.", "info");
+        finishPulse();
         loadProposalWork();
         document.getElementById("preview")?.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (error) {
+        stopPulse();
         setMessage(error.message || "Proposal generation failed.", "error");
         generateButton.disabled = false;
       }
