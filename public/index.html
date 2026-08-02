@@ -31,7 +31,11 @@
       --surface-border-soft: rgba(86, 113, 166, 0.20);
       --surface-shadow: 0 28px 86px rgba(0, 0, 0, 0.32);
       --surface-shadow-soft: 0 18px 54px rgba(0, 0, 0, 0.22);
-      --max: 1180px;
+      --surface-glass: rgba(7, 15, 31, 0.72);
+      --surface-glass-strong: rgba(8, 18, 38, 0.88);
+      --glow-cyan-soft: 0 0 42px rgba(0, 212, 255, 0.18);
+      --glow-cyan-strong: 0 0 66px rgba(0, 212, 255, 0.34);
+      --max: 1240px;
       --ease: cubic-bezier(.2, .8, .2, 1);
     }
 
@@ -48,9 +52,10 @@
       margin: 0;
       min-height: 100vh;
       background:
-        radial-gradient(circle at 12% -8%, rgba(0, 212, 255, 0.09), transparent 30%),
-        radial-gradient(circle at 82% 4%, rgba(92, 85, 255, 0.07), transparent 28%),
-        linear-gradient(180deg, #081123 0%, #050A15 100%);
+        radial-gradient(circle at 8% -8%, rgba(0, 212, 255, 0.10), transparent 28%),
+        radial-gradient(circle at 82% 3%, rgba(92, 85, 255, 0.06), transparent 26%),
+        radial-gradient(ellipse at 50% 0%, rgba(15, 35, 70, 0.48), transparent 58%),
+        linear-gradient(180deg, #071021 0%, #050913 100%);
       color: var(--text);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       letter-spacing: 0;
@@ -81,16 +86,16 @@
       position: sticky;
       top: 0;
       z-index: 20;
-      border-bottom: 1px solid rgba(38, 58, 92, 0.58);
-      background: rgba(6, 13, 27, 0.78);
-      backdrop-filter: blur(22px);
+      border-bottom: 1px solid rgba(48, 72, 112, 0.42);
+      background: rgba(5, 11, 24, 0.76);
+      backdrop-filter: blur(24px);
     }
 
     .nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      min-height: 82px;
+      min-height: 76px;
       gap: 28px;
     }
 
@@ -181,42 +186,44 @@
     .hero {
       position: relative;
       overflow: hidden;
-      padding: 42px 0 58px;
+      padding: 36px 0 58px;
     }
 
     .hero::before {
       content: "";
       position: absolute;
       inset: -20% -10% auto;
-      height: 380px;
+      height: 460px;
       background:
-        radial-gradient(circle at 72% 38%, rgba(0, 212, 255, 0.11), transparent 28%),
-        radial-gradient(circle at 45% 18%, rgba(93, 108, 255, 0.08), transparent 24%);
+        radial-gradient(circle at 72% 34%, rgba(0, 212, 255, 0.14), transparent 26%),
+        radial-gradient(circle at 45% 18%, rgba(93, 108, 255, 0.07), transparent 22%),
+        linear-gradient(180deg, rgba(0, 212, 255, 0.035), transparent 72%);
       pointer-events: none;
     }
 
     .hero-shell {
       position: relative;
       display: grid;
-      gap: 28px;
+      gap: 18px;
     }
 
     .hero-banner {
       position: relative;
       display: grid;
-      grid-template-columns: minmax(390px, 0.96fr) minmax(390px, 1.04fr);
+      grid-template-columns: minmax(400px, 0.92fr) minmax(460px, 1.08fr);
       align-items: center;
-      min-height: 204px;
+      min-height: 246px;
       overflow: hidden;
       border: 1px solid var(--surface-border);
-      border-radius: var(--radius-card);
-      padding: 40px 46px;
+      border-radius: 16px;
+      padding: 42px 48px;
       background:
-        radial-gradient(circle at 86% 38%, rgba(0, 212, 255, 0.17), transparent 28%),
-        radial-gradient(circle at 64% 112%, rgba(93, 108, 255, 0.10), transparent 34%),
-        linear-gradient(90deg, rgba(7, 13, 27, 0.98), rgba(9, 18, 39, 0.82)),
-        linear-gradient(180deg, rgba(13, 25, 49, 0.98), rgba(5, 10, 21, 0.98));
-      box-shadow: var(--surface-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.045);
+        radial-gradient(circle at 80% 36%, rgba(0, 212, 255, 0.22), transparent 22%),
+        radial-gradient(ellipse at 56% 114%, rgba(0, 108, 185, 0.20), transparent 34%),
+        radial-gradient(circle at 38% 18%, rgba(93, 108, 255, 0.08), transparent 26%),
+        linear-gradient(90deg, rgba(5, 11, 25, 0.99), rgba(8, 18, 38, 0.90)),
+        linear-gradient(180deg, rgba(13, 26, 52, 0.98), rgba(4, 9, 20, 0.99));
+      box-shadow: 0 34px 100px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.055);
     }
 
     .hero-banner::before {
@@ -224,11 +231,12 @@
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(90deg, rgba(255, 255, 255, 0.030) 1px, transparent 1px),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.024) 1px, transparent 1px);
-      background-size: 56px 56px;
-      mask-image: linear-gradient(90deg, transparent, #000 16%, #000 68%, transparent);
-      opacity: 0.18;
+        radial-gradient(circle at 76% 40%, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.020) 1px, transparent 1px);
+      background-size: 32px 32px, 58px 58px, 58px 58px;
+      mask-image: linear-gradient(90deg, transparent, #000 12%, #000 76%, transparent);
+      opacity: 0.20;
       pointer-events: none;
     }
 
@@ -248,15 +256,15 @@
     .banner-line,
     .banner-accent {
       margin: 0;
-      font-size: clamp(27px, 2.45vw, 36px);
-      line-height: 1.16;
-      font-weight: 820;
+      font-size: clamp(29px, 2.6vw, 42px);
+      line-height: 1.12;
+      font-weight: 790;
     }
 
     .banner-accent {
       margin-top: 6px;
       color: var(--accent);
-      text-shadow: 0 0 36px rgba(0, 212, 255, 0.24);
+      text-shadow: 0 0 42px rgba(0, 212, 255, 0.30);
     }
 
     .banner-note {
@@ -269,10 +277,10 @@
     .direction-trail {
       position: relative;
       z-index: 1;
-      min-height: 142px;
+      min-height: 184px;
     }
 
-    .direction-trail svg {
+    .direction-trail > svg {
       position: absolute;
       inset: 0;
       width: 100%;
@@ -281,12 +289,12 @@
     }
 
     .trail-aura {
-      filter: blur(6px);
-      opacity: 0.34;
+      filter: blur(8px);
+      opacity: 0.42;
     }
 
     .trail-foundation {
-      opacity: 0.22;
+      opacity: 0.28;
     }
 
     .trail-glow,
@@ -296,25 +304,60 @@
     }
 
     .trail-glow {
-      filter: drop-shadow(0 0 14px rgba(0, 212, 255, 0.48));
-      opacity: 0.82;
+      filter: drop-shadow(0 0 16px rgba(0, 212, 255, 0.54));
+      opacity: 0.88;
     }
 
     .trail-core {
-      filter: drop-shadow(0 0 7px rgba(115, 242, 255, 0.40));
+      filter: drop-shadow(0 0 9px rgba(115, 242, 255, 0.48));
       opacity: 0.92;
     }
 
     .trail-dot {
-      filter: drop-shadow(0 0 22px rgba(0, 212, 255, 0.72));
+      filter: drop-shadow(0 0 28px rgba(0, 212, 255, 0.80));
       transform-box: fill-box;
       transform-origin: center;
     }
 
     .trail-ring {
-      opacity: 0.24;
+      opacity: 0.34;
       transform-box: fill-box;
       transform-origin: center;
+    }
+
+    .trail-north-star {
+      position: absolute;
+      right: 38px;
+      top: 16px;
+      display: grid;
+      justify-items: center;
+      width: 104px;
+      color: var(--text);
+      text-align: center;
+      filter: drop-shadow(0 0 22px rgba(0, 212, 255, 0.24));
+      z-index: 2;
+    }
+
+    .trail-north-star svg {
+      width: 70px;
+      height: 70px;
+      color: #DDFBFF;
+    }
+
+    .trail-north-star strong {
+      margin-top: 4px;
+      font-size: 22px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .trail-north-star span {
+      margin-top: 5px;
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
     }
 
     body[data-gt63-pulse="ai"] .trail-glow,
@@ -386,8 +429,8 @@
 
     .hero-grid {
       display: grid;
-      grid-template-columns: minmax(0, 0.86fr) minmax(420px, 1.14fr);
-      gap: 24px;
+      grid-template-columns: minmax(320px, 0.70fr) minmax(560px, 1.30fr);
+      gap: 18px;
       align-items: stretch;
     }
 
@@ -505,7 +548,7 @@
       justify-content: center;
       min-height: 48px;
       border: 1px solid rgba(255, 255, 255, 0);
-      border-radius: var(--radius);
+      border-radius: 10px;
       padding: 0 18px;
       color: var(--text);
       background: transparent;
@@ -531,14 +574,14 @@
 
     .button-primary {
       color: #061120;
-      background: linear-gradient(180deg, #7AF0FF 0%, #21D8F6 100%);
-      box-shadow: 0 16px 40px rgba(0, 212, 255, 0.17), inset 0 1px 0 rgba(255, 255, 255, 0.48);
+      background: linear-gradient(180deg, #89F3FF 0%, #21D8F6 52%, #12BDE2 100%);
+      box-shadow: 0 18px 46px rgba(0, 212, 255, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.54);
     }
 
     .button-secondary {
       border-color: rgba(45, 68, 108, 0.78);
       color: var(--muted-strong);
-      background: rgba(13, 26, 49, 0.62);
+      background: rgba(9, 20, 42, 0.68);
     }
 
     .button-quiet {
@@ -581,13 +624,13 @@
       align-content: stretch;
       gap: 20px;
       min-width: 0;
-      border: 1px solid rgba(65, 87, 132, 0.34);
+      border: 1px solid var(--surface-border);
       border-radius: var(--radius-card);
-      padding: 30px;
+      padding: 32px;
       background:
-        radial-gradient(circle at 0% 0%, rgba(0, 212, 255, 0.06), transparent 34%),
-        linear-gradient(180deg, rgba(12, 25, 48, 0.76), rgba(7, 13, 27, 0.70));
-      box-shadow: var(--surface-shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        radial-gradient(circle at 10% 0%, rgba(0, 212, 255, 0.08), transparent 30%),
+        linear-gradient(180deg, rgba(12, 25, 48, 0.78), rgba(5, 12, 26, 0.76));
+      box-shadow: var(--surface-shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.035);
     }
 
     .home-date {
@@ -601,8 +644,8 @@
 
     .home-greeting {
       margin: 0;
-      font-size: clamp(40px, 4.4vw, 62px);
-      line-height: 0.98;
+      font-size: clamp(42px, 4.2vw, 64px);
+      line-height: 0.96;
       font-weight: 840;
       overflow-wrap: anywhere;
     }
@@ -611,7 +654,7 @@
       max-width: 520px;
       margin: 18px 0 0;
       color: var(--muted);
-      font-size: 17px;
+      font-size: 16px;
       line-height: 1.6;
     }
 
@@ -624,7 +667,7 @@
 
     .command-surface {
       display: grid;
-      gap: 16px;
+      gap: 18px;
       min-width: 0;
     }
 
@@ -635,14 +678,15 @@
       border: 1px solid var(--surface-border);
       border-radius: var(--radius-card);
       background:
-        linear-gradient(180deg, rgba(13, 26, 49, 0.88), rgba(7, 13, 27, 0.94));
-      box-shadow: var(--surface-shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        radial-gradient(circle at 100% 0%, rgba(0, 212, 255, 0.055), transparent 28%),
+        linear-gradient(180deg, rgba(12, 25, 50, 0.86), rgba(5, 12, 26, 0.94));
+      box-shadow: var(--surface-shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.035);
     }
 
     .next-action-card {
       position: relative;
       overflow: hidden;
-      padding: 30px;
+      padding: 32px;
       border-color: rgba(0, 212, 255, 0.24);
     }
 
@@ -651,7 +695,7 @@
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(circle at 92% 8%, rgba(0, 212, 255, 0.12), transparent 30%),
+        radial-gradient(circle at 92% 8%, rgba(0, 212, 255, 0.14), transparent 30%),
         radial-gradient(circle at 4% 16%, rgba(117, 241, 255, 0.06), transparent 26%),
         linear-gradient(90deg, rgba(0, 212, 255, 0.055), transparent 38%);
       pointer-events: none;
@@ -673,8 +717,8 @@
       position: relative;
       z-index: 1;
       margin: 0;
-      font-size: clamp(28px, 3vw, 38px);
-      line-height: 1.08;
+      font-size: clamp(30px, 3vw, 40px);
+      line-height: 1.06;
       overflow-wrap: anywhere;
     }
 
@@ -736,7 +780,7 @@
 
     .readiness-card,
     .continue-card {
-      padding: 20px;
+      padding: 22px;
     }
 
     .readiness-grid {
@@ -748,11 +792,11 @@
     .readiness-item {
       position: relative;
       min-width: 0;
-      min-height: 108px;
+      min-height: 112px;
       border: 1px solid var(--surface-border-soft);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 15px;
-      background: rgba(7, 13, 27, 0.38);
+      background: rgba(6, 14, 30, 0.46);
       overflow: hidden;
       transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
     }
@@ -760,7 +804,7 @@
     .readiness-item:hover {
       transform: translateY(-1px);
       border-color: rgba(0, 212, 255, 0.20);
-      background: rgba(10, 22, 42, 0.56);
+      background: rgba(10, 22, 42, 0.60);
     }
 
     .readiness-item::before {
@@ -774,7 +818,7 @@
       background:
         radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.18), transparent 58%),
         rgba(0, 212, 255, 0.05);
-      box-shadow: 0 0 18px rgba(0, 212, 255, 0.07);
+      box-shadow: 0 0 22px rgba(0, 212, 255, 0.09);
     }
 
     .readiness-item span {
@@ -804,9 +848,9 @@
       gap: 14px;
       align-items: center;
       border: 1px solid var(--surface-border-soft);
-      border-radius: 10px;
-      padding: 14px;
-      background: rgba(7, 13, 27, 0.36);
+      border-radius: 12px;
+      padding: 15px;
+      background: rgba(6, 14, 30, 0.44);
       transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
     }
 
@@ -1238,7 +1282,22 @@
       }
 
       .direction-trail {
-        min-height: 72px;
+        min-height: 104px;
+      }
+
+      .trail-north-star {
+        right: 4px;
+        top: -2px;
+        width: 92px;
+      }
+
+      .trail-north-star svg {
+        width: 56px;
+        height: 56px;
+      }
+
+      .trail-north-star strong {
+        font-size: 17px;
       }
 
       .hero-grid,
@@ -1302,7 +1361,7 @@
 
       .banner-line,
       .banner-accent {
-        font-size: 22px;
+        font-size: 21px;
       }
 
       .banner-note {
@@ -1310,7 +1369,26 @@
       }
 
       .direction-trail {
-        min-height: 42px;
+        min-height: 72px;
+      }
+
+      .trail-north-star {
+        right: 0;
+        top: -4px;
+        width: 64px;
+      }
+
+      .trail-north-star svg {
+        width: 38px;
+        height: 38px;
+      }
+
+      .trail-north-star strong {
+        font-size: 12px;
+      }
+
+      .trail-north-star span {
+        font-size: 7px;
       }
 
       .home-context,
@@ -1506,6 +1584,15 @@
                 </linearGradient>
               </defs>
             </svg>
+            <div class="trail-north-star">
+              <svg viewBox="0 0 64 64" fill="none">
+                <path d="M32 2 39.8 24.2 62 32 39.8 39.8 32 62 24.2 39.8 2 32 24.2 24.2 32 2Z" stroke="currentColor" stroke-width="1.2" />
+                <path d="M32 10 36.8 27.2 54 32 36.8 36.8 32 54 27.2 36.8 10 32 27.2 27.2 32 10Z" fill="currentColor" />
+                <path d="M32 2 32 62 M2 32 62 32" stroke="rgba(0, 212, 255, 0.42)" stroke-width=".8" />
+              </svg>
+              <strong>GT63</strong>
+              <span>North Star</span>
+            </div>
           </div>
         </section>
 
