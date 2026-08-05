@@ -1,0 +1,13 @@
+{
+  "maxFiles": 500,
+  "maxFileBytes": 200000,
+  "includeExtensions": [".js", ".json", ".md", ".html", ".css"],
+  "ignoreDirectories": [
+    ".git",
+    "node_modules",
+    "storage/generated",
+    "tmp",
+    "tmp_pdf_review",
+    ".codex-remote-attachments"
+  ]
+}

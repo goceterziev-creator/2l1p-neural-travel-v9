@@ -1,0 +1,4 @@
+{
+  "workflow": "local-repository-bootstrap",
+  "repositoryPath": "."
+}
