@@ -6,6 +6,8 @@ const path = require("path");
 const { scanRepository } = require("./repository-scanner");
 const { extractEvidence } = require("./evidence-extractor");
 const { classifyEvidence } = require("./evidence-classifier");
+const { discoverDocuments } = require("./document-discovery");
+const { classifyDocuments } = require("./document-classifier");
 
 function normalizePath(absolutePath) {
   return path.resolve(absolutePath).split(path.sep).join("/");
@@ -115,6 +117,43 @@ function executeWorkflow(config, input, workspaceRoot) {
     classifications = classifyEvidence(evidence);
   } catch (error) {
     return failurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Evidence classification failed.");
+  }
+
+  if (workflow === "local-document-report") {
+    let discoveryResult;
+    try {
+      discoveryResult = discoverDocuments(evidence);
+    } catch (error) {
+      return failurePayload(workflow, "EVIDENCE_EXTRACTION_FAILED", "Document discovery failed.");
+    }
+
+    let documentClassification;
+    try {
+      documentClassification = classifyDocuments(discoveryResult.documents);
+    } catch (error) {
+      return failurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Document classification failed.");
+    }
+
+    return {
+      status: "PASS",
+      workflow,
+      repository,
+      scan: scanResult.scan,
+      logs: [
+        {
+          level: "INFO",
+          message: "GT63 Machine document report workflow completed."
+        }
+      ],
+      failures: [],
+      machineReport: {
+        documentsFound: documentClassification.documents.length,
+        categories: documentClassification.categories,
+        duplicates: discoveryResult.duplicates,
+        warnings: discoveryResult.warnings,
+        documents: documentClassification.documents
+      }
+    };
   }
 
   return {
