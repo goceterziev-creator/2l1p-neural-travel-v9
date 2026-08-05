@@ -9,6 +9,7 @@ const { classifyEvidence } = require("./evidence-classifier");
 const { discoverDocuments } = require("./document-discovery");
 const { classifyDocuments } = require("./document-classifier");
 const { mapDocumentRelationships } = require("./relationship-mapper");
+const { generateSummary } = require("./summary-generator");
 
 function normalizePath(absolutePath) {
   return path.resolve(absolutePath).split(path.sep).join("/");
@@ -187,6 +188,46 @@ function executeWorkflow(config, input, workspaceRoot) {
       summary: graphReport.summary,
       nodes: graphReport.nodes,
       relationships: graphReport.relationships,
+      warnings: graphReport.warnings,
+      failures: []
+    };
+  }
+
+  if (workflow === "machine-graph-summary") {
+    let discoveryResult;
+    try {
+      discoveryResult = discoverDocuments(evidence);
+    } catch (error) {
+      return failurePayload(workflow, "EVIDENCE_EXTRACTION_FAILED", "Document discovery failed.");
+    }
+
+    let documentClassification;
+    try {
+      documentClassification = classifyDocuments(discoveryResult.documents);
+    } catch (error) {
+      return failurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Document classification failed.");
+    }
+
+    let graphReport;
+    try {
+      graphReport = mapDocumentRelationships(repositoryRoot, documentClassification.documents);
+    } catch (error) {
+      return failurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Relationship mapping failed.");
+    }
+
+    let machineSummary;
+    try {
+      machineSummary = generateSummary(graphReport);
+    } catch (error) {
+      return failurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Summary generation failed.");
+    }
+
+    return {
+      status: "PASS",
+      workflow,
+      repository,
+      scan: scanResult.scan,
+      summary: machineSummary,
       warnings: graphReport.warnings,
       failures: []
     };
