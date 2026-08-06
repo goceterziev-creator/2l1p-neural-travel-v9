@@ -10,6 +10,7 @@ const { discoverDocuments } = require("./document-discovery");
 const { classifyDocuments } = require("./document-classifier");
 const { mapDocumentRelationships } = require("./relationship-mapper");
 const { generateSummary } = require("./summary-generator");
+const { buildCanonicalCandidateModel } = require("./canonical-candidate-builder");
 
 function normalizePath(absolutePath) {
   return path.resolve(absolutePath).split(path.sep).join("/");
@@ -229,6 +230,55 @@ function executeWorkflow(config, input, workspaceRoot) {
       scan: scanResult.scan,
       summary: machineSummary,
       warnings: graphReport.warnings,
+      failures: []
+    };
+  }
+
+  if (workflow === "canonical-candidate-builder") {
+    let discoveryResult;
+    try {
+      discoveryResult = discoverDocuments(evidence);
+    } catch (error) {
+      return failurePayload(workflow, "EVIDENCE_EXTRACTION_FAILED", "Document discovery failed.");
+    }
+
+    let documentClassification;
+    try {
+      documentClassification = classifyDocuments(discoveryResult.documents);
+    } catch (error) {
+      return failurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Document classification failed.");
+    }
+
+    let graphReport;
+    try {
+      graphReport = mapDocumentRelationships(repositoryRoot, documentClassification.documents);
+    } catch (error) {
+      return failurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Relationship mapping failed.");
+    }
+
+    let machineSummary;
+    try {
+      machineSummary = generateSummary(graphReport);
+    } catch (error) {
+      return failurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Summary generation failed.");
+    }
+
+    let candidateModel;
+    try {
+      candidateModel = buildCanonicalCandidateModel({
+        ...graphReport,
+        summary: machineSummary
+      });
+    } catch (error) {
+      return failurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Canonical candidate build failed.");
+    }
+
+    return {
+      status: "PASS",
+      workflow,
+      repository,
+      scan: scanResult.scan,
+      candidateModel,
       failures: []
     };
   }
