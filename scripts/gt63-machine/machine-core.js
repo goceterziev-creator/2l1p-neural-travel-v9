@@ -11,6 +11,7 @@ const { classifyDocuments } = require("./document-classifier");
 const { mapDocumentRelationships } = require("./relationship-mapper");
 const { generateSummary } = require("./summary-generator");
 const { buildCanonicalCandidateModel } = require("./canonical-candidate-builder");
+const { buildCanonicalReview } = require("./candidate-reviewer");
 
 function normalizePath(absolutePath) {
   return path.resolve(absolutePath).split(path.sep).join("/");
@@ -80,12 +81,29 @@ function failurePayload(workflow, code, message) {
   };
 }
 
+function workflowFailurePayload(workflow, code, message) {
+  if (workflow === "candidate-review-resolution") {
+    return {
+      status: "FAIL",
+      workflow,
+      authority: "NONE",
+      failures: [
+        {
+          code,
+          message
+        }
+      ]
+    };
+  }
+  return failurePayload(workflow, code, message);
+}
+
 function executeWorkflow(config, input, workspaceRoot) {
   const workflow = input && input.workflow;
   const configuredPath = input && input.repositoryPath;
 
   if (!configuredPath || typeof configuredPath !== "string") {
-    return failurePayload(workflow, "INPUT_PATH_INVALID", "Input repositoryPath must be a string.");
+    return workflowFailurePayload(workflow, "INPUT_PATH_INVALID", "Input repositoryPath must be a string.");
   }
 
   const repositoryRoot = path.resolve(workspaceRoot, configuredPath);
@@ -93,7 +111,7 @@ function executeWorkflow(config, input, workspaceRoot) {
   const leavesWorkspace = relativeToWorkspace.startsWith("..") || path.isAbsolute(relativeToWorkspace);
 
   if (leavesWorkspace || !fs.existsSync(repositoryRoot) || !fs.statSync(repositoryRoot).isDirectory()) {
-    return failurePayload(workflow, "INPUT_PATH_INVALID", "Input repositoryPath must resolve to an existing workspace directory.");
+    return workflowFailurePayload(workflow, "INPUT_PATH_INVALID", "Input repositoryPath must resolve to an existing workspace directory.");
   }
 
   const repository = {
@@ -105,21 +123,21 @@ function executeWorkflow(config, input, workspaceRoot) {
   try {
     scanResult = scanRepository(repositoryRoot, config);
   } catch (error) {
-    return failurePayload(workflow, "REPOSITORY_SCAN_FAILED", "Repository scan failed.");
+    return workflowFailurePayload(workflow, "REPOSITORY_SCAN_FAILED", "Repository scan failed.");
   }
 
   let evidence;
   try {
     evidence = extractEvidence(scanResult.files);
   } catch (error) {
-    return failurePayload(workflow, "EVIDENCE_EXTRACTION_FAILED", "Evidence extraction failed.");
+    return workflowFailurePayload(workflow, "EVIDENCE_EXTRACTION_FAILED", "Evidence extraction failed.");
   }
 
   let classifications;
   try {
     classifications = classifyEvidence(evidence);
   } catch (error) {
-    return failurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Evidence classification failed.");
+    return workflowFailurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Evidence classification failed.");
   }
 
   if (workflow === "local-document-report") {
@@ -279,6 +297,65 @@ function executeWorkflow(config, input, workspaceRoot) {
       repository,
       scan: scanResult.scan,
       candidateModel,
+      failures: []
+    };
+  }
+
+  if (workflow === "candidate-review-resolution") {
+    let candidateModel;
+    if (Object.prototype.hasOwnProperty.call(input, "candidateModel")) {
+      candidateModel = input.candidateModel;
+    } else {
+      let discoveryResult;
+      try {
+        discoveryResult = discoverDocuments(evidence);
+      } catch (error) {
+        return workflowFailurePayload(workflow, "EVIDENCE_EXTRACTION_FAILED", "Document discovery failed.");
+      }
+
+      let documentClassification;
+      try {
+        documentClassification = classifyDocuments(discoveryResult.documents);
+      } catch (error) {
+        return workflowFailurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Document classification failed.");
+      }
+
+      let graphReport;
+      try {
+        graphReport = mapDocumentRelationships(repositoryRoot, documentClassification.documents);
+      } catch (error) {
+        return workflowFailurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Relationship mapping failed.");
+      }
+
+      let machineSummary;
+      try {
+        machineSummary = generateSummary(graphReport);
+      } catch (error) {
+        return workflowFailurePayload(workflow, "EVIDENCE_CLASSIFICATION_FAILED", "Summary generation failed.");
+      }
+
+      try {
+        candidateModel = buildCanonicalCandidateModel({
+          ...graphReport,
+          summary: machineSummary
+        });
+      } catch (error) {
+        return workflowFailurePayload(workflow, "CANDIDATE_MODEL_BUILD_FAILED", "Canonical candidate build failed.");
+      }
+    }
+
+    const reviewResult = buildCanonicalReview(candidateModel);
+    if (!reviewResult.ok) {
+      return workflowFailurePayload(workflow, reviewResult.failure, "Candidate model input is invalid.");
+    }
+
+    return {
+      status: "PASS",
+      workflow,
+      repository,
+      scan: scanResult.scan,
+      authority: "NONE",
+      canonicalReview: reviewResult.review,
       failures: []
     };
   }
