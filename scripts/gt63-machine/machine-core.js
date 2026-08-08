@@ -13,6 +13,7 @@ const { generateSummary } = require("./summary-generator");
 const { buildCanonicalCandidateModel } = require("./canonical-candidate-builder");
 const { buildCanonicalReview } = require("./candidate-reviewer");
 const { executeExternalArtifactIntake } = require("./external-artifact-intake");
+const { executeIntakeProcessingBridge } = require("./intake-processing-bridge");
 
 function normalizePath(absolutePath) {
   return path.resolve(absolutePath).split(path.sep).join("/");
@@ -104,6 +105,13 @@ function executeWorkflow(config, input, workspaceRoot) {
 
   if (workflow === "external-artifact-intake") {
     return executeExternalArtifactIntake(input, workspaceRoot);
+  }
+
+  if (workflow === "intake-processing-bridge") {
+    return executeIntakeProcessingBridge(config, input, workspaceRoot, (repositoryPath) => executeWorkflow(config, {
+      workflow: "local-repository-bootstrap",
+      repositoryPath
+    }, workspaceRoot));
   }
 
   const configuredPath = input && input.repositoryPath;
