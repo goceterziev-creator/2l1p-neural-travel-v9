@@ -12,6 +12,7 @@ const { mapDocumentRelationships } = require("./relationship-mapper");
 const { generateSummary } = require("./summary-generator");
 const { buildCanonicalCandidateModel } = require("./canonical-candidate-builder");
 const { buildCanonicalReview } = require("./candidate-reviewer");
+const { executeExternalArtifactIntake } = require("./external-artifact-intake");
 
 function normalizePath(absolutePath) {
   return path.resolve(absolutePath).split(path.sep).join("/");
@@ -100,6 +101,11 @@ function workflowFailurePayload(workflow, code, message) {
 
 function executeWorkflow(config, input, workspaceRoot) {
   const workflow = input && input.workflow;
+
+  if (workflow === "external-artifact-intake") {
+    return executeExternalArtifactIntake(input, workspaceRoot);
+  }
+
   const configuredPath = input && input.repositoryPath;
 
   if (!configuredPath || typeof configuredPath !== "string") {

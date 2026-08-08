@@ -1,0 +1,4 @@
+{
+  "workflow": "external-artifact-intake",
+  "externalSourcePath": "scripts/gt63-machine/fixtures/external-artifact-source"
+}

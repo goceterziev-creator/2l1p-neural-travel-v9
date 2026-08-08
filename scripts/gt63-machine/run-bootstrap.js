@@ -66,7 +66,7 @@ function main() {
 
   const result = executeWorkflow(configResult.value, inputResult.value, workspaceRoot);
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  process.exitCode = result.status === "PASS" ? 0 : 1;
+  process.exitCode = result.status === "PASS" || result.status === "PASS_WITH_WARNINGS" ? 0 : 1;
 }
 
 main();
