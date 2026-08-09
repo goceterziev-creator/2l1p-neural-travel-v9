@@ -1,0 +1,12 @@
+{
+  "workflow": "authority-aware-evidence-review",
+  "task": "Review GT63 Machine authority boundaries from repository evidence.",
+  "repositoryPath": ".",
+  "scope": {
+    "mode": "mixed",
+    "allowedSources": ["repository"],
+    "explicitPaths": [
+      "docs/gt63-machine"
+    ]
+  }
+}

@@ -14,6 +14,7 @@ const { buildCanonicalCandidateModel } = require("./canonical-candidate-builder"
 const { buildCanonicalReview } = require("./candidate-reviewer");
 const { executeExternalArtifactIntake } = require("./external-artifact-intake");
 const { executeIntakeProcessingBridge } = require("./intake-processing-bridge");
+const { executeAuthorityAwareEvidenceReview } = require("./authority-aware-review-packet");
 
 function normalizePath(absolutePath) {
   return path.resolve(absolutePath).split(path.sep).join("/");
@@ -112,6 +113,10 @@ function executeWorkflow(config, input, workspaceRoot) {
       workflow: "local-repository-bootstrap",
       repositoryPath
     }, workspaceRoot));
+  }
+
+  if (workflow === "authority-aware-evidence-review") {
+    return executeAuthorityAwareEvidenceReview(config, input, workspaceRoot);
   }
 
   const configuredPath = input && input.repositoryPath;

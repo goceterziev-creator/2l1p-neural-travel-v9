@@ -18,7 +18,7 @@ function shouldIgnore(relativeDirectory, ignoreDirectories) {
   });
 }
 
-function scanRepository(repositoryRoot, config) {
+function scanRepository(repositoryRoot, config, options) {
   const includeExtensions = Array.isArray(config.includeExtensions)
     ? config.includeExtensions.map(String).sort()
     : [];
@@ -36,7 +36,41 @@ function scanRepository(repositoryRoot, config) {
     ignoredDirectories: []
   };
   const ignoredDirectorySet = new Set();
+  const seenFiles = new Set();
   const files = [];
+
+  function addFile(absolutePath, relativePath) {
+    if (scan.truncated || seenFiles.has(relativePath)) {
+      return;
+    }
+
+    const extension = path.extname(relativePath).toLowerCase();
+    if (!includeExtensions.includes(extension)) {
+      scan.filesSkipped += 1;
+      return;
+    }
+
+    const stat = fs.statSync(absolutePath);
+    if (stat.size > maxFileBytes) {
+      scan.filesSkipped += 1;
+      return;
+    }
+
+    if (scan.filesScanned >= maxFiles) {
+      scan.truncated = true;
+      scan.truncationReason = "MAX_FILES";
+      return;
+    }
+
+    seenFiles.add(relativePath);
+    files.push({
+      absolutePath,
+      path: relativePath,
+      extension,
+      sizeBytes: stat.size
+    });
+    scan.filesScanned += 1;
+  }
 
   function walk(directory) {
     if (scan.truncated) {
@@ -68,35 +102,39 @@ function scanRepository(repositoryRoot, config) {
         continue;
       }
 
-      const extension = path.extname(entry.name).toLowerCase();
-      if (!includeExtensions.includes(extension)) {
-        scan.filesSkipped += 1;
-        continue;
-      }
-
-      const stat = fs.statSync(absolutePath);
-      if (stat.size > maxFileBytes) {
-        scan.filesSkipped += 1;
-        continue;
-      }
-
-      if (scan.filesScanned >= maxFiles) {
-        scan.truncated = true;
-        scan.truncationReason = "MAX_FILES";
-        return;
-      }
-
-      files.push({
-        absolutePath,
-        path: relativePath,
-        extension,
-        sizeBytes: stat.size
-      });
-      scan.filesScanned += 1;
+      addFile(absolutePath, relativePath);
     }
   }
 
-  walk(repositoryRoot);
+  const scopePaths = options && Array.isArray(options.scopePaths)
+    ? Array.from(new Set(options.scopePaths.map(String))).sort()
+    : [];
+
+  if (scopePaths.length > 0) {
+    for (const scopePath of scopePaths) {
+      if (scan.truncated) {
+        break;
+      }
+      const absoluteScopePath = path.resolve(repositoryRoot, ...scopePath.split("/"));
+      const relativeScopePath = toRepositoryPath(repositoryRoot, absoluteScopePath);
+      const stat = fs.statSync(absoluteScopePath);
+      if (stat.isDirectory()) {
+        if (shouldIgnore(relativeScopePath, ignoreDirectories)) {
+          ignoredDirectorySet.add(relativeScopePath);
+          scan.filesSkipped += 1;
+          continue;
+        }
+        walk(absoluteScopePath);
+      } else if (stat.isFile()) {
+        addFile(absoluteScopePath, relativeScopePath);
+      } else {
+        scan.filesSkipped += 1;
+      }
+    }
+  } else {
+    walk(repositoryRoot);
+  }
+
   scan.ignoredDirectories = Array.from(ignoredDirectorySet).sort();
   files.sort((left, right) => left.path.localeCompare(right.path));
 
