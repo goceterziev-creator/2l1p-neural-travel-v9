@@ -172,7 +172,7 @@ It must not receive:
 {
   "capability": "semantic-evidence",
   "schemaVersion": "1.0",
-  "rulesetVersion": "semantic-evidence-v1.0.0",
+  "rulesetVersion": "semantic-evidence-v1.0.1",
   "provenanceScopes": [
     {
       "scopeId": "scope:<stable-id>",
@@ -322,14 +322,78 @@ It must not receive:
 
 Temporal frames are normalized input. The resolver MUST NOT infer temporal frame from filesystem modification time, ZIP timestamp, filename version, newest-looking document, lexical ordering, process clock, or current system date.
 
-`temporalFrameId` is a stable normalized identifier for one caller-supplied temporal frame. `start` and `end`, when present, MUST be UTC ISO-8601 instants using `YYYY-MM-DDTHH:mm:ssZ`. V1 does not support local time zones, partial dates, relative dates, or implementation-local date parsing inside temporalFrames. Unsupported temporal values produce `SCHEMA_UNSUPPORTED_VALUE`.
+`temporalFrameId` is a stable normalized identifier for one caller-supplied temporal frame. A normalized `temporalFrames` collection MUST NOT contain the same `temporalFrameId` more than once. Any duplicate `temporalFrameId` in one normalized collection is schema-invalid whether the duplicate records are semantically identical, materially conflicting, repeated twice, or repeated three or more times.
 
-Temporal frame comparison is a closed V1 result:
+Duplicate `temporalFrameId` failure is deterministic:
 
-- `SAME_FRAME`: both references name the same temporalFrameId.
-- `DIFFERENT_FRAME`: both references exist, both temporalFrames are valid, and temporalFrameId differs.
-- `NOT_COMPARABLE`: both references exist but their frameType or scope relationship makes comparison out of V1 scope.
-- `UNKNOWN`: either reference is null where required, missing, invalid, or not resolvable.
+1. Inspect the complete normalized `temporalFrames` collection.
+2. Identify every `temporalFrameId` occurring more than once.
+3. Normalize duplicated IDs using the normalized string assumptions already applicable to normalized input.
+4. Sort duplicated IDs by frozen canonical Unicode code-point ordering.
+5. Select the first canonical duplicated ID.
+6. Emit exactly `SCHEMA_UNSUPPORTED_VALUE:duplicateTemporalFrameId:<selected-id>`.
+
+Implementations MUST NOT deduplicate, choose first record, choose last record, merge records, or make duplicate handling depend on array order, first duplicate encountered, last duplicate encountered, record contents, filesystem order, locale, or host environment.
+
+Duplicate-ID adversarial table:
+
+```text
+[A, A] -> SCHEMA_UNSUPPORTED_VALUE:duplicateTemporalFrameId:A
+[A1, A2 conflicting] -> SCHEMA_UNSUPPORTED_VALUE:duplicateTemporalFrameId:A
+[A, A, A] -> SCHEMA_UNSUPPORTED_VALUE:duplicateTemporalFrameId:A
+[A, B, A] -> SCHEMA_UNSUPPORTED_VALUE:duplicateTemporalFrameId:A
+[A, B, A, B] -> SCHEMA_UNSUPPORTED_VALUE:duplicateTemporalFrameId:<canonical-min(A,B)>
+[B, A, B, A] -> same exact error as [A, B, A, B]
+[C, B, A, C, B, A] -> SCHEMA_UNSUPPORTED_VALUE:duplicateTemporalFrameId:<canonical-min(A,B,C)>
+```
+
+`start` and `end`, when present, MUST be UTC ISO-8601 instants using `YYYY-MM-DDTHH:mm:ssZ`. V1 does not support local time zones, partial dates, relative dates, or implementation-local date parsing inside temporalFrames. Unsupported temporal values produce `SCHEMA_UNSUPPORTED_VALUE`.
+
+Temporal frame comparison is a closed V1.0.1 result:
+
+- `SAME_FRAME`: both references resolve to the same valid `temporalFrameId` in a duplicate-free normalized `temporalFrames` collection.
+- `DIFFERENT_FRAME`: both references resolve to valid temporal frames in the same duplicate-free normalized `temporalFrames` collection, their `temporalFrameId` values differ, neither resolved frame has `frameType = UNKNOWN_FRAME`, and `left.scopeId == right.scopeId`.
+- `NOT_COMPARABLE`: both references resolve to valid temporal frames and the normalized comparison input explicitly establishes a V1-defined non-comparability condition. Under the closed Unit 3 V1.0.1 comparison input, no positive `NOT_COMPARABLE` condition is currently reachable.
+- `UNKNOWN`: either reference is null where required, missing, invalid, not resolvable, the `temporalFrames` collection is invalid at the comparison boundary, either resolved frame has `frameType = UNKNOWN_FRAME` after the resolved IDs are known to differ, or the normalized input lacks information required to determine comparability.
+
+For Unit 3 V1.0.1 temporal-frame comparison, the comparison input is only:
+
+```text
+left temporalFrameRef
+right temporalFrameRef
+temporalFrames[]
+rulesetVersion
+```
+
+Unit 3 comparison does not consume `provenanceScopes` and MUST NOT infer provenance-scope relationship beyond the raw fields present in the referenced temporal frames. Raw `scopeId` equality establishes that both normalized records belong to the same caller-supplied scope identifier for this comparison. Raw `scopeId` inequality does not establish comparability and does not establish explicit non-comparability. If provenance-scope relationship would be required and no normalized provenance-scope relationship is supplied to this Unit 3 input, the required result is `UNKNOWN`.
+
+Reference identity is evaluated before frame-type comparability. If both references resolve to the same valid `temporalFrameId`, the result is `SAME_FRAME` regardless of `frameType`; this includes `UNKNOWN_FRAME X` compared with `UNKNOWN_FRAME X`. The `UNKNOWN_FRAME` rule applies only after the resolved `temporalFrameId` values are known to be different. Therefore `UNKNOWN_FRAME X` compared with `UNKNOWN_FRAME Y` returns `UNKNOWN`, and `CURRENT_BASELINE X` compared with `UNKNOWN_FRAME Y` returns `UNKNOWN`.
+
+Temporal comparison evaluation order is deterministic:
+
+1. Validate `rulesetVersion`.
+2. Validate the duplicate-free `temporalFrames` collection.
+3. Resolve both refs.
+4. If either ref is unresolved, null where required, or invalid, return `UNKNOWN`.
+5. If both refs resolve to the same valid `temporalFrameId`, return `SAME_FRAME`.
+6. If resolved IDs differ and either frame has `frameType = UNKNOWN_FRAME`, return `UNKNOWN`.
+7. If resolved IDs differ and `left.scopeId == right.scopeId`, return `DIFFERENT_FRAME`.
+8. If resolved IDs differ and `left.scopeId != right.scopeId`, return `UNKNOWN`.
+9. `NOT_COMPARABLE` is unreachable under the current Unit 3 V1.0.1 normalized input unless a future ruleset introduces an explicit normalized non-comparability condition.
+
+Temporal comparison table:
+
+```text
+same valid non-UNKNOWN frame ref vs itself -> SAME_FRAME
+same valid UNKNOWN_FRAME ref vs itself -> SAME_FRAME
+different valid frame IDs + same scopeId + neither frameType UNKNOWN_FRAME -> DIFFERENT_FRAME
+different valid frame IDs + different scopeId -> UNKNOWN
+different valid frame IDs + same scopeId + one UNKNOWN_FRAME -> UNKNOWN
+different valid frame IDs + same scopeId + both UNKNOWN_FRAME -> UNKNOWN
+missing/null/unresolvable reference -> UNKNOWN
+invalid temporalFrames collection -> comparison prerequisite invalid; comparison result must not be guessed; UNKNOWN at comparison boundary where comparison API handles invalid collection
+explicit NOT_COMPARABLE -> currently UNREACHABLE in Unit 3 V1.0.1 closed input domain unless a future ruleset introduces an explicit normalized non-comparability condition
+```
 
 Identity contradiction may be emitted only when temporal comparison for the affected identityResolution records is `SAME_FRAME`. `DIFFERENT_FRAME` does not automatically create conflict. `NOT_COMPARABLE` and `UNKNOWN` preserve UNKNOWN for temporal comparability and MUST NOT be upgraded to same-frame by implementation judgment.
 
@@ -567,7 +631,7 @@ Two conforming implementations receiving identical adapterCoverage, evidence, re
 {
   "capability": "semantic-evidence",
   "schemaVersion": "1.0",
-  "rulesetVersion": "semantic-evidence-v1.0.0",
+  "rulesetVersion": "semantic-evidence-v1.0.1",
   "authority": "NONE",
   "artifactStates": [],
   "dependencyStates": [],
@@ -590,7 +654,7 @@ Every derived record must contain:
   "provenanceScope": "scope:<id>",
   "temporalFrameRef": "time:<id>|null",
   "derivationRuleId": "SE-V1-...",
-  "rulesetVersion": "semantic-evidence-v1.0.0"
+  "rulesetVersion": "semantic-evidence-v1.0.1"
 }
 ```
 
@@ -1110,7 +1174,7 @@ All output arrays and evidence refs sort deterministically.
 Ruleset:
 
 ```text
-semantic-evidence-v1.0.0
+semantic-evidence-v1.0.1
 ```
 
 Any change that alters evidence threshold, state derivation, relation semantics, precedence, negative-conclusion rule, or UNKNOWN policy requires a new ruleset version.
