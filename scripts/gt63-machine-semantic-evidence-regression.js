@@ -183,6 +183,63 @@ function dependencyEnvelope(overrides = {}) {
   };
 }
 
+function relationshipInput(overrides = {}) {
+  return {
+    rulesetVersion: DEP_RULESET_VERSION,
+    relationshipId: "rel:rt",
+    source: "artifact:source",
+    target: "artifact:target",
+    relationType: "REFERENCES",
+    provenanceScope: "scope:repo",
+    temporalFrameRef: "time:current",
+    evidenceRefs: ["ev:rel", "ev:parser"],
+    factStatus: "OBSERVED_FACT",
+    identityResolutionStatus: "RESOLVED",
+    aliasTransformations: 0,
+    directEvidence: true,
+    inspectedContent: true,
+    configurationParsed: false,
+    configMeaningEstablished: false,
+    targetResolutionPartial: false,
+    supportedLanguageSyntax: false,
+    staticCallResolved: false,
+    executionEvidenceDemonstratesCall: false,
+    executableOrConfigRegistration: false,
+    documentaryOnly: false,
+    outputLinkedProvenance: false,
+    singleGeneratesFact: false,
+    singleOperationPath: false,
+    producerIdentityResolved: false,
+    outputIdentityResolved: false,
+    relationshipInspection: completeness("COMPLETE"),
+    contentInspection: completeness("COMPLETE"),
+    noDirectOutputProvenance: false,
+    nativeGitTraversalProof: false,
+    sameRepositoryIdentity: false,
+    bothMembersEstablished: false,
+    sameBoundedScope: false,
+    compatibleTemporalFrame: false,
+    materialContradiction: false,
+    contradictionComparable: false,
+    propositionEvaluable: true,
+    unsupportedAdapterMechanism: false,
+    extensions: {},
+    ...overrides
+  };
+}
+
+function assertRelationshipStatus(overrides, expected) {
+  const actual = dependencyReachability.assessRelationshipStatus(relationshipInput(overrides));
+  assert.strictEqual(actual, expected);
+  return actual;
+}
+
+function assertRelationshipNotStatus(overrides, forbidden) {
+  const actual = dependencyReachability.assessRelationshipStatus(relationshipInput(overrides));
+  assert.notStrictEqual(actual, forbidden);
+  return actual;
+}
+
 function unit1SemanticOutput() {
   const statement = baseStatement();
   const conflict = baseConflict();
@@ -435,6 +492,488 @@ function executeDrTraceabilityRegistry() {
   };
 }
 
+function relationshipTraceabilityRegistry() {
+  return [
+    {
+      id: "RT-01",
+      proposition: "REFERENCES direct unambiguous reference with resolved target is PROVEN.",
+      expected: "PROVEN",
+      test: () => assertRelationshipStatus({}, "PROVEN")
+    },
+    {
+      id: "RT-02",
+      proposition: "REFERENCES with exactly one deterministic alias transformation is SUPPORTED.",
+      expected: "SUPPORTED",
+      test: () => assertRelationshipStatus({ inspectedContent: false, aliasTransformations: 1 }, "SUPPORTED")
+    },
+    {
+      id: "RT-03",
+      proposition: "REFERENCES ambiguous normalized identity evidence is POSSIBLE.",
+      expected: "POSSIBLE",
+      test: () => assertRelationshipStatus({ inspectedContent: false, identityResolutionStatus: "AMBIGUOUS" }, "POSSIBLE")
+    },
+    {
+      id: "RT-04",
+      proposition: "CONFIGURES parsed explicit config mapping is PROVEN.",
+      expected: "PROVEN",
+      test: () => assertRelationshipStatus({ relationType: "CONFIGURES", configurationParsed: true }, "PROVEN")
+    },
+    {
+      id: "RT-05",
+      proposition: "CONFIGURES clear config semantics with partial target resolution is SUPPORTED.",
+      expected: "SUPPORTED",
+      test: () => assertRelationshipStatus({
+        relationType: "CONFIGURES",
+        directEvidence: false,
+        inspectedContent: false,
+        configMeaningEstablished: true,
+        targetResolutionPartial: true
+      }, "SUPPORTED")
+    },
+    {
+      id: "RT-06",
+      proposition: "IMPORTS valid supported-language direct import token is PROVEN without target-presence inference.",
+      expected: "PROVEN",
+      test: () => {
+        const actual = assertRelationshipStatus({ relationType: "IMPORTS", supportedLanguageSyntax: true }, "PROVEN");
+        assert.strictEqual("presence" in dependencyReachability.assessRelationshipAssessment(relationshipInput({
+          relationType: "IMPORTS",
+          supportedLanguageSyntax: true
+        })), false);
+        return actual;
+      }
+    },
+    {
+      id: "RT-07",
+      proposition: "CALLS statically resolved direct call is PROVEN.",
+      expected: "PROVEN",
+      test: () => assertRelationshipStatus({ relationType: "CALLS", staticCallResolved: true }, "PROVEN")
+    },
+    {
+      id: "RT-08",
+      proposition: "CALLS direct execution evidence demonstrating the call is PROVEN.",
+      expected: "PROVEN",
+      test: () => assertRelationshipStatus({ relationType: "CALLS", directEvidence: false, executionEvidenceDemonstratesCall: true }, "PROVEN")
+    },
+    {
+      id: "RT-09",
+      proposition: "CALLS direct fact with exactly one alias transformation is SUPPORTED.",
+      expected: "SUPPORTED",
+      test: () => assertRelationshipStatus({ relationType: "CALLS", aliasTransformations: 1 }, "SUPPORTED")
+    },
+    {
+      id: "RT-10",
+      proposition: "CALLS ambiguous normalized target is POSSIBLE.",
+      expected: "POSSIBLE",
+      test: () => assertRelationshipStatus({ relationType: "CALLS", identityResolutionStatus: "AMBIGUOUS" }, "POSSIBLE")
+    },
+    {
+      id: "RT-11",
+      proposition: "SERVES executable/config registration is PROVEN.",
+      expected: "PROVEN",
+      test: () => assertRelationshipStatus({ relationType: "SERVES", executableOrConfigRegistration: true }, "PROVEN")
+    },
+    {
+      id: "RT-12",
+      proposition: "SERVES documentary wording without qualifying structure is not PROVEN.",
+      expected: "not PROVEN",
+      test: () => assertRelationshipNotStatus({
+        relationType: "SERVES",
+        directEvidence: false,
+        inspectedContent: false,
+        documentaryOnly: true
+      }, "PROVEN")
+    },
+    {
+      id: "RT-13",
+      proposition: "GENERATES direct output-linked producer/output provenance is PROVEN.",
+      expected: "PROVEN",
+      test: () => assertRelationshipStatus({ relationType: "GENERATES", outputLinkedProvenance: true }, "PROVEN")
+    },
+    {
+      id: "RT-14",
+      proposition: "GENERATES exact frozen conjunctive gate is STRONGLY_SUPPORTED.",
+      expected: "STRONGLY_SUPPORTED",
+      test: () => assertRelationshipStatus({
+        relationType: "GENERATES",
+        directEvidence: false,
+        inspectedContent: false,
+        singleGeneratesFact: true,
+        singleOperationPath: true,
+        producerIdentityResolved: true,
+        outputIdentityResolved: true,
+        noDirectOutputProvenance: true
+      }, "STRONGLY_SUPPORTED")
+    },
+    {
+      id: "RT-15",
+      proposition: "GENERATES missing one required strong prerequisite is not STRONGLY_SUPPORTED.",
+      expected: "not STRONGLY_SUPPORTED",
+      test: () => assertRelationshipNotStatus({
+        relationType: "GENERATES",
+        directEvidence: false,
+        inspectedContent: false,
+        singleGeneratesFact: true,
+        singleOperationPath: true,
+        producerIdentityResolved: true,
+        outputIdentityResolved: false,
+        noDirectOutputProvenance: true
+      }, "STRONGLY_SUPPORTED")
+    },
+    {
+      id: "RT-16",
+      proposition: "Output exists plus generator library evidence alone is not PROVEN.",
+      expected: "not PROVEN",
+      test: () => assertRelationshipNotStatus({
+        relationType: "GENERATES",
+        directEvidence: false,
+        inspectedContent: false,
+        extensions: { outputExists: true, generatorLibraryExists: true }
+      }, "PROVEN")
+    },
+    {
+      id: "RT-17",
+      proposition: "GIT_ANCESTOR_OF native traversal proof in same repository is PROVEN.",
+      expected: "PROVEN",
+      test: () => assertRelationshipStatus({
+        relationType: "GIT_ANCESTOR_OF",
+        nativeGitTraversalProof: true,
+        sameRepositoryIdentity: true
+      }, "PROVEN")
+    },
+    {
+      id: "RT-18",
+      proposition: "Git name/file/timestamp similarity without native proof is not PROVEN.",
+      expected: "not PROVEN",
+      test: () => assertRelationshipNotStatus({
+        relationType: "GIT_ANCESTOR_OF",
+        directEvidence: false,
+        inspectedContent: false,
+        extensions: { sameName: true, similarTimestamp: true }
+      }, "PROVEN")
+    },
+    {
+      id: "RT-19",
+      proposition: "COEXISTS_WITH direct bounded compatible scope/frame fact is PROVEN.",
+      expected: "PROVEN",
+      test: () => assertRelationshipStatus({
+        relationType: "COEXISTS_WITH",
+        bothMembersEstablished: true,
+        sameBoundedScope: true,
+        compatibleTemporalFrame: true
+      }, "PROVEN")
+    },
+    {
+      id: "RT-20",
+      proposition: "COEXISTS_WITH proof creates no secondary relationship, identity, lineage, integration, or authority fields.",
+      expected: "PROVEN only",
+      test: () => {
+        const record = dependencyReachability.assessRelationshipAssessment(relationshipInput({
+          relationType: "COEXISTS_WITH",
+          bothMembersEstablished: true,
+          sameBoundedScope: true,
+          compatibleTemporalFrame: true
+        }));
+        assert.strictEqual(record.relationStatus, "PROVEN");
+        for (const forbidden of ["imports", "calls", "integration", "identity", "lineage", "authority"]) {
+          assert.strictEqual(Object.prototype.hasOwnProperty.call(record, forbidden), false);
+        }
+        return record.relationStatus;
+      }
+    },
+    {
+      id: "RT-21",
+      proposition: "Unresolved material identity makes relationship proposition UNKNOWN.",
+      expected: "UNKNOWN",
+      test: () => assertRelationshipStatus({
+        identityResolutionStatus: "UNRESOLVED",
+        factStatus: "UNRESOLVED_TARGET",
+        propositionEvaluable: false
+      }, "UNKNOWN")
+    },
+    {
+      id: "RT-22",
+      proposition: "Ambiguous provenance or scope makes relationship proposition UNKNOWN.",
+      expected: "UNKNOWN",
+      test: () => assertRelationshipStatus({ propositionEvaluable: false, extensions: { ambiguousScope: true } }, "UNKNOWN")
+    },
+    {
+      id: "RT-23",
+      proposition: "Unsupported adapter mechanism material to proposition is UNKNOWN.",
+      expected: "UNKNOWN",
+      test: () => assertRelationshipStatus({ unsupportedAdapterMechanism: true }, "UNKNOWN")
+    },
+    {
+      id: "RT-24",
+      proposition: "Evaluable proposition with no positive or contradiction threshold is INSUFFICIENT_EVIDENCE.",
+      expected: "INSUFFICIENT_EVIDENCE",
+      test: () => assertRelationshipStatus({ directEvidence: false, inspectedContent: false }, "INSUFFICIENT_EVIDENCE")
+    },
+    {
+      id: "RT-25",
+      proposition: "UNKNOWN and INSUFFICIENT_EVIDENCE remain distinct by evaluability prerequisite.",
+      expected: "UNKNOWN != INSUFFICIENT_EVIDENCE",
+      test: () => {
+        assert.strictEqual(dependencyReachability.assessRelationshipStatus(relationshipInput({ propositionEvaluable: false })), "UNKNOWN");
+        assert.strictEqual(dependencyReachability.assessRelationshipStatus(relationshipInput({
+          directEvidence: false,
+          inspectedContent: false
+        })), "INSUFFICIENT_EVIDENCE");
+        return "PASS";
+      }
+    },
+    {
+      id: "RT-26",
+      proposition: "Comparable materially incompatible relationship proposition is CONTRADICTED.",
+      expected: "CONTRADICTED",
+      test: () => assertRelationshipStatus({ materialContradiction: true, contradictionComparable: true }, "CONTRADICTED")
+    },
+    {
+      id: "RT-27",
+      proposition: "Missing proof is not CONTRADICTED.",
+      expected: "not CONTRADICTED",
+      test: () => assertRelationshipNotStatus({ directEvidence: false, inspectedContent: false }, "CONTRADICTED")
+    },
+    {
+      id: "RT-28",
+      proposition: "Temporal evolution or non-comparable contradiction does not automatically produce CONTRADICTED.",
+      expected: "not CONTRADICTED",
+      test: () => assertRelationshipNotStatus({
+        materialContradiction: true,
+        contradictionComparable: false,
+        extensions: { temporalEvolution: true }
+      }, "CONTRADICTED")
+    },
+    {
+      id: "RT-29",
+      proposition: "All seven relationStatus values map to frozen semanticState values.",
+      expected: "mapping PASS",
+      test: () => {
+        const cases = [
+          ["PROVEN", "ESTABLISHED"],
+          ["STRONGLY_SUPPORTED", "SUPPORTED"],
+          ["SUPPORTED", "SUPPORTED"],
+          ["POSSIBLE", "POSSIBLE"],
+          ["INSUFFICIENT_EVIDENCE", "UNKNOWN"],
+          ["UNKNOWN", "UNKNOWN"],
+          ["CONTRADICTED", "CONTRADICTED"]
+        ];
+        const fixtures = {
+          PROVEN: {},
+          STRONGLY_SUPPORTED: {
+            relationType: "GENERATES",
+            directEvidence: false,
+            inspectedContent: false,
+            singleGeneratesFact: true,
+            singleOperationPath: true,
+            producerIdentityResolved: true,
+            outputIdentityResolved: true,
+            noDirectOutputProvenance: true
+          },
+          SUPPORTED: { inspectedContent: false, aliasTransformations: 1 },
+          POSSIBLE: { inspectedContent: false, identityResolutionStatus: "AMBIGUOUS" },
+          INSUFFICIENT_EVIDENCE: { directEvidence: false, inspectedContent: false },
+          UNKNOWN: { propositionEvaluable: false },
+          CONTRADICTED: { materialContradiction: true, contradictionComparable: true }
+        };
+        for (const [status, semanticState] of cases) {
+          const record = dependencyReachability.assessRelationshipAssessment(relationshipInput(fixtures[status]));
+          assert.strictEqual(record.relationStatus, status);
+          assert.strictEqual(record.semanticState, semanticState);
+        }
+        return "PASS";
+      }
+    },
+    {
+      id: "RT-30",
+      proposition: "Positive relationship assessment with zero evidenceRefs is rejected.",
+      expected: "SCHEMA_UNSUPPORTED_VALUE:evidenceRefs",
+      test: () => assertThrowsMessage(
+        () => dependencyReachability.assessRelationshipAssessment(relationshipInput({ evidenceRefs: [] })),
+        /SCHEMA_UNSUPPORTED_VALUE:evidenceRefs/
+      )
+    },
+    {
+      id: "RT-31",
+      proposition: "Unsupported relationType outside the closed V1 vocabulary is rejected.",
+      expected: "SCHEMA_UNSUPPORTED_VALUE:relationType",
+      test: () => assertThrowsMessage(
+        () => dependencyReachability.assessRelationshipStatus(relationshipInput({ relationType: "DERIVED_FROM" })),
+        /SCHEMA_UNSUPPORTED_VALUE:relationType/
+      )
+    },
+    {
+      id: "RT-32",
+      proposition: "Valid UNSUPPORTED_RELATION_FAMILY factStatus is schema-accepted but non-positive.",
+      expected: "UNKNOWN",
+      test: () => {
+        const actual = dependencyReachability.assessRelationshipStatus(relationshipInput({
+          factStatus: "UNSUPPORTED_RELATION_FAMILY"
+        }));
+        assert.strictEqual(actual, "UNKNOWN");
+        assert(!["PROVEN", "STRONGLY_SUPPORTED", "SUPPORTED", "POSSIBLE"].includes(actual));
+        return actual;
+      }
+    },
+    {
+      id: "RT-33",
+      proposition: "Unsupported semantic input field is rejected.",
+      expected: "SCHEMA_UNSUPPORTED_FIELD",
+      test: () => assertThrowsMessage(
+        () => dependencyReachability.assessRelationshipStatus({ ...relationshipInput(), sameFileName: true }),
+        /SCHEMA_UNSUPPORTED_FIELD:sameFileName/
+      )
+    },
+    {
+      id: "RT-34",
+      proposition: "Permitted extensions do not alter relationStatus.",
+      expected: "PROVEN",
+      test: () => {
+        const plain = dependencyReachability.assessRelationshipAssessment(relationshipInput());
+        const extended = dependencyReachability.assessRelationshipAssessment(relationshipInput({
+          extensions: { sameFileName: true, colocated: true, arbitraryReviewerNote: "ignored" }
+        }));
+        assert.strictEqual(extended.relationStatus, plain.relationStatus);
+        return extended.relationStatus;
+      }
+    },
+    {
+      id: "RT-35",
+      proposition: "Input ordering and evidenceRefs permutation preserve semantic record.",
+      expected: "deep-equal",
+      test: () => {
+        const left = dependencyReachability.assessRelationshipAssessment(relationshipInput({
+          evidenceRefs: ["ev:b", "ev:a", "ev:a"]
+        }));
+        const right = dependencyReachability.assessRelationshipAssessment({
+          ...relationshipInput({ evidenceRefs: ["ev:a", "ev:b"] })
+        });
+        assert.deepStrictEqual(left, right);
+        return "PASS";
+      }
+    },
+    {
+      id: "RT-36",
+      proposition: "EvidenceRefs ordering and dedupe preserve statementId.",
+      expected: "same statementId",
+      test: () => {
+        const left = dependencyReachability.assessRelationshipAssessment(relationshipInput({ evidenceRefs: ["ev:z", "ev:a", "ev:z"] }));
+        const right = dependencyReachability.assessRelationshipAssessment(relationshipInput({ evidenceRefs: ["ev:a", "ev:z"] }));
+        assert.strictEqual(left.statementId, right.statementId);
+        return left.statementId;
+      }
+    },
+    {
+      id: "RT-37",
+      proposition: "Repeated relationship assessment execution is deterministic.",
+      expected: "deep-equal",
+      test: () => {
+        const first = dependencyReachability.assessRelationshipAssessment(relationshipInput());
+        const second = dependencyReachability.assessRelationshipAssessment(relationshipInput());
+        assert.deepStrictEqual(first, second);
+        return "PASS";
+      }
+    },
+    {
+      id: "RT-38",
+      proposition: "Relationship resolver source contains no filesystem, Git, environment, time, randomness, or locale derivation.",
+      expected: "no forbidden source APIs",
+      test: () => {
+        const source = fs.readFileSync(path.join(repositoryRoot, "scripts", "gt63-machine", "semantic-evidence-resolver.js"), "utf8");
+        for (const forbidden of [
+          "require(\"fs\")",
+          "require('fs')",
+          "require(\"path\")",
+          "require('path')",
+          "process.cwd",
+          "process.env",
+          "require.resolve",
+          "child_process",
+          "fetch(",
+          "Date",
+          "Math.random",
+          "localeCompare",
+          "Intl",
+          ".git"
+        ]) {
+          assert(!source.includes(forbidden), `relationship resolver must not use ${forbidden}`);
+        }
+        return "PASS";
+      }
+    },
+    {
+      id: "RT-39",
+      proposition: "Relationship assessment output never emits governance authority states.",
+      expected: "authority NONE / forbidden states absent",
+      test: () => {
+        const output = dependencyReachability.assessRelationshipAssessment(relationshipInput());
+        const serialized = JSON.stringify(output);
+        for (const forbidden of ["CANONICAL", "ACCEPTED", "AUTHORIZED", "LOCKED", "GOVERNING", "APPROVED_PRODUCT_TRUTH", "CONSTITUTIONAL"]) {
+          assert(!serialized.includes(forbidden));
+        }
+        assert.strictEqual(dependencyReachability.assessDependencyReachability(dependencyEnvelope()).authority, "NONE");
+        return "PASS";
+      }
+    },
+    {
+      id: "RT-40",
+      proposition: "Relationship unit does not populate historicalRelations, outputProvenance, binaryIntegration, unknowns, or conflicts.",
+      expected: "no final-envelope expansion",
+      test: () => {
+        const output = dependencyReachability.assessRelationshipAssessment(relationshipInput());
+        for (const forbidden of ["historicalRelations", "outputProvenance", "binaryIntegration", "unknowns", "conflicts"]) {
+          assert.strictEqual(Object.prototype.hasOwnProperty.call(output, forbidden), false);
+        }
+        return "PASS";
+      }
+    },
+    {
+      id: "RT-41",
+      proposition: "Existing DR-01 through DR-22 dependency/reachability traceability remains PASS.",
+      expected: "DR PASS",
+      test: () => {
+        const dr = executeDrTraceabilityRegistry();
+        assert.strictEqual(dr.status, "PASS");
+        assert.strictEqual(dr.count, 22);
+        return "PASS";
+      }
+    }
+  ];
+}
+
+function executeRelationshipTraceabilityRegistry() {
+  const registry = relationshipTraceabilityRegistry();
+  const expectedIds = Array.from({ length: 41 }, (_, index) => `RT-${String(index + 1).padStart(2, "0")}`);
+  const ids = registry.map((entry) => entry.id);
+  const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+  const missing = expectedIds.filter((id) => !ids.includes(id));
+  const unexpected = ids.filter((id) => !expectedIds.includes(id));
+  assert.strictEqual(registry.length, 41);
+  assert.deepStrictEqual(duplicates, []);
+  assert.deepStrictEqual(missing, []);
+  assert.deepStrictEqual(unexpected, []);
+  const results = registry.map((entry) => {
+    const actual = entry.test();
+    return {
+      id: entry.id,
+      proposition: entry.proposition,
+      expected: entry.expected,
+      actual: typeof actual === "undefined" ? "PASS" : actual,
+      status: "PASS"
+    };
+  });
+  return {
+    count: registry.length,
+    first: ids[0],
+    last: ids[ids.length - 1],
+    duplicates,
+    missing,
+    unexpected,
+    status: "PASS",
+    results
+  };
+}
+
 function main() {
   const trace = {
     rulesetVersion: RULESET_VERSION,
@@ -442,6 +981,7 @@ function main() {
     fixtureId: "unit1-canonical-serialization"
   };
   const drTraceability = executeDrTraceabilityRegistry();
+  const relationshipTraceability = executeRelationshipTraceabilityRegistry();
 
   // T-01 Object key order.
   assert.strictEqual(canonicalSerialize({ b: "2", a: "1" }), canonicalSerialize({ a: "1", b: "2" }));
@@ -857,7 +1397,80 @@ function main() {
       } catch (error) {
         return /UNSUPPORTED_RULESET_VERSION/.test(error.message);
       }
-    })()
+    })(),
+    "RT-M-01": dependencyReachability.assessRelationshipStatus(relationshipInput({ propositionEvaluable: false })) === "UNKNOWN",
+    "RT-M-02": dependencyReachability.assessRelationshipStatus(relationshipInput({
+      directEvidence: false,
+      inspectedContent: false
+    })) === "INSUFFICIENT_EVIDENCE",
+    "RT-M-03": dependencyReachability.assessRelationshipStatus(relationshipInput({
+      directEvidence: false,
+      inspectedContent: false
+    })) !== "CONTRADICTED",
+    "RT-M-04": dependencyReachability.assessRelationshipStatus(relationshipInput({
+      inspectedContent: false,
+      identityResolutionStatus: "AMBIGUOUS"
+    })) === "POSSIBLE",
+    "RT-M-05": dependencyReachability.assessRelationshipStatus(relationshipInput({
+      inspectedContent: false,
+      aliasTransformations: 1
+    })) === "SUPPORTED",
+    "RT-M-06": dependencyReachability.assessRelationshipStatus(relationshipInput({
+      relationType: "GENERATES",
+      directEvidence: false,
+      inspectedContent: false,
+      singleGeneratesFact: true,
+      singleOperationPath: true,
+      producerIdentityResolved: true,
+      outputIdentityResolved: false,
+      noDirectOutputProvenance: true
+    })) !== "STRONGLY_SUPPORTED",
+    "RT-M-07": dependencyReachability.assessRelationshipStatus(relationshipInput({
+      relationType: "GENERATES",
+      directEvidence: false,
+      inspectedContent: false,
+      extensions: { outputExists: true, generatorLibraryExists: true }
+    })) !== "PROVEN",
+    "RT-M-08": dependencyReachability.assessRelationshipStatus(relationshipInput({
+      relationType: "GIT_ANCESTOR_OF",
+      directEvidence: false,
+      inspectedContent: false,
+      extensions: { sameName: true, similarTimestamp: true }
+    })) !== "PROVEN",
+    "RT-M-09": (() => {
+      const record = dependencyReachability.assessRelationshipAssessment(relationshipInput({
+        relationType: "COEXISTS_WITH",
+        bothMembersEstablished: true,
+        sameBoundedScope: true,
+        compatibleTemporalFrame: true
+      }));
+      return !JSON.stringify(record).includes("IMPORTS") &&
+        !JSON.stringify(record).includes("CALLS") &&
+        !JSON.stringify(record).includes("AUTHORITY");
+    })(),
+    "RT-M-10": (() => {
+      try {
+        dependencyReachability.assessRelationshipAssessment(relationshipInput({ evidenceRefs: [] }));
+        return false;
+      } catch (error) {
+        return /SCHEMA_UNSUPPORTED_VALUE:evidenceRefs/.test(error.message);
+      }
+    })(),
+    "RT-M-11": dependencyReachability.assessRelationshipStatus(relationshipInput({ unsupportedAdapterMechanism: true })) === "UNKNOWN",
+    "RT-M-12": (() => {
+      try {
+        dependencyReachability.assessRelationshipStatus({ ...relationshipInput(), unsupportedSemanticField: true });
+        return false;
+      } catch (error) {
+        return /SCHEMA_UNSUPPORTED_FIELD:unsupportedSemanticField/.test(error.message);
+      }
+    })(),
+    "RT-M-13": (() => {
+      const a = dependencyReachability.assessRelationshipAssessment(relationshipInput({ evidenceRefs: ["ev:b", "ev:a"] }));
+      const b = dependencyReachability.assessRelationshipAssessment(relationshipInput({ evidenceRefs: ["ev:a", "ev:b", "ev:a"] }));
+      return a.statementId === b.statementId;
+    })(),
+    "RT-M-14": dependencyReachability.assessDependencyReachability(dependencyEnvelope()).authority === "NONE"
   };
   for (const [mutationId, detected] of Object.entries(mutationResults)) {
     assert.strictEqual(detected, true, `${mutationId} mutation must be detected`);
@@ -915,6 +1528,11 @@ function main() {
           "M-15": true
         },
         drTraceability
+      },
+      relationshipThreshold: {
+        rulesetVersion: DEP_RULESET_VERSION,
+        rtTraceability: relationshipTraceability,
+        sampleStatementId: dependencyReachability.assessRelationshipAssessment(relationshipInput()).statementId
       }
     }
   }, null, 2));
