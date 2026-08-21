@@ -10,6 +10,20 @@ const SECTIONS = Object.freeze([
 
 const SOURCE_TYPES = new Set(['RAW_TEXT', 'SUPPLIED_EVIDENCE', 'INFERENCE']);
 
+const ID_NAMESPACES = Object.freeze({
+  OUTCOME: 'outcome',
+  EXPLICIT: 'explicit',
+  INFERRED: 'inferred',
+  LOCKED: 'locked',
+  UNKNOWN: 'unknown',
+  PROPOSED: 'proposed',
+  AUTHORIZED: 'authorized',
+  NOT_AUTHORIZED: 'not_authorized',
+  HUMAN_GATES: 'gate',
+  ACCEPTANCE: 'acceptance',
+  NECESSARY_COLLATERAL_CHANGES: 'collateral'
+});
+
 const PUBLIC_PROTOCOL = `Human Intent Interpreter V0.1 public protocol.
 Return only the candidate intent contract described by the supplied JSON schema.
 Classify requested facts and actions as EXPLICIT. Put only supported, non-literal
@@ -105,6 +119,58 @@ function buildEnvelope(source) {
   });
 }
 
+function normalizeDuplicateIds(candidate) {
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return candidate;
+  if (SECTIONS.some((section) => !Array.isArray(candidate[section]))) return candidate;
+
+  const counts = new Map();
+  for (const section of SECTIONS) {
+    for (const entry of candidate[section]) {
+      if (entry && typeof entry.id === 'string') {
+        counts.set(entry.id, (counts.get(entry.id) || 0) + 1);
+      }
+    }
+  }
+  const duplicates = new Set([...counts].filter(([, count]) => count > 1).map(([id]) => id));
+  if (!duplicates.size) return candidate;
+
+  // targets and requiredFor may contain contract-entry references. A repeated raw
+  // ID cannot be resolved safely without semantic judgement, so reject instead
+  // of guessing. Non-ID target labels and prose remain byte-for-byte unchanged.
+  for (const section of SECTIONS) {
+    for (const entry of candidate[section]) {
+      const references = [
+        ...(Array.isArray(entry?.targets) ? entry.targets : []),
+        ...(typeof entry?.requiredFor === 'string' && entry.requiredFor ? [entry.requiredFor] : [])
+      ];
+      const ambiguous = references.find((reference) => duplicates.has(reference));
+      if (ambiguous !== undefined) {
+        throw new TypeError(`ambiguous reference to duplicate candidate id: ${ambiguous}`);
+      }
+    }
+  }
+
+  // Reserve every provider-supplied ID so a normalized ID can never silently
+  // retain or collide with one of them.
+  const used = new Set(counts.keys());
+  const normalized = {};
+  for (const section of SECTIONS) {
+    normalized[section] = candidate[section].map((entry, index) => {
+      if (!entry || !duplicates.has(entry.id)) return entry;
+      const base = `${ID_NAMESPACES[section]}.${index + 1}`;
+      let id = base;
+      let suffix = 1;
+      while (used.has(id)) {
+        id = `${base}.normalized${suffix}`;
+        suffix += 1;
+      }
+      used.add(id);
+      return { ...entry, id };
+    });
+  }
+  return normalized;
+}
+
 function assertReference(reference, source, evidence, label) {
   if (!reference || typeof reference !== 'object') throw new TypeError(`${label}: invalid reference`);
   const quote = reference.quote;
@@ -184,7 +250,7 @@ function extractCandidate(rawResponse, source) {
   if (!text.trim().startsWith('{') || !text.trim().endsWith('}')) {
     throw new TypeError('candidate response must be one strict JSON object without commentary or fences');
   }
-  return validateCandidate(JSON.parse(text), source);
+  return validateCandidate(normalizeDuplicateIds(JSON.parse(text)), source);
 }
 
 module.exports = {
@@ -194,6 +260,7 @@ module.exports = {
   buildEnvelope,
   canonicalJson,
   extractCandidate,
+  normalizeDuplicateIds,
   sha256,
   stableBytes,
   validateCandidate
