@@ -37,7 +37,12 @@ Requested action, delegated execution, and necessary mechanics are not PROPOSED.
 HUMAN_GATES are required only when approval is explicitly reserved or an
 established UNKNOWN blocks a specific authoritative action. Every entry must
 carry exact RAW_TEXT, SUPPLIED_EVIDENCE, or supported INFERENCE provenance.
-Never fabricate or rewrite a quotation represented as exact.`;
+Never fabricate or rewrite a quotation represented as exact.
+Cross-entry references in targets or requiredFor must be section-qualified as
+<section>:<local-id>, for example explicit:2, authorized:1, proposed:3,
+locked:4, gate:1, or collateral:2. A direct already-globally-unique ID such as
+explicit.2 is also valid. Never emit a bare local reference when that ID may
+occur in more than one section; strict extraction rejects ambiguous references.`;
 
 const referenceSchema = Object.freeze({
   type: 'object',
@@ -67,9 +72,19 @@ const entrySchema = Object.freeze({
     id: { type: 'string' },
     statement: { type: 'string' },
     provenance: { type: 'array', items: provenanceSchema },
-    targets: { type: 'array', items: { type: 'string' } },
+    targets: {
+      type: 'array',
+      description: 'Cross-entry references must use <section>:<local-id> or an already globally unique ID. Use an empty array when there is no cross-entry reference.',
+      items: {
+        type: 'string',
+        description: 'A mechanically resolvable entry reference, preferably section-qualified (for example explicit:2).'
+      }
+    },
     required: { type: 'boolean' },
-    requiredFor: { type: 'string' }
+    requiredFor: {
+      type: 'string',
+      description: 'May be descriptive text. When it points to another contract entry, use <section>:<local-id> or an already globally unique ID.'
+    }
   },
   required: ['id', 'statement', 'provenance', 'targets', 'required', 'requiredFor'],
   additionalProperties: false
@@ -132,31 +147,18 @@ function normalizeDuplicateIds(candidate) {
     }
   }
   const duplicates = new Set([...counts].filter(([, count]) => count > 1).map(([id]) => id));
-  if (!duplicates.size) return candidate;
-
-  // targets and requiredFor may contain contract-entry references. A repeated raw
-  // ID cannot be resolved safely without semantic judgement, so reject instead
-  // of guessing. Non-ID target labels and prose remain byte-for-byte unchanged.
-  for (const section of SECTIONS) {
-    for (const entry of candidate[section]) {
-      const references = [
-        ...(Array.isArray(entry?.targets) ? entry.targets : []),
-        ...(typeof entry?.requiredFor === 'string' && entry.requiredFor ? [entry.requiredFor] : [])
-      ];
-      const ambiguous = references.find((reference) => duplicates.has(reference));
-      if (ambiguous !== undefined) {
-        throw new TypeError(`ambiguous reference to duplicate candidate id: ${ambiguous}`);
-      }
-    }
-  }
 
   // Reserve every provider-supplied ID so a normalized ID can never silently
   // retain or collide with one of them.
   const used = new Set(counts.keys());
-  const normalized = {};
+  const normalizedIds = new Map();
   for (const section of SECTIONS) {
-    normalized[section] = candidate[section].map((entry, index) => {
-      if (!entry || !duplicates.has(entry.id)) return entry;
+    candidate[section].forEach((entry, index) => {
+      if (!entry || typeof entry.id !== 'string') return;
+      if (!duplicates.has(entry.id)) {
+        normalizedIds.set(entry, entry.id);
+        return;
+      }
       const base = `${ID_NAMESPACES[section]}.${index + 1}`;
       let id = base;
       let suffix = 1;
@@ -165,10 +167,81 @@ function normalizeDuplicateIds(candidate) {
         suffix += 1;
       }
       used.add(id);
-      return { ...entry, id };
+      normalizedIds.set(entry, id);
     });
   }
-  return normalized;
+
+  const byOriginalId = new Map();
+  const bySectionAndOriginalId = new Map();
+  for (const section of SECTIONS) {
+    for (const entry of candidate[section]) {
+      if (!entry || typeof entry.id !== 'string') continue;
+      const record = { entry, normalizedId: normalizedIds.get(entry), section };
+      if (!byOriginalId.has(entry.id)) byOriginalId.set(entry.id, []);
+      byOriginalId.get(entry.id).push(record);
+      const key = `${section}\u0000${entry.id}`;
+      if (!bySectionAndOriginalId.has(key)) bySectionAndOriginalId.set(key, []);
+      bySectionAndOriginalId.get(key).push(record);
+    }
+  }
+
+  const sectionsByQualifier = new Map(
+    Object.entries(ID_NAMESPACES).map(([section, qualifier]) => [qualifier, section])
+  );
+  const qualifierPattern = /^([A-Za-z_]+):([^:\s]+)$/;
+  const directPattern = /^([A-Za-z_]+)\.([^\s]+)$/;
+
+  function resolveReference(reference) {
+    if (typeof reference !== 'string' || !reference) return reference;
+    const qualified = reference.match(qualifierPattern);
+    if (qualified) {
+      const section = sectionsByQualifier.get(qualified[1].toLowerCase());
+      if (!section) throw new TypeError(`unknown candidate reference section: ${qualified[1]}`);
+      const matches = bySectionAndOriginalId.get(`${section}\u0000${qualified[2]}`) || [];
+      if (matches.length !== 1) {
+        throw new TypeError(`${reference}: candidate reference resolved to ${matches.length} entries`);
+      }
+      return matches[0].normalizedId;
+    }
+
+    const direct = reference.match(directPattern);
+    if (direct && sectionsByQualifier.has(direct[1].toLowerCase())) {
+      const matches = byOriginalId.get(reference) || [];
+      if (matches.length !== 1) {
+        throw new TypeError(`${reference}: direct candidate reference resolved to ${matches.length} entries`);
+      }
+      return matches[0].normalizedId;
+    }
+
+    const matches = byOriginalId.get(reference) || [];
+    if (matches.length === 1) return matches[0].normalizedId;
+    if (matches.length > 1) {
+      throw new TypeError(`ambiguous reference to duplicate candidate id: ${reference}`);
+    }
+    if (/^\d+$/.test(reference)) {
+      throw new TypeError(`${reference}: bare candidate reference resolved to 0 entries`);
+    }
+    return reference;
+  }
+
+  let changed = false;
+  const normalized = {};
+  for (const section of SECTIONS) {
+    normalized[section] = candidate[section].map((entry) => {
+      if (!entry || typeof entry !== 'object') return entry;
+      const id = normalizedIds.get(entry);
+      const targets = Array.isArray(entry.targets) ? entry.targets.map(resolveReference) : entry.targets;
+      const requiredFor = typeof entry.requiredFor === 'string' && entry.requiredFor
+        ? resolveReference(entry.requiredFor)
+        : entry.requiredFor;
+      const entryChanged = id !== entry.id
+        || (Array.isArray(targets) && targets.some((target, index) => target !== entry.targets[index]))
+        || requiredFor !== entry.requiredFor;
+      changed ||= entryChanged;
+      return entryChanged ? { ...entry, id, targets, requiredFor } : entry;
+    });
+  }
+  return changed ? normalized : candidate;
 }
 
 function lexicalTokens(text) {
