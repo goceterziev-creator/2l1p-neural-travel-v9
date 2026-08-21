@@ -14,7 +14,12 @@ function entry(id, statement, quote) {
     }],
     targets: [],
     required: false,
-    requiredFor: ''
+    requiredFor: {
+      kind: 'NONE',
+      text: '',
+      section: '',
+      entry_id: ''
+    }
   };
 }
 

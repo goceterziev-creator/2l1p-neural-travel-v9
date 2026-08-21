@@ -38,11 +38,12 @@ HUMAN_GATES are required only when approval is explicitly reserved or an
 established UNKNOWN blocks a specific authoritative action. Every entry must
 carry exact RAW_TEXT, SUPPLIED_EVIDENCE, or supported INFERENCE provenance.
 Never fabricate or rewrite a quotation represented as exact.
-Cross-entry references in targets or requiredFor must be section-qualified as
-<section>:<local-id>, for example explicit:2, authorized:1, proposed:3,
-locked:4, gate:1, or collateral:2. A direct already-globally-unique ID such as
-explicit.2 is also valid. Never emit a bare local reference when that ID may
-occur in more than one section; strict extraction rejects ambiguous references.`;
+Entry IDs are opaque strings, never references. Cross-entry references are
+objects with separate section and entry_id fields; entry_id must exactly equal
+the provider entry ID in the named section. targets contains only reference
+objects. requiredFor is a tagged NONE, TEXT, or REFERENCE object. Never encode
+a provider reference as a string. Strict extraction rejects zero or multiple
+targets and converts the provider representation to the accepted V0 strings.`;
 
 const referenceSchema = Object.freeze({
   type: 'object',
@@ -66,25 +67,46 @@ const provenanceSchema = Object.freeze({
   additionalProperties: false
 });
 
+const REFERENCE_SECTIONS = Object.freeze(Object.values(ID_NAMESPACES));
+
+const contractReferenceSchema = Object.freeze({
+  type: 'object',
+  properties: {
+    section: { type: 'string', enum: REFERENCE_SECTIONS },
+    entry_id: { type: 'string' }
+  },
+  required: ['section', 'entry_id'],
+  additionalProperties: false
+});
+
+const requiredForSchema = Object.freeze({
+  type: 'object',
+  properties: {
+    kind: { type: 'string', enum: ['NONE', 'TEXT', 'REFERENCE'] },
+    text: { type: 'string' },
+    section: { type: 'string', enum: ['', ...REFERENCE_SECTIONS] },
+    entry_id: { type: 'string' }
+  },
+  required: ['kind', 'text', 'section', 'entry_id'],
+  additionalProperties: false
+});
+
 const entrySchema = Object.freeze({
   type: 'object',
   properties: {
-    id: { type: 'string' },
+    id: {
+      type: 'string',
+      description: 'Opaque entry identity. This string is never parsed as a cross-entry reference.'
+    },
     statement: { type: 'string' },
     provenance: { type: 'array', items: provenanceSchema },
     targets: {
       type: 'array',
-      description: 'Cross-entry references must use <section>:<local-id> or an already globally unique ID. Use an empty array when there is no cross-entry reference.',
-      items: {
-        type: 'string',
-        description: 'A mechanically resolvable entry reference, preferably section-qualified (for example explicit:2).'
-      }
+      description: 'Cross-entry references as structurally distinct objects. Use an empty array when there is no cross-entry reference.',
+      items: contractReferenceSchema
     },
     required: { type: 'boolean' },
-    requiredFor: {
-      type: 'string',
-      description: 'May be descriptive text. When it points to another contract entry, use <section>:<local-id> or an already globally unique ID.'
-    }
+    requiredFor: requiredForSchema
   },
   required: ['id', 'statement', 'provenance', 'targets', 'required', 'requiredFor'],
   additionalProperties: false
@@ -192,12 +214,32 @@ function normalizeDuplicateIds(candidate) {
   const directPattern = /^([A-Za-z_]+)\.([^\s]+)$/;
 
   function resolveReference(reference) {
+    if (reference && typeof reference === 'object' && !Array.isArray(reference)) {
+      const keys = Object.keys(reference).sort();
+      if (JSON.stringify(keys) !== JSON.stringify(['entry_id', 'section'])) {
+        throw new TypeError('structured candidate reference fields are invalid');
+      }
+      const section = sectionsByQualifier.get(reference.section);
+      if (!section || typeof reference.entry_id !== 'string' || !reference.entry_id) {
+        throw new TypeError('structured candidate reference is invalid');
+      }
+      const matches = bySectionAndOriginalId.get(`${section}\u0000${reference.entry_id}`) || [];
+      if (matches.length !== 1) {
+        throw new TypeError(
+          `${reference.section}:${reference.entry_id}: candidate reference resolved to ${matches.length} entries`
+        );
+      }
+      return matches[0].normalizedId;
+    }
     if (typeof reference !== 'string' || !reference) return reference;
     const qualified = reference.match(qualifierPattern);
     if (qualified) {
       const section = sectionsByQualifier.get(qualified[1].toLowerCase());
       if (!section) throw new TypeError(`unknown candidate reference section: ${qualified[1]}`);
-      const matches = bySectionAndOriginalId.get(`${section}\u0000${qualified[2]}`) || [];
+      const matches = [
+        ...(bySectionAndOriginalId.get(`${section}\u0000${qualified[2]}`) || []),
+        ...(bySectionAndOriginalId.get(`${section}\u0000${reference}`) || [])
+      ].filter((record, index, all) => all.findIndex(({ entry }) => entry === record.entry) === index);
       if (matches.length !== 1) {
         throw new TypeError(`${reference}: candidate reference resolved to ${matches.length} entries`);
       }
@@ -224,6 +266,29 @@ function normalizeDuplicateIds(candidate) {
     return reference;
   }
 
+  function resolveRequiredFor(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return typeof value === 'string' && value ? resolveReference(value) : value;
+    }
+    const keys = Object.keys(value).sort();
+    if (JSON.stringify(keys) !== JSON.stringify(['entry_id', 'kind', 'section', 'text'])) {
+      throw new TypeError('requiredFor provider fields are invalid');
+    }
+    if (value.kind === 'NONE') {
+      if (value.text || value.section || value.entry_id) throw new TypeError('requiredFor NONE payload is invalid');
+      return '';
+    }
+    if (value.kind === 'TEXT') {
+      if (!value.text || value.section || value.entry_id) throw new TypeError('requiredFor TEXT payload is invalid');
+      return value.text;
+    }
+    if (value.kind === 'REFERENCE') {
+      if (value.text) throw new TypeError('requiredFor REFERENCE text must be empty');
+      return resolveReference({ section: value.section, entry_id: value.entry_id });
+    }
+    throw new TypeError(`requiredFor kind is invalid: ${value.kind}`);
+  }
+
   let changed = false;
   const normalized = {};
   for (const section of SECTIONS) {
@@ -231,9 +296,7 @@ function normalizeDuplicateIds(candidate) {
       if (!entry || typeof entry !== 'object') return entry;
       const id = normalizedIds.get(entry);
       const targets = Array.isArray(entry.targets) ? entry.targets.map(resolveReference) : entry.targets;
-      const requiredFor = typeof entry.requiredFor === 'string' && entry.requiredFor
-        ? resolveReference(entry.requiredFor)
-        : entry.requiredFor;
+      const requiredFor = resolveRequiredFor(entry.requiredFor);
       const entryChanged = id !== entry.id
         || (Array.isArray(targets) && targets.some((target, index) => target !== entry.targets[index]))
         || requiredFor !== entry.requiredFor;
