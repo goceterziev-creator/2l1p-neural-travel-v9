@@ -20,8 +20,8 @@ jobs:
     timeout-minutes: 30
     env:
       BASE: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport
-      RUN_DIR: ${{ runner.temp }}/hii-v0-2-real-blind-1
-      EVIDENCE_DIR: ${{ runner.temp }}/hii-v0-2-evidence
+      RUN_DIR: /tmp/hii-v0-2-real-blind-1
+      EVIDENCE_DIR: /tmp/hii-v0-2-evidence
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - name: Checkout the authorized branch commit
@@ -93,7 +93,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: hii-v0-2-real-blind-1
-          path: ${{ runner.temp }}/hii-v0-2-evidence
+          path: /tmp/hii-v0-2-evidence
           if-no-files-found: error
           retention-days: 30
 
