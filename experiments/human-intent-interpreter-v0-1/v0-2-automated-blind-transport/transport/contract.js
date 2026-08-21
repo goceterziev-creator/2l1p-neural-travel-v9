@@ -171,6 +171,125 @@ function normalizeDuplicateIds(candidate) {
   return normalized;
 }
 
+function lexicalTokens(text) {
+  const tokens = [];
+  const pattern = /[\p{L}\p{N}]+(?:[’'][\p{L}\p{N}]+)*/gu;
+  for (const match of text.matchAll(pattern)) {
+    tokens.push({ value: match[0], start: match.index, end: match.index + match[0].length });
+  }
+  return tokens;
+}
+
+function boundaryCapitalizationEquivalent(candidateWord, sourceWord, index) {
+  if (candidateWord === sourceWord) return true;
+  if (index !== 0) return false;
+  const candidateChars = [...candidateWord];
+  const sourceChars = [...sourceWord];
+  return candidateChars.length === sourceChars.length
+    && candidateChars.slice(1).join('') === sourceChars.slice(1).join('')
+    && candidateChars[0].toLocaleLowerCase('und') === sourceChars[0].toLocaleLowerCase('und');
+}
+
+function canonicalRawTextSpan(sourceText, modelQuote) {
+  if (typeof modelQuote !== 'string' || !modelQuote) {
+    throw new TypeError('RAW_TEXT quote must be a non-empty string');
+  }
+  if (sourceText.includes(modelQuote)) return modelQuote;
+
+  const quoteTokens = lexicalTokens(modelQuote);
+  const sourceTokens = lexicalTokens(sourceText);
+  if (!quoteTokens.length) throw new TypeError('RAW_TEXT quote has no lexical content');
+
+  const matches = [];
+  for (let startIndex = 0; startIndex <= sourceTokens.length - quoteTokens.length; startIndex += 1) {
+    let valid = true;
+    for (let index = 0; index < quoteTokens.length; index += 1) {
+      if (!boundaryCapitalizationEquivalent(
+        quoteTokens[index].value,
+        sourceTokens[startIndex + index].value,
+        index
+      )) {
+        valid = false;
+        break;
+      }
+      if (index > 0) {
+        const quoteSeparator = modelQuote.slice(quoteTokens[index - 1].end, quoteTokens[index].start);
+        const sourceSeparator = sourceText.slice(
+          sourceTokens[startIndex + index - 1].end,
+          sourceTokens[startIndex + index].start
+        );
+        if (quoteSeparator !== sourceSeparator) {
+          valid = false;
+          break;
+        }
+      }
+    }
+    if (!valid) continue;
+
+    let spanStart = sourceTokens[startIndex].start;
+    let spanEnd = sourceTokens[startIndex + quoteTokens.length - 1].end;
+    const quotePrefix = modelQuote.slice(0, quoteTokens[0].start);
+    const quoteSuffix = modelQuote.slice(quoteTokens[quoteTokens.length - 1].end);
+    if (quotePrefix && sourceText.slice(spanStart - quotePrefix.length, spanStart) === quotePrefix) {
+      spanStart -= quotePrefix.length;
+    }
+    if (quoteSuffix && sourceText.slice(spanEnd, spanEnd + quoteSuffix.length) === quoteSuffix) {
+      spanEnd += quoteSuffix.length;
+    }
+    matches.push({ start: spanStart, end: spanEnd, quote: sourceText.slice(spanStart, spanEnd) });
+  }
+
+  const unique = matches.filter((match, index) => (
+    matches.findIndex((candidate) => candidate.start === match.start && candidate.end === match.end) === index
+  ));
+  if (unique.length !== 1) {
+    throw new TypeError(`RAW_TEXT quote has ${unique.length} canonical exact source spans`);
+  }
+  return unique[0].quote;
+}
+
+function canonicalizeRawTextProvenance(candidate, source) {
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return candidate;
+  if (SECTIONS.some((section) => !Array.isArray(candidate[section]))) return candidate;
+
+  let candidateChanged = false;
+  const canonical = {};
+  for (const section of SECTIONS) {
+    canonical[section] = candidate[section].map((entry) => {
+      if (!entry || !Array.isArray(entry.provenance)) return entry;
+      let entryChanged = false;
+      const provenance = entry.provenance.map((item) => {
+        if (!item || typeof item !== 'object') return item;
+        let itemChanged = false;
+        let next = item;
+        if (item.source_type === 'RAW_TEXT' && item.evidence_id === null) {
+          const quote = canonicalRawTextSpan(source.text, item.quote);
+          if (quote !== item.quote) {
+            next = { ...next, quote };
+            itemChanged = true;
+          }
+        }
+        if (item.source_type === 'INFERENCE' && Array.isArray(item.supports)) {
+          const supports = item.supports.map((reference) => {
+            if (!reference || reference.evidence_id !== null) return reference;
+            const quote = canonicalRawTextSpan(source.text, reference.quote);
+            if (quote === reference.quote) return reference;
+            itemChanged = true;
+            return { ...reference, quote };
+          });
+          if (itemChanged) next = { ...next, supports };
+        }
+        entryChanged ||= itemChanged;
+        return next;
+      });
+      if (!entryChanged) return entry;
+      candidateChanged = true;
+      return { ...entry, provenance };
+    });
+  }
+  return candidateChanged ? canonical : candidate;
+}
+
 function assertReference(reference, source, evidence, label) {
   if (!reference || typeof reference !== 'object') throw new TypeError(`${label}: invalid reference`);
   const quote = reference.quote;
@@ -250,7 +369,8 @@ function extractCandidate(rawResponse, source) {
   if (!text.trim().startsWith('{') || !text.trim().endsWith('}')) {
     throw new TypeError('candidate response must be one strict JSON object without commentary or fences');
   }
-  return validateCandidate(normalizeDuplicateIds(JSON.parse(text)), source);
+  const normalized = normalizeDuplicateIds(JSON.parse(text));
+  return validateCandidate(canonicalizeRawTextProvenance(normalized, source), source);
 }
 
 module.exports = {
@@ -258,6 +378,8 @@ module.exports = {
   PUBLIC_PROTOCOL,
   SECTIONS,
   buildEnvelope,
+  canonicalRawTextSpan,
+  canonicalizeRawTextProvenance,
   canonicalJson,
   extractCandidate,
   normalizeDuplicateIds,
