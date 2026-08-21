@@ -275,15 +275,15 @@ function normalizeDuplicateIds(candidate) {
       throw new TypeError('requiredFor provider fields are invalid');
     }
     if (value.kind === 'NONE') {
-      if (value.text || value.section || value.entry_id) throw new TypeError('requiredFor NONE payload is invalid');
       return '';
     }
     if (value.kind === 'TEXT') {
-      if (!value.text || value.section || value.entry_id) throw new TypeError('requiredFor TEXT payload is invalid');
+      if (typeof value.text !== 'string' || !value.text) {
+        throw new TypeError('requiredFor TEXT payload is invalid');
+      }
       return value.text;
     }
     if (value.kind === 'REFERENCE') {
-      if (value.text) throw new TypeError('requiredFor REFERENCE text must be empty');
       return resolveReference({ section: value.section, entry_id: value.entry_id });
     }
     throw new TypeError(`requiredFor kind is invalid: ${value.kind}`);

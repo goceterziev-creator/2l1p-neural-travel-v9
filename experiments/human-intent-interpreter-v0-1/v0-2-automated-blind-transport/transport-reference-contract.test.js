@@ -152,7 +152,26 @@ async function main() {
 
   const invalidNone = candidate();
   invalidNone.OUTCOME.push(entry('1', { requiredFor: { ...none(), text: 'not empty' } }));
-  assert.throws(() => extract(invalidNone), /requiredFor NONE payload is invalid/);
+  assert.equal(extract(invalidNone).OUTCOME[0].requiredFor, '');
+
+  const invalidText = candidate();
+  invalidText.OUTCOME.push(entry('1', {
+    requiredFor: { kind: 'TEXT', text: '', section: 'outcome', entry_id: '1' }
+  }));
+  assert.throws(() => extract(invalidText), /requiredFor TEXT payload is invalid/);
+
+  const inactiveReferenceText = candidate();
+  inactiveReferenceText.AUTHORIZED.push(entry('1'));
+  inactiveReferenceText.NECESSARY_COLLATERAL_CHANGES.push(entry('2', {
+    required: true,
+    requiredFor: {
+      kind: 'REFERENCE',
+      text: 'Inactive descriptive filler.',
+      section: 'authorized',
+      entry_id: '1'
+    }
+  }));
+  assert.equal(extract(inactiveReferenceText).NECESSARY_COLLATERAL_CHANGES[0].requiredFor, '1');
 
   const invalidRequiredReference = candidate();
   invalidRequiredReference.AUTHORIZED.push(entry('1'));
