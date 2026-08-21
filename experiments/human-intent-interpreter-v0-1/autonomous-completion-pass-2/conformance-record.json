@@ -1,0 +1,22 @@
+{
+  "recordVersion":"0.1.2-autonomous-completion-2",
+  "method":"Frozen candidate semantic-equivalence scoring against pre-existing hidden gold; no candidate repair.",
+  "cases":{
+    "A9":{"explicit":[5,5,0],"separation":[1,1],"locked":[2,2],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "A10":{"explicit":[5,5,0],"separation":[1,1],"locked":[2,2],"unknown":[0,0],"authority":[1,1],"gates":[1,1],"proposed":[1,1,0],"findings":[]},
+    "A11":{"explicit":[7,7,0],"separation":[1,1],"locked":[1,1],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "A12":{"explicit":[5,5,0],"separation":[1,1],"locked":[2,2],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "S9":{"explicit":[5,5,0],"separation":[1,1],"locked":[2,2],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "S10":{"explicit":[6,6,0],"separation":[1,1],"locked":[3,3],"unknown":[0,0],"authority":[1,1],"gates":[1,1],"proposed":[1,1,0],"findings":[]},
+    "S11":{"explicit":[6,6,0],"separation":[1,1],"locked":[2,2],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "S12":{"explicit":[7,7,0],"separation":[1,1],"locked":[3,3],"unknown":[2,2],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "T9":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "T10":{"explicit":[6,6,0],"separation":[1,1],"locked":[3,3],"unknown":[0,0],"authority":[1,1],"gates":[1,1],"proposed":[1,1,0],"findings":[]},
+    "T11":{"explicit":[7,7,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "T12":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "K9":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "K10":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[2,2],"authority":[1,1],"gates":[1,1],"proposed":[1,1,0],"findings":[]},
+    "K11":{"explicit":[6,6,0],"separation":[1,1],"locked":[4,4],"unknown":[2,2],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "K12":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[2,2],"authority":[1,1],"gates":[1,1],"proposed":[1,1,0],"findings":[]}
+  }
+}
