@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {
   canonicalStringify,
+  compileIntentContract,
   createIntentLayer,
   evaluateIntentRegression
 } = require('./intent-layer');
@@ -20,9 +21,32 @@ function patchExecution(base, patch) {
   return { ...clone(base), ...clone(patch) };
 }
 
+function runSchemaHardeningTests() {
+  const architecture = suite.fixtures.find((fixture) => fixture.id === 'architecture-facade');
+  assert.ok(architecture, 'architecture fixture required for schema hardening tests');
+
+  const missingGateRequired = clone(architecture.interpretation);
+  delete missingGateRequired.HUMAN_GATES[0].required;
+  assert.throws(
+    () => compileIntentContract(architecture.input, missingGateRequired),
+    /must declare required/,
+    'Human Gate required must be explicit boolean'
+  );
+
+  const invalidAuthorityTargets = clone(architecture.interpretation);
+  invalidAuthorityTargets.AUTHORIZED[0].targets = ['delta.facade', ''];
+  assert.throws(
+    () => compileIntentContract(architecture.input, invalidAuthorityTargets),
+    /targets must be an array of non-empty strings/,
+    'authority target bindings must be structurally valid'
+  );
+
+  return { status: 'PASS', cases: 2 };
+}
+
 function runSuite() {
   const fixtureMap = new Map();
-  const report = { fixtures: [], negativeCases: [] };
+  const report = { fixtures: [], negativeCases: [], schemaHardening: runSchemaHardeningTests() };
 
   for (const fixture of suite.fixtures) {
     const layer = createIntentLayer({ interpret: ({ evidence }) => evidence.interpretation });
