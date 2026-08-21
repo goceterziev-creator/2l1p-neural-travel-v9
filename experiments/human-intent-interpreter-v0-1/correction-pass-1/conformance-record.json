@@ -1,0 +1,25 @@
+{
+  "recordVersion":"0.1.1-correction-1",
+  "method":"Frozen candidate semantic mapping against hidden gold; semantic equivalence scored without candidate repair.",
+  "cases":{
+    "A5":{"explicit":[5,5,0],"separation":[1,1],"locked":[2,2],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "A6":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[0,0],"authority":[1,1],"gates":[1,1],"proposed":[1,0,0],"findings":["The optional canopy addition was represented as authorized concept display and gated implementation, but the optional improvement itself was omitted from PROPOSED."]},
+    "A7":{"explicit":[6,6,0],"separation":[1,1],"locked":[2,2],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "A8":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+
+    "S5":{"explicit":[6,6,0],"separation":[1,1],"locked":[2,2],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "S6":{"explicit":[6,6,0],"separation":[1,1],"locked":[3,3],"unknown":[0,0],"authority":[1,1],"gates":[1,1],"proposed":[1,1,0],"findings":[]},
+    "S7":{"explicit":[7,7,0],"separation":[1,1],"locked":[2,2],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "S8":{"explicit":[7,7,0],"separation":[1,1],"locked":[4,4],"unknown":[2,2],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+
+    "T5":{"explicit":[5,5,0],"separation":[1,1],"locked":[2,2],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "T6":{"explicit":[7,7,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[1,0,0],"findings":["The one-night Malmö extension was preserved as a separate authorized suggestion and gated itinerary addition, but the optional extension itself was omitted from PROPOSED."]},
+    "T7":{"explicit":[8,8,0],"separation":[1,1],"locked":[4,4],"unknown":[3,3],"authority":[1,1],"gates":[1,0],"proposed":[0,0,0],"findings":["The unresolved rail journey and approximate arrival were preserved as UNKNOWN, but the candidate omitted the Human Gate needed before route-specific rail selection."]},
+    "T8":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+
+    "K5":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "K6":{"explicit":[6,6,0],"separation":[1,1],"locked":[3,3],"unknown":[2,2],"authority":[1,1],"gates":[1,1],"proposed":[1,1,0],"findings":[]},
+    "K7":{"explicit":[6,6,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,0],"findings":[]},
+    "K8":{"explicit":[6,6,0],"separation":[1,1],"locked":[2,2],"unknown":[2,2],"authority":[1,1],"gates":[1,1],"proposed":[1,1,0],"findings":[]}
+  }
+}
