@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 30
     env:
       BASE: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport
-      RUN_DIR: /tmp/hii-v0-2-real-blind-1
+      RUN_DIR: /tmp/hii-v0-2-real-blind-2
       EVIDENCE_DIR: /tmp/hii-v0-2-evidence
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node "$BASE/transport/run-generation.js"             --corpus "$BASE/corpus/blind-corpus.json"             --output "$RUN_DIR"             --adapter openai             --run-id v0-2-real-blind-1             > "$RUNNER_TEMP/generation.json"
+          node "$BASE/transport/run-generation.js"             --corpus "$BASE/corpus/blind-corpus.json"             --output "$RUN_DIR"             --adapter openai             --run-id v0-2-real-blind-2             > "$RUNNER_TEMP/generation.json"
           test "$(node -e 'const f=require(process.argv[1]); process.stdout.write(String(f.totalModelCalls))' "$RUN_DIR/freeze.json")" = "8"
 
       - name: Evaluate only after sealed freeze
@@ -92,7 +92,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hii-v0-2-real-blind-1
+          name: hii-v0-2-real-blind-2
           path: /tmp/hii-v0-2-evidence
           if-no-files-found: error
           retention-days: 30
