@@ -58,6 +58,12 @@ function assertEntry(section, entry, index) {
   }
 }
 
+function assertStringArray(value, label) {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string' || item.trim() === '')) {
+    throw new TypeError(`${label} must be an array of non-empty strings`);
+  }
+}
+
 function validateInterpretation(interpretation) {
   if (!isPlainObject(interpretation)) {
     throw new TypeError('interpretation must be an object');
@@ -80,6 +86,18 @@ function validateInterpretation(interpretation) {
     }
   }
 
+  for (const authority of interpretation.AUTHORIZED) {
+    if (authority.targets !== undefined) {
+      assertStringArray(authority.targets, `AUTHORIZED entry ${authority.id}.targets`);
+    }
+  }
+
+  for (const gate of interpretation.HUMAN_GATES) {
+    if (typeof gate.required !== 'boolean') {
+      throw new TypeError(`HUMAN_GATES entry ${gate.id} must declare required`);
+    }
+  }
+
   for (const change of interpretation[COLLATERAL_SECTION]) {
     if (typeof change.required !== 'boolean') {
       throw new TypeError(`${COLLATERAL_SECTION} entry ${change.id} must declare required`);
@@ -99,7 +117,7 @@ function compileIntentContract(naturalLanguage, interpretation, options = {}) {
   validateInterpretation(interpretation);
 
   return canonicalize({
-    schemaVersion: '0.1.0',
+    schemaVersion: '0.1.1',
     contractId: options.contractId || 'intent-contract',
     source: {
       language: options.language || 'und',
@@ -140,8 +158,16 @@ function byRef(items, key) {
   return new Map((items || []).map((item) => [item[key], item]));
 }
 
+function authorityCovers(contract, authorityIds, targetId) {
+  const authorityMap = new Map(contract.AUTHORIZED.map((item) => [item.id, item]));
+  return authorityIds.some((authorityId) => {
+    const authority = authorityMap.get(authorityId);
+    return authority && Array.isArray(authority.targets) && authority.targets.includes(targetId);
+  });
+}
+
 function evaluateIntentRegression(contract, execution) {
-  if (!isPlainObject(contract) || contract.schemaVersion !== '0.1.0') {
+  if (!isPlainObject(contract) || contract.schemaVersion !== '0.1.1') {
     throw new TypeError('contract must be a compiled Human Intent Layer V0 contract');
   }
   if (!isPlainObject(execution)) {
@@ -153,10 +179,11 @@ function evaluateIntentRegression(contract, execution) {
   const invariantResults = byRef(execution.invariantResults, 'ref');
   const collateralResults = byRef(execution.collateralChanges, 'ref');
   const gateEvents = byRef(execution.humanGateEvents, 'gateRef');
-  const authorizedIds = new Set(contract.AUTHORIZED.map((item) => item.id));
   const notAuthorizedIds = new Set(contract.NOT_AUTHORIZED.map((item) => item.id));
   const inferredIds = new Set(contract.INFERRED.map((item) => item.id));
   const unknownIds = new Set(contract.UNKNOWN.map((item) => item.id));
+  const claimSourceIds = new Set([...inferredIds, ...unknownIds]);
+  const declaredGateIds = new Set(contract.HUMAN_GATES.map((item) => item.id));
 
   for (const requirement of [...contract.EXPLICIT, ...contract.ACCEPTANCE]) {
     const result = requirementResults.get(requirement.id);
@@ -183,12 +210,12 @@ function evaluateIntentRegression(contract, execution) {
   for (const delta of execution.semanticDeltas || []) {
     const authorities = Array.isArray(delta.authorizedBy) ? delta.authorizedBy : [];
     const prohibitions = Array.isArray(delta.prohibitedBy) ? delta.prohibitedBy : [];
-    if (!authorities.some((id) => authorizedIds.has(id))
+    if (!authorityCovers(contract, authorities, delta.id)
       || prohibitions.some((id) => notAuthorizedIds.has(id))) {
       findings.push(makeFinding(
         'UNAUTHORIZED_SEMANTIC_DELTA',
-        `Semantic or user-facing delta ${delta.id} has no valid authority.`,
-        [delta.id]
+        `Semantic or user-facing delta ${delta.id} is outside the exact scope of its cited authority.`,
+        [delta.id, ...authorities]
       ));
     }
     if (delta.requiresHumanGate === true && delta.gateSatisfied !== true) {
@@ -201,6 +228,14 @@ function evaluateIntentRegression(contract, execution) {
   }
 
   for (const claim of execution.claims || []) {
+    if (!claimSourceIds.has(claim.sourceRef)) {
+      findings.push(makeFinding(
+        'UNDECLARED_CLAIM_SOURCE',
+        `Claim ${claim.id} references source ${claim.sourceRef} that is not declared as INFERRED or UNKNOWN.`,
+        [claim.id, claim.sourceRef]
+      ));
+      continue;
+    }
     if (inferredIds.has(claim.sourceRef) && claim.certainty === 'FACT') {
       findings.push(makeFinding(
         'INFERENCE_PROMOTED_TO_FACT',
@@ -221,11 +256,11 @@ function evaluateIntentRegression(contract, execution) {
     const authorities = Array.isArray(implementation.authorizedBy)
       ? implementation.authorizedBy
       : [];
-    if (!authorities.some((id) => authorizedIds.has(id))) {
+    if (!authorityCovers(contract, authorities, implementation.proposalRef)) {
       findings.push(makeFinding(
         'UNAUTHORIZED_PROPOSAL_IMPLEMENTED',
-        `Proposal ${implementation.proposalRef} was implemented without authority.`,
-        [implementation.proposalRef]
+        `Proposal ${implementation.proposalRef} was implemented outside the exact scope of its cited authority.`,
+        [implementation.proposalRef, ...authorities]
       ));
     }
   }
@@ -290,6 +325,14 @@ function evaluateIntentRegression(contract, execution) {
   }
 
   for (const event of execution.humanGateEvents || []) {
+    if (!declaredGateIds.has(event.gateRef)) {
+      findings.push(makeFinding(
+        'UNDECLARED_HUMAN_GATE',
+        `Human Gate event ${event.gateRef} is not declared in the contract.`,
+        [event.gateRef]
+      ));
+      continue;
+    }
     if (event.necessary !== true) {
       findings.push(makeFinding(
         'UNNECESSARY_HUMAN_GATE',
@@ -312,11 +355,13 @@ function evaluateIntentRegression(contract, execution) {
   });
 
   const pendingGate = (execution.humanGateEvents || [])
-    .some((event) => event.necessary === true && event.action === 'REQUESTED');
+    .some((event) => declaredGateIds.has(event.gateRef)
+      && event.necessary === true
+      && event.action === 'REQUESTED');
 
   return canonicalize({
     contractId: contract.contractId,
-    evaluatorVersion: '0.1.0',
+    evaluatorVersion: '0.1.1',
     status: findings.length > 0 ? 'FAIL' : pendingGate ? 'HUMAN_GATE_REQUIRED' : 'PASS',
     findings,
     checks: {
