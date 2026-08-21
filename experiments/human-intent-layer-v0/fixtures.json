@@ -19,7 +19,7 @@
         "LOCKED": [{ "id": "locked.geometry", "statement": "Building geometry and all unrequested elements remain unchanged." }],
         "UNKNOWN": [{ "id": "unknown.beige-code", "statement": "Exact beige manufacturer color code is unknown." }],
         "PROPOSED": [{ "id": "proposed.landscape", "statement": "Add decorative landscaping." }],
-        "AUTHORIZED": [{ "id": "authorized.facade-delta", "statement": "Only the listed material, railing, column-step and level changes are authorized." }],
+        "AUTHORIZED": [{ "id": "authorized.facade-delta", "statement": "Only the listed material, railing, column-step and level changes are authorized.", "targets": ["delta.facade"] }],
         "NOT_AUTHORIZED": [{ "id": "not-authorized.geometry", "statement": "Changing openings, massing, roof, landscaping or element counts is not authorized." }],
         "HUMAN_GATES": [{ "id": "gate.design-expansion", "statement": "Any additional user-facing design mutation requires approval.", "required": false }],
         "ACCEPTANCE": [{ "id": "acceptance.facade", "statement": "All requested facade changes are visible and locked geometry is preserved." }],
@@ -252,6 +252,30 @@
         "humanGateEvents": [{ "gateRef": "gate.dependency-or-product", "action": "REQUESTED", "necessary": false }]
       },
       "expectedCodes": ["UNNECESSARY_HUMAN_GATE"]
+    },
+    {
+      "id": "authority-laundering",
+      "fixture": "architecture-facade",
+      "patch": {
+        "semanticDeltas": [{ "id": "delta.landscaping", "authorizedBy": ["authorized.facade-delta"], "requiresHumanGate": false }]
+      },
+      "expectedCodes": ["UNAUTHORIZED_SEMANTIC_DELTA"]
+    },
+    {
+      "id": "fabricated-claim-source",
+      "fixture": "travel-natural-brief",
+      "patch": {
+        "claims": [{ "id": "claim.fabricated", "sourceRef": "unknown.fabricated", "certainty": "UNKNOWN" }]
+      },
+      "expectedCodes": ["UNDECLARED_CLAIM_SOURCE"]
+    },
+    {
+      "id": "undeclared-human-gate",
+      "fixture": "knowledge-unresolved-evidence",
+      "patch": {
+        "humanGateEvents": [{ "gateRef": "gate.fabricated", "action": "REQUESTED", "necessary": true }]
+      },
+      "expectedCodes": ["UNDECLARED_HUMAN_GATE"]
     }
   ]
 }
