@@ -1,0 +1,88 @@
+{
+  "corpusVersion": "0.2.0-automated-transport-blind-1",
+  "cases": [
+    {
+      "id": "A13",
+      "domain": "architecture",
+      "style": "concise",
+      "language": "en",
+      "evidence": [],
+      "text": "On the courtyard elevation, replace the bronze-colored cladding with weathered copper. Window sizes, joint grid, balcony edges and every unmentioned element stay as drawn. The final copper patina sample is undecided; prepare the material study, but do not issue a final color selection until I approve the sample."
+    },
+    {
+      "id": "A14",
+      "domain": "architecture",
+      "style": "mixed",
+      "language": "en",
+      "evidence": [
+        {
+          "evidence_id": "survey-courtyard-4",
+          "content": "Survey C4 records the lower terrace at +0.12 m and the garden path at -0.08 m, with three risers between them."
+        }
+      ],
+      "text": "Please use survey-courtyard-4 for the levels. Change just the three riser faces to dark granite and show the recorded height relationship accurately. Leave the tread finish, terrace outline, path width and door threshold untouched. If drainage compliance needs a level or riser-count change, stop and ask before changing it."
+    },
+    {
+      "id": "S13",
+      "domain": "software",
+      "style": "fragmented",
+      "language": "en",
+      "evidence": [],
+      "text": "Bug: reconnect can deliver the same chat message twice. Target: one logical delivery. Preserve protocol, idempotency key, tenant isolation, public events. Root branch unknown. Internal diagnosis, fix and regression tests allowed. No dependency, schema migration, UI change, merge or deploy."
+    },
+    {
+      "id": "S14",
+      "domain": "software",
+      "style": "conversational",
+      "language": "en",
+      "evidence": [],
+      "text": "Could you fix the Android draft restore so attachments keep their conversation owner after the app is killed? Please keep the compose screen and analytics event names exactly the same, and use the smallest internal correction you consider sound. Someone suggested replacing the whole draft queue; you may assess that separately, but do not replace it unless I approve. No new package, release, merge or deployment."
+    },
+    {
+      "id": "T13",
+      "domain": "travel",
+      "style": "concise",
+      "language": "en",
+      "evidence": [],
+      "text": "Compare flights and quiet design hotels in Lisbon for two adults, 6–11 May 2028, departing Sofia. The budget is not decided, so keep prices visible instead of inventing a limit. Research only; booking and payment need my approval."
+    },
+    {
+      "id": "T14",
+      "domain": "travel",
+      "style": "mixed",
+      "language": "en",
+      "evidence": [
+        {
+          "evidence_id": "hotel-note-porto-12",
+          "content": "Hotel preference: independent property, no more than 45 rooms, breakfast available, outside late-night entertainment streets."
+        }
+      ],
+      "text": "We are considering Porto for roughly five nights in September 2028, two adults. Use hotel-note-porto-12 and start with hotel options. Our departure city and exact dates are still open, so wait before producing a specific flight shortlist. A one-day Douro visit could be shown as a separate idea, not inserted into the trip without our approval. Do not book, pay or contact suppliers."
+    },
+    {
+      "id": "K13",
+      "domain": "knowledge",
+      "style": "concise",
+      "language": "en",
+      "evidence": [],
+      "text": "Establish whether buildLegacyIndex is invoked by the production search pipeline. Inspect callers and runtime wiring; unit tests alone are not proof of production use. Keep unsupported use UNKNOWN. This is read-only analysis, with no code change."
+    },
+    {
+      "id": "K14",
+      "domain": "knowledge",
+      "style": "mixed",
+      "language": "en",
+      "evidence": [
+        {
+          "evidence_id": "sender-hourly",
+          "content": "The sender recorded 120 emitted notifications between 14:00 and 15:00."
+        },
+        {
+          "evidence_id": "gateway-hourly",
+          "content": "The gateway accepted 117 notifications in the same interval; recipient delivery receipts were not retained."
+        }
+      ],
+      "text": "Compare the two supplied notification records and state only what they establish. Do not collapse emission, gateway acceptance and recipient delivery into one event. Keep the three-notification gap and final delivery status unresolved. You may recommend one next evidence check, but do not resend anything, alter configuration or contact recipients."
+    }
+  ]
+}
