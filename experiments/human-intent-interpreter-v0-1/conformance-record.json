@@ -1,0 +1,22 @@
+{
+  "recordVersion":"0.1.0",
+  "method":"Frozen semantic mapping against hidden gold; no candidate repair.",
+  "cases":{
+    "A1":{"explicit":[6,6,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,3],"findings":["Authorized execution actions were placed in PROPOSED."]},
+    "A2":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[1,1,2],"findings":["Two authorized facade actions were also placed in PROPOSED."]},
+    "A3":{"explicit":[6,6,0],"separation":[1,1],"locked":[2,2],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,3],"findings":["Authorized execution actions were placed in PROPOSED."]},
+    "A4":{"explicit":[5,5,0],"separation":[1,1],"locked":[2,2],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,3],"findings":["Authorized execution actions were placed in PROPOSED."]},
+    "S1":{"explicit":[4,4,0],"separation":[1,1],"locked":[2,2],"unknown":[1,0],"authority":[1,1],"gates":[1,1],"proposed":[0,0,1],"findings":["Root cause UNKNOWN was omitted.","Authorized correction was placed in PROPOSED."]},
+    "S2":{"explicit":[4,4,0],"separation":[2,2],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,1],"findings":["Authorized correction was placed in PROPOSED."]},
+    "S3":{"explicit":[6,6,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,1],"findings":["Authorized correction was placed in PROPOSED."]},
+    "S4":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,3],"findings":["Authorized repair, state transfer and tests were placed in PROPOSED."]},
+    "T1":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[3,3],"authority":[1,1],"gates":[1,1],"proposed":[0,0,2],"findings":["Authorized research actions were placed in PROPOSED."]},
+    "T2":{"explicit":[5,5,0],"separation":[2,2],"locked":[2,2],"unknown":[3,3],"authority":[1,1],"gates":[1,1],"proposed":[0,0,2],"findings":["Authorized research actions were placed in PROPOSED."]},
+    "T3":{"explicit":[6,6,0],"separation":[1,1],"locked":[4,4],"unknown":[2,2],"authority":[1,1],"gates":[1,1],"proposed":[1,1,2],"findings":["Two authorized shortlist actions were also placed in PROPOSED."]},
+    "T4":{"explicit":[5,5,0],"separation":[1,1],"locked":[4,4],"unknown":[3,3],"authority":[1,1],"gates":[1,1],"proposed":[0,0,1],"findings":["Authorized research action was placed in PROPOSED."]},
+    "K1":{"explicit":[4,4,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,1],"findings":["Authorized inspection action was placed in PROPOSED."]},
+    "K2":{"explicit":[4,4,0],"separation":[1,1],"locked":[3,3],"unknown":[1,1],"authority":[1,1],"gates":[1,1],"proposed":[0,0,1],"findings":["Authorized trace action was placed in PROPOSED."]},
+    "K3":{"explicit":[5,5,0],"separation":[1,1],"locked":[3,3],"unknown":[2,2],"authority":[1,1],"gates":[1,1],"proposed":[0,0,1],"findings":["Authorized assessment action was placed in PROPOSED.","Supplied implementation-commit evidence was not represented in entry provenance."]},
+    "K4":{"explicit":[6,6,0],"separation":[1,1],"locked":[3,3],"unknown":[2,2],"authority":[1,1],"gates":[1,1],"proposed":[1,1,1],"findings":["Authorized comparison action was also placed in PROPOSED.","Evidence context was described as raw-text absence rather than evidence provenance."]}
+  }
+}
