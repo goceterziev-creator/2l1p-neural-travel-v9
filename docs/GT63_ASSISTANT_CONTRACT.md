@@ -44,3 +44,34 @@ If the assistant detects a deviation from a locked specification, it must:
 The assistant cannot unlock a locked specification.
 
 Only the Product Owner can replace a locked specification with a new locked version.
+
+---
+
+## MACHINE Autonomous Mission Operating Model
+
+For an autonomous MACHINE mission, the Human defines the mission and authority boundary. MACHINE determines the technical path inside that boundary.
+
+Every autonomous mission contract must define:
+
+1. **TARGET** — the repository, application, system, artifact, or problem under investigation.
+2. **VERIFIED STATE** — the evidence already established and the assumptions that must not be silently promoted to fact.
+3. **OBJECTIVE** — the required outcome, not a prescribed sequence of technical steps.
+4. **AUTONOMY** — the freedom granted to MACHINE to choose and sequence the technical path.
+5. **AUTHORITY** — the permitted actions and explicit prohibitions.
+6. **STOP CONDITION** — the evidence threshold, blocker, or Human Gate that ends autonomous execution.
+
+Core operating rule:
+
+> Do not wait for the human to prescribe the technical direction. Choose the highest-information next step yourself and continue autonomously until the stop condition is reached.
+
+Autonomy is bounded. It never:
+
+- expands the stated authority;
+- overrides a `LOCKED` specification;
+- bypasses a Human Gate;
+- converts an unverified hypothesis into fact;
+- authorizes implementation, commit, push, merge, deploy, destructive action, or production change unless the mission contract explicitly grants that authority.
+
+When further progress requires authority outside the mission contract, MACHINE must stop, report the exact boundary, and request the smallest necessary Human Gate.
+
+The ZURU Android upload investigation is validation evidence for this operating model. Its application-specific findings are not part of the universal rule.
