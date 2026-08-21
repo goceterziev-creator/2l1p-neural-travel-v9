@@ -1,0 +1,111 @@
+name: HII V0.2 one frozen-corpus real-model run
+
+on:
+  push:
+    branches:
+      - experiment/hii-v0-2-automated-blind-transport
+    paths:
+      - .github/workflows/hii-v0-2-one-real-model-run.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hii-v0-2-one-real-model-run
+  cancel-in-progress: false
+
+jobs:
+  frozen-real-model-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport
+      RUN_DIR: ${{ runner.temp }}/hii-v0-2-real-blind-1
+      EVIDENCE_DIR: ${{ runner.temp }}/hii-v0-2-evidence
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - name: Checkout the authorized branch commit
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Verify public corpus identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(sha256sum "$BASE/corpus/blind-corpus.json" | cut -d ' ' -f 1)"
+          test "$actual" = "58e5c8c5597cd026b0db975bad96f1c2d8fceb4a4fc41416b14e3a3668b7a91f"
+
+      - name: Generate and freeze exactly eight candidates
+        id: generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          node "$BASE/transport/run-generation.js"             --corpus "$BASE/corpus/blind-corpus.json"             --output "$RUN_DIR"             --adapter openai             --run-id v0-2-real-blind-1             > "$RUNNER_TEMP/generation.json"
+          test "$(node -e 'const f=require(process.argv[1]); process.stdout.write(String(f.totalModelCalls))' "$RUN_DIR/freeze.json")" = "8"
+
+      - name: Evaluate only after sealed freeze
+        id: evaluation
+        if: steps.generation.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -e 'const f=require(process.argv[1]); process.stdout.write(String(f.sealed))' "$RUN_DIR/freeze.json")" = "true"
+          actual_gold="$(sha256sum "$BASE/corpus/hidden-gold.json" | cut -d ' ' -f 1)"
+          test "$actual_gold" = "48a430e4c519aa6b6a3406eb9e57de767fbd324624b7517eb242a5dd106b9483"
+          node "$BASE/transport/run-evaluation.js"             --run-dir "$RUN_DIR"             --corpus "$BASE/corpus/blind-corpus.json"             --gold "$BASE/corpus/hidden-gold.json"             --v0-module experiments/human-intent-layer-v0/intent-layer.js             --evaluator experiments/human-intent-interpreter-v0-1/acceptance-hardening/independent-semantic-evaluator.js             > "$RUNNER_TEMP/evaluation.json"
+
+      - name: Accepted V0 regression
+        id: v0
+        if: steps.generation.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test experiments/human-intent-layer-v0/intent-layer.test.js             > "$RUNNER_TEMP/v0-regression.tap"
+
+      - name: Accepted V0.1 regression
+        id: v01
+        if: steps.generation.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2"           HUMAN_INTENT_V0_MODULE="$GITHUB_WORKSPACE/experiments/human-intent-layer-v0/intent-layer.js"           node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js             > "$RUNNER_TEMP/v0-1-regression.json"
+
+      - name: Assemble frozen evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$EVIDENCE_DIR"
+          if test -d "$RUN_DIR"; then cp -a "$RUN_DIR" "$EVIDENCE_DIR/run"; fi
+          for file in generation.json evaluation.json v0-regression.tap v0-1-regression.json; do
+            if test -f "$RUNNER_TEMP/$file"; then cp "$RUNNER_TEMP/$file" "$EVIDENCE_DIR/$file"; fi
+          done
+          {
+            printf '{"repository":"%s","commit":"%s","runId":"%s","generationOutcome":"%s","evaluationOutcome":"%s","v0Outcome":"%s","v01Outcome":"%s"}\n'               "$GITHUB_REPOSITORY" "$GITHUB_SHA" "$GITHUB_RUN_ID"               "${{ steps.generation.outcome }}" "${{ steps.evaluation.outcome }}"               "${{ steps.v0.outcome }}" "${{ steps.v01.outcome }}"
+          } > "$EVIDENCE_DIR/workflow-evidence.json"
+
+      - name: Upload frozen run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hii-v0-2-real-blind-1
+          path: ${{ runner.temp }}/hii-v0-2-evidence
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce terminal verdict
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.generation.outcome }}" = "success" || { echo "BLOCKED: generation did not complete"; exit 20; }
+          test "${{ steps.evaluation.outcome }}" = "success" || { echo "BLOCKED: post-freeze evaluation did not complete"; exit 20; }
+          test "${{ steps.v0.outcome }}" = "success" || { echo "FAIL: accepted V0 regression failed"; exit 1; }
+          test "${{ steps.v01.outcome }}" = "success" || { echo "FAIL: accepted V0.1 regression failed"; exit 1; }
+          status="$(node -e 'const r=require(process.argv[1]); process.stdout.write(r.status)' "$RUNNER_TEMP/evaluation.json")"
+          test "$status" = "PASS" || { echo "FAIL: frozen candidates missed semantic thresholds"; exit 1; }
+          echo "PASS: one frozen-corpus real-model run met all gates"
