@@ -33,6 +33,17 @@ function oneCaseCorpus(tempRoot) {
   return file;
 }
 
+function makeWritable(target) {
+  if (!fs.existsSync(target)) return;
+  const stat = fs.lstatSync(target);
+  if (stat.isDirectory()) {
+    fs.chmodSync(target, 0o755);
+    for (const child of fs.readdirSync(target)) makeWritable(path.join(target, child));
+  } else {
+    fs.chmodSync(target, 0o644);
+  }
+}
+
 function providerStructuredResponseFromLegacy(rawResponse, source) {
   const copy = JSON.parse(JSON.stringify(rawResponse));
   const candidate = JSON.parse(copy.output_text);
@@ -156,6 +167,7 @@ function providerStructuredResponseFromLegacy(rawResponse, source) {
       realOutboundCalls: 0
     }, null, 2)}\n`);
   } finally {
+    makeWritable(tempRoot);
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
 })().catch((error) => {
