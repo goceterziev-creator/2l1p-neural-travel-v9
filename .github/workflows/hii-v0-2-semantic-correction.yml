@@ -1,0 +1,49 @@
+name: HII V0.2 semantic correction validation
+
+on:
+  push:
+    branches:
+      - experiment/hii-v0-2-semantic-correction
+
+permissions:
+  contents: read
+
+jobs:
+  provider-free-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BASE: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Semantic policy syntax and boundary tests
+        run: |
+          set -euo pipefail
+          node --check "$BASE/transport/semantic-policy.js"
+          node --check "$BASE/transport/generation-worker.js"
+          node "$BASE/transport/semantic-policy.test.js"
+
+      - name: V0.2 transport and provenance regressions
+        run: |
+          set -euo pipefail
+          node "$BASE/transport.test.js"
+          node "$BASE/transport-id-contract.test.js"
+          node "$BASE/transport-provenance-contract.test.js"
+          node "$BASE/transport-reference-contract.test.js"
+
+      - name: Accepted V0 regression
+        run: |
+          set -euo pipefail
+          node --test experiments/human-intent-layer-v0/intent-layer.test.js
+
+      - name: Accepted V0.1 independent acceptance regression
+        run: |
+          set -euo pipefail
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" \
+          HUMAN_INTENT_V0_MODULE="$GITHUB_WORKSPACE/experiments/human-intent-layer-v0/intent-layer.js" \
+          node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js
