@@ -9,6 +9,10 @@ const {
   sha256,
   stableBytes
 } = require('./contract');
+const {
+  SEMANTIC_POLICY_VERSION,
+  renderSemanticPolicy
+} = require('./semantic-policy');
 const { createFakeAdapter } = require('./adapters/fake-adapter');
 const { createOpenAiResponsesAdapter } = require('./adapters/openai-responses-adapter');
 
@@ -47,6 +51,13 @@ function loadAdapter(args) {
   throw new TypeError(`unsupported adapter: ${args.adapter}`);
 }
 
+function withSemanticPolicy(envelope) {
+  return Object.freeze({
+    ...envelope,
+    instructions: `${envelope.instructions}\n\n${renderSemanticPolicy()}`
+  });
+}
+
 function assertCorpus(corpus) {
   if (!corpus || !Array.isArray(corpus.cases) || !corpus.cases.length) throw new TypeError('corpus requires cases');
   const ids = new Set();
@@ -65,7 +76,7 @@ async function main() {
   ensureFreshOutput(path.resolve(args.output));
   const outputDir = path.resolve(args.output);
   const adapter = loadAdapter(args);
-  const envelopes = corpus.cases.map((source) => buildEnvelope(source));
+  const envelopes = corpus.cases.map((source) => withSemanticPolicy(buildEnvelope(source)));
   const pricing = adapter.parameters.pricing_usd_per_million || { input: 0, output: 0 };
   const inputTokenUpperBound = envelopes.reduce((total, envelope) => total + Buffer.byteLength(stableBytes(envelope)), 0);
   const outputTokenUpperBound = corpus.cases.length * Number(adapter.parameters.max_output_tokens || 0);
@@ -76,6 +87,7 @@ async function main() {
   if (maximumEstimatedCostUsd > Number(adapter.parameters.max_budget_usd || 0)) {
     throw new Error(`projected maximum model cost ${maximumEstimatedCostUsd} exceeds adapter budget`);
   }
+  const effectiveProtocol = envelopes[0].instructions;
   const requestManifest = {
     manifestVersion: 'hii-v0.2-generation-request-v1',
     runId: args['run-id'],
@@ -84,6 +96,9 @@ async function main() {
     parameters: adapter.parameters,
     corpusIdentity: sha256(corpusBytes),
     publicProtocolIdentity: sha256(PUBLIC_PROTOCOL),
+    semanticPolicyVersion: SEMANTIC_POLICY_VERSION,
+    semanticPolicyIdentity: sha256(renderSemanticPolicy()),
+    effectiveProtocolIdentity: sha256(effectiveProtocol),
     costBoundary: {
       inputTokenUpperBound,
       outputTokenUpperBound,
