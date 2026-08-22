@@ -20,6 +20,14 @@ For SUPPLIED_EVIDENCE, use the accepted evidence_id/quote representation and spa
 For INFERENCE, use INFERENCE provenance with supports as defined by the accepted contract and spans=[].
 Spans are evidence grounding only. Their number must not create, remove, move or reclassify semantic entries.`;
 
+function providerRepresentationFor(envelope) {
+  return {
+    descriptor: PROVIDER_REPRESENTATION,
+    instructions: PROVIDER_PROVENANCE_INSTRUCTIONS,
+    outputSchema: structuredProvenanceSchema(envelope.outputSchema)
+  };
+}
+
 function createOpenAiResponsesAdapter(options = {}) {
   const providerLayerPath = options.providerLayerPath || process.env.HII_PROVIDER_LAYER_PATH
     || path.resolve(__dirname, '..', '..', '..', '..', '..', 'provider-layer');
@@ -42,6 +50,7 @@ function createOpenAiResponsesAdapter(options = {}) {
     model,
     parameters,
     providerRepresentation: PROVIDER_REPRESENTATION,
+    providerRepresentationFor,
     async invoke(envelope, context = {}) {
       if (!provider) {
         if (!process.env.OPENAI_API_KEY) {
@@ -58,6 +67,7 @@ function createOpenAiResponsesAdapter(options = {}) {
         error.code = 'BLOCKED_REAL_MODEL_ACCESS';
         throw error;
       }
+      const representation = providerRepresentationFor(envelope);
       const result = await provider.execute({
         task: 'responses',
         model,
@@ -66,7 +76,7 @@ function createOpenAiResponsesAdapter(options = {}) {
           temperature: parameters.temperature,
           max_output_tokens: parameters.max_output_tokens,
           input: [
-            { role: 'system', content: [{ type: 'input_text', text: `${envelope.instructions}\n\n${PROVIDER_PROVENANCE_INSTRUCTIONS}` }] },
+            { role: 'system', content: [{ type: 'input_text', text: `${envelope.instructions}\n\n${representation.instructions}` }] },
             { role: 'user', content: [{ type: 'input_text', text: JSON.stringify({
               text: envelope.text,
               language: envelope.language,
@@ -78,7 +88,7 @@ function createOpenAiResponsesAdapter(options = {}) {
               type: 'json_schema',
               name: 'human_intent_candidate',
               strict: true,
-              schema: structuredProvenanceSchema(envelope.outputSchema)
+              schema: representation.outputSchema
             }
           }
         }
@@ -101,5 +111,6 @@ module.exports = {
   EXPERIMENTAL_MODEL,
   PROVIDER_REPRESENTATION,
   PROVIDER_PROVENANCE_INSTRUCTIONS,
+  providerRepresentationFor,
   createOpenAiResponsesAdapter
 };
