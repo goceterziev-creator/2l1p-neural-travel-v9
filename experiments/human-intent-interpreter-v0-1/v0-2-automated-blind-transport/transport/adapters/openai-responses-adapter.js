@@ -1,15 +1,18 @@
 'use strict';
 
 const path = require('node:path');
+const {
+  structuredProvenanceSchema,
+  extractionResponseFromStructured
+} = require('../structured-provenance');
 
 const EXPERIMENTAL_MODEL = 'gpt-4.1-mini-2025-04-14';
 
 const PROVIDER_PROVENANCE_INSTRUCTIONS = `Provider-facing provenance representation:
-Each provenance array element represents exactly one independently valid source span or one supplied-evidence reference.
-For RAW_TEXT, quote exactly one contiguous span copied from the raw text. If one semantic statement depends on two or more non-contiguous raw-text spans, emit two or more separate RAW_TEXT provenance elements in the same entry.provenance array. Never concatenate, summarize, bridge, omit words from, add words to, or reorder disjoint spans inside one quote field.
-For SUPPLIED_EVIDENCE, one provenance element identifies exactly one evidence_id and, when quote is present, one exact contiguous span from that evidence item.
-For INFERENCE, use INFERENCE provenance with supports as defined by the accepted contract; each support reference remains independently exact.
-Multiple provenance elements support one semantic entry only; they do not create additional semantic claims or change the entry's section, statement, authority meaning, or Human Gate meaning.`;
+RAW_TEXT provenance is structural. Do not author a RAW_TEXT quotation. Set quote=null, evidence_id=null, supports=[] and select one or more exact UTF-16 code-unit [start,end) spans from the raw brief in spans. Each span is contiguous, non-empty, ordered and non-overlapping. If one semantic statement depends on non-contiguous raw locations, put each location in the same RAW_TEXT provenance item's spans array. The transport copies canonical quote text directly from those source locations.
+For SUPPLIED_EVIDENCE, use the accepted evidence_id/quote representation and spans=[].
+For INFERENCE, use INFERENCE provenance with supports as defined by the accepted contract and spans=[].
+Spans are evidence grounding only. Their number must not create, remove, move or reclassify semantic entries.`;
 
 function createOpenAiResponsesAdapter(options = {}) {
   const providerLayerPath = options.providerLayerPath || process.env.HII_PROVIDER_LAYER_PATH
@@ -68,7 +71,7 @@ function createOpenAiResponsesAdapter(options = {}) {
               type: 'json_schema',
               name: 'human_intent_candidate',
               strict: true,
-              schema: envelope.outputSchema
+              schema: structuredProvenanceSchema(envelope.outputSchema)
             }
           }
         }
@@ -79,7 +82,10 @@ function createOpenAiResponsesAdapter(options = {}) {
         error.code = result.errors?.[0]?.code || 'PROVIDER_REQUEST_FAILED';
         throw error;
       }
-      return { rawResponse: result.data };
+      return {
+        rawResponse: result.data,
+        extractionResponse: extractionResponseFromStructured(result.data, envelope.text)
+      };
     }
   });
 }
