@@ -127,6 +127,7 @@ async function main() {
       return {
         id: source.id,
         envelopeIdentity: sha256(stableBytes(envelope)),
+        providerRepresentation: representation,
         providerRepresentationIdentity: sha256(stableBytes(representation)),
         envelope
       };
