@@ -44,9 +44,28 @@ function makeWritable(target) {
   }
 }
 
+function outputTextSlot(rawResponse) {
+  if (typeof rawResponse?.output_text === 'string') {
+    return {
+      get: () => rawResponse.output_text,
+      set: (text) => { rawResponse.output_text = text; }
+    };
+  }
+  const content = rawResponse?.output?.flatMap((item) => Array.isArray(item?.content) ? item.content : [])
+    .find((item) => item?.type === 'output_text' && typeof item.text === 'string');
+  if (content) {
+    return {
+      get: () => content.text,
+      set: (text) => { content.text = text; }
+    };
+  }
+  throw new TypeError('provider mock response has no output_text payload');
+}
+
 function providerStructuredResponseFromLegacy(rawResponse, source) {
   const copy = JSON.parse(JSON.stringify(rawResponse));
-  const candidate = JSON.parse(copy.output_text);
+  const slot = outputTextSlot(copy);
+  const candidate = JSON.parse(slot.get());
   for (const entries of Object.values(candidate)) {
     if (!Array.isArray(entries)) continue;
     for (const entry of entries) {
@@ -65,7 +84,7 @@ function providerStructuredResponseFromLegacy(rawResponse, source) {
       }
     }
   }
-  copy.output_text = JSON.stringify(candidate);
+  slot.set(JSON.stringify(candidate));
   return copy;
 }
 
