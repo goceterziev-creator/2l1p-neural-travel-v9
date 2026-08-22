@@ -109,7 +109,7 @@ async function main() {
   const systemText = capturedRequest.body.input[0].content[0].text;
   assert.ok(systemText.includes(PROVIDER_PROVENANCE_INSTRUCTIONS));
   assert.match(systemText, /UTF-16 code-unit/i);
-  assert.match(systemText, /multiple non-contiguous raw-text regions/i);
+  assert.match(systemText, /non-contiguous raw locations/i);
   const providerProvenanceSchema = capturedRequest.body.text.format.schema.properties.EXPLICIT.items.properties.provenance.items;
   assert.equal(providerProvenanceSchema.properties.spans.type, 'array');
   assert.ok(providerProvenanceSchema.required.includes('spans'));
