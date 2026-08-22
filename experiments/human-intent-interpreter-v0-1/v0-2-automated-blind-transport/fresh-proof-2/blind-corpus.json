@@ -1,0 +1,107 @@
+{
+  "cases": [
+    {
+      "domain": "architecture",
+      "evidence": [
+        {
+          "content": "The ceiling survey records accessible cable routes in the central bay. The void depth behind the east cornice was not verified during the visit.",
+          "evidence_id": "ceiling-survey-4"
+        }
+      ],
+      "id": "A31",
+      "language": "en",
+      "style": "conversational",
+      "text": "For the library reading room, revise the pendant layout so the tables are lit more evenly and use ceiling-survey-4 when planning the cable routes. Keep the listed plaster medallions, cornice line, table positions and sprinkler heads where they are. You can choose the cable route through the surveyed central bay. The void depth behind the east cornice is still unknown, but that should not stop the rest of the lighting layout. Do not drill through a medallion. If the only workable route would penetrate the listed cornice, bring that specific decision back to me before detailing it."
+    },
+    {
+      "domain": "architecture",
+      "evidence": [],
+      "id": "A32",
+      "language": "en",
+      "style": "mixed",
+      "text": "Rework the hotel terrace for 36 dining seats while keeping both olive trees and the 1.5 m accessible route untouched. Use a neutral placeholder for the chair upholstery because we have not chosen the fabric colour yet. Also price and show a retractable awning as an alternative worth considering, but keep it out of the base terrace layout and do not order or specify it for construction unless I approve that option. You may decide the table spacing and service aisle arrangement yourself."
+    },
+    {
+      "domain": "software",
+      "evidence": [
+        {
+          "content": "The incident log contains two deliveries with the same event_id evt_8841 within 18 seconds. The log does not contain a downstream acknowledgement for the first delivery.",
+          "evidence_id": "delivery-log-9"
+        }
+      ],
+      "id": "S31",
+      "language": "en",
+      "style": "concise",
+      "text": "Use delivery-log-9 to stop duplicate webhook processing in the consumer. Preserve the public webhook payload, endpoint contract and incoming event IDs. You can choose the internal deduplication key and add tests. We do not know whether the sender retried because it missed an acknowledgement, and you do not need to prove that upstream cause if the consumer can reject the duplicate safely. No queue replacement or database schema change. If a correct fix turns out to require persistent schema changes, ask me before doing that."
+    },
+    {
+      "domain": "software",
+      "evidence": [
+        {
+          "content": "Profiler sample P17 shows heap usage rising sharply while one indexing batch is expanded; the sample does not isolate synonym expansion as the cause.",
+          "evidence_id": "profiler-P17"
+        }
+      ],
+      "id": "S32",
+      "language": "en",
+      "style": "conversational",
+      "text": "Investigate the indexing worker memory spike using profiler-P17 and make the batch processing stay within the existing memory limit. Keep the search API response shape and ranking behaviour unchanged. Chunk size, buffering and other internal batching mechanics are yours to adjust. Someone suggested turning off synonym expansion; you may evaluate that suggestion and report whether it looks relevant, but do not disable synonyms. It is not established that synonyms caused the spike. No deploy."
+    },
+    {
+      "domain": "travel",
+      "evidence": [],
+      "id": "T31",
+      "language": "en",
+      "style": "fragmented",
+      "text": "Barcelona, parent + 16-year-old, five nights in late May. Start now with neighbourhoods, hotel areas and a shortlist of museums. The teenager's final exam date has not been published, so the exact travel dates are still open. Do not buy flights or reserve anything. Girona can be shown as an optional day trip, but leave it out of the base plan unless we choose it. Once the exam date is known, bring the exact flight choice back to me before any ticketing."
+    },
+    {
+      "domain": "travel",
+      "evidence": [
+        {
+          "content": "One guest has reported a possible tree-nut allergy and is waiting for clinical confirmation; no confirmed allergen list has been supplied.",
+          "evidence_id": "diet-note-3"
+        }
+      ],
+      "id": "T32",
+      "language": "en",
+      "style": "mixed",
+      "text": "Plan a four-night Marrakech anniversary trip for two adults using diet-note-3 as a real constraint, not as a diagnosis. You can shortlist riads, neighbourhoods, gardens and non-food experiences now, and you may choose whether a private or small-group city guide gives better value. Do not contact restaurants. Any tasting-menu or food experience that depends on knowing the allergen details must wait until the guest provides confirmed information. A hammam package may be presented as an optional extra, but do not add it to the base plan unless we approve it."
+    },
+    {
+      "domain": "knowledge",
+      "evidence": [
+        {
+          "content": "Runbook R7 is dated 2026-05-12 and describes the current incident escalation sequence. Its header does not name an owning team or approval authority.",
+          "evidence_id": "runbook-R7"
+        },
+        {
+          "content": "Runbook R5 is dated 2025-11-03 and uses a different escalation sequence. It is marked 'approved' but does not state whether it was superseded.",
+          "evidence_id": "runbook-R5"
+        }
+      ],
+      "id": "K31",
+      "language": "en",
+      "style": "conversational",
+      "text": "Compare runbook-R7 and runbook-R5 and map the conflicting escalation steps. Do not declare either document canonical just because one is newer. The current authority is not established by the supplied files. You may explain which document appears more recent and recommend what ownership evidence to obtain next, but do not edit either runbook. Before we label one of them canonical, that authority question must come back to me with the evidence."
+    },
+    {
+      "domain": "knowledge",
+      "evidence": [
+        {
+          "content": "The vendor contract states a monthly service-availability target of 99.9%.",
+          "evidence_id": "sla-contract"
+        },
+        {
+          "content": "The supplied monitoring export records 21 minutes of outage in the month, but contains no telemetry for the 14th and 15th.",
+          "evidence_id": "monitor-export"
+        }
+      ],
+      "id": "K32",
+      "language": "en",
+      "style": "concise",
+      "text": "Using only sla-contract and monitor-export, state the contracted availability target and what the monitoring export actually establishes. Do not treat the two missing telemetry days as uptime or downtime, and do not claim a contract breach from this incomplete sample. Keep the full-month availability result unresolved. You may recommend requesting the missing telemetry as the next evidence step, but do not contact the vendor or alter the monitoring data."
+    }
+  ],
+  "corpusVersion": "0.2.2-fresh-blind-semantic-proof-2"
+}
