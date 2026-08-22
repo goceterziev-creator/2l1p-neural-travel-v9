@@ -92,6 +92,17 @@ function runReplay(runDir, output, corpusPath) {
   ], { encoding: 'utf8' });
 }
 
+function makeWritable(target) {
+  if (!fs.existsSync(target)) return;
+  const stat = fs.lstatSync(target);
+  if (stat.isDirectory()) {
+    fs.chmodSync(target, 0o755);
+    for (const child of fs.readdirSync(target)) makeWritable(path.join(target, child));
+  } else {
+    fs.chmodSync(target, 0o644);
+  }
+}
+
 (function main() {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hii-structured-replay-'));
   try {
@@ -164,6 +175,7 @@ function runReplay(runDir, output, corpusPath) {
       }
     }, null, 2)}\n`);
   } finally {
+    makeWritable(tempRoot);
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
 })();
