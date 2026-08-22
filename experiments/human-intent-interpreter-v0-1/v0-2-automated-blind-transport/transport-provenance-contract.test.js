@@ -1,7 +1,13 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { extractCandidate, sha256, stableBytes } = require('./transport/contract');
+const {
+  buildEnvelope,
+  canonicalEvidenceComposition,
+  extractCandidate,
+  sha256,
+  stableBytes
+} = require('./transport/contract');
 const { createFakeAdapter } = require('./transport/adapters/fake-adapter');
 
 const SECTIONS = [
@@ -12,6 +18,10 @@ const SECTIONS = [
 
 function source(text) {
   return { id: 'provenance-test', language: 'en', text, evidence: [] };
+}
+
+function sourceWithEvidence(text, evidence) {
+  return { id: 'provenance-test', language: 'en', text, evidence };
 }
 
 function entry(quote) {
@@ -71,7 +81,10 @@ async function main() {
     ['Change the three riser faces to dark granite.', 'Change the riser three faces to dark granite.'],
     ['marker alpha beta; marker alpha beta.', 'Marker alpha beta.']
   ]) {
-    assert.throws(() => extract(text, quote), /canonical exact source spans|raw quote is not exact/);
+    assert.throws(
+      () => extract(text, quote),
+      /canonical exact source spans|raw quote is not exact|exact source decompositions/
+    );
   }
 
   const exactSource = 'Keep this exact RAW_TEXT span.';
@@ -103,6 +116,95 @@ async function main() {
   const fakeCandidate = extractCandidate(fakeResult.rawResponse, source(exactSource));
   assert.equal(fakeCandidate.OUTCOME[0].provenance[0].quote, exactSource);
 
+  const evidenceSource = sourceWithEvidence('Compare only the supplied records.', [
+    { evidence_id: 'sender', content: 'The sender recorded 120 emitted notifications.' },
+    { evidence_id: 'gateway', content: 'The gateway accepted 117 notifications; receipts were not retained.' }
+  ]);
+  const combined = 'The sender recorded 120 emitted notifications. The gateway accepted 117 notifications.';
+  assert.deepEqual(canonicalEvidenceComposition(evidenceSource, combined), [
+    { evidence_id: 'sender', quote: 'The sender recorded 120 emitted notifications' },
+    { evidence_id: 'gateway', quote: 'The gateway accepted 117 notifications' }
+  ]);
+
+  const evidenceCandidate = candidate(combined);
+  const evidenceExtracted = extractCandidate(
+    { output_text: stableBytes(evidenceCandidate).trim() },
+    evidenceSource
+  );
+  assert.deepEqual(evidenceExtracted.OUTCOME[0].provenance, [{
+    source_type: 'INFERENCE',
+    quote: null,
+    evidence_id: null,
+    supports: [
+      { evidence_id: 'sender', quote: 'The sender recorded 120 emitted notifications' },
+      { evidence_id: 'gateway', quote: 'The gateway accepted 117 notifications' }
+    ]
+  }]);
+  assert.equal(evidenceExtracted.OUTCOME[0].statement, evidenceCandidate.OUTCOME[0].statement);
+  assert.deepEqual(evidenceExtracted.OUTCOME[0].targets, evidenceCandidate.OUTCOME[0].targets);
+
+  const singleEvidenceCandidate = candidate('The sender recorded 120 emitted notifications.');
+  const singleEvidenceExtracted = extractCandidate(
+    { output_text: stableBytes(singleEvidenceCandidate).trim() },
+    evidenceSource
+  );
+  assert.deepEqual(singleEvidenceExtracted.OUTCOME[0].provenance, [{
+    source_type: 'SUPPLIED_EVIDENCE',
+    quote: 'The sender recorded 120 emitted notifications',
+    evidence_id: 'sender',
+    supports: []
+  }]);
+
+  const suppliedEvidenceCandidate = candidate('The gateway accepted 117 notifications.');
+  suppliedEvidenceCandidate.OUTCOME[0].provenance = [{
+    source_type: 'SUPPLIED_EVIDENCE',
+    quote: 'Receipts were not retained.',
+    evidence_id: 'gateway',
+    supports: []
+  }];
+  const suppliedEvidenceExtracted = extractCandidate(
+    { output_text: stableBytes(suppliedEvidenceCandidate).trim() },
+    evidenceSource
+  );
+  assert.equal(
+    suppliedEvidenceExtracted.OUTCOME[0].provenance[0].quote,
+    'receipts were not retained.'
+  );
+
+  for (const invalid of [
+    'The sender recorded 121 emitted notifications. The gateway accepted 117 notifications.',
+    'The gateway accepted 117 notifications. The sender recorded 120 emitted notifications plus one.',
+    'The sender recorded emitted notifications. The gateway accepted 117 notifications.'
+  ]) {
+    assert.throws(
+      () => extractCandidate({ output_text: stableBytes(candidate(invalid)).trim() }, evidenceSource),
+      /exact source decompositions/
+    );
+  }
+
+  const ambiguousSource = sourceWithEvidence('Use the supplied records.', [
+    { evidence_id: 'first', content: 'Identical evidence statement.' },
+    { evidence_id: 'second', content: 'Identical evidence statement.' }
+  ]);
+  assert.throws(
+    () => canonicalEvidenceComposition(ambiguousSource, 'Identical evidence statement.'),
+    /2 exact source decompositions/
+  );
+
+  const inferredSchema = buildEnvelope(evidenceSource).outputSchema.properties.INFERRED.items;
+  assert.deepEqual(inferredSchema.properties.provenance.items.properties.source_type.enum, ['INFERENCE']);
+
+  const evidenceFirst = extractCandidate(
+    { output_text: stableBytes(evidenceCandidate).trim() },
+    evidenceSource
+  );
+  const evidenceSecond = extractCandidate(
+    { output_text: stableBytes(evidenceCandidate).trim() },
+    evidenceSource
+  );
+  const multiSourceDeterministicIdentity = sha256(stableBytes(evidenceFirst));
+  assert.equal(multiSourceDeterministicIdentity, sha256(stableBytes(evidenceSecond)));
+
   process.stdout.write(`${JSON.stringify({
     status: 'PASS',
     proofs: {
@@ -118,7 +220,15 @@ async function main() {
       alreadyExactUnchanged: 'PASS',
       semanticFieldsUnchanged: 'PASS',
       fakeAdapterPath: 'PASS',
-      deterministicIdentity
+      deterministicIdentity,
+      multiSourceExactComposition: 'PASS',
+      singleEvidenceSourceRecovery: 'PASS',
+      suppliedEvidenceExactSpanCanonicalization: 'PASS',
+      changedAddedOmittedWordsRejected: 'PASS',
+      ambiguousEvidenceCompositionRejected: 'PASS',
+      inferredSchemaRequiresInferenceProvenance: 'PASS',
+      multiSourceSemanticFieldsUnchanged: 'PASS',
+      multiSourceDeterministicIdentity
     }
   }, null, 2)}\n`);
 }

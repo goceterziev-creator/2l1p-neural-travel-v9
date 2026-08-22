@@ -37,7 +37,9 @@ Requested action, delegated execution, and necessary mechanics are not PROPOSED.
 HUMAN_GATES are required only when approval is explicitly reserved or an
 established UNKNOWN blocks a specific authoritative action. Every entry must
 carry exact RAW_TEXT, SUPPLIED_EVIDENCE, or supported INFERENCE provenance.
-Never fabricate or rewrite a quotation represented as exact.
+Never fabricate or rewrite a quotation represented as exact. INFERRED entries
+must use INFERENCE provenance. Put each exact supporting source span in its own
+supports item; never concatenate text from multiple sources into one quote.
 Entry IDs are opaque strings, never references. Cross-entry references are
 objects with separate section and entry_id fields; entry_id must exactly equal
 the provider entry ID in the named section. targets contains only reference
@@ -112,11 +114,27 @@ const entrySchema = Object.freeze({
   additionalProperties: false
 });
 
+const inferredProvenanceSchema = Object.freeze({
+  ...provenanceSchema,
+  properties: {
+    ...provenanceSchema.properties,
+    source_type: { type: 'string', enum: ['INFERENCE'] }
+  }
+});
+
+const inferredEntrySchema = Object.freeze({
+  ...entrySchema,
+  properties: {
+    ...entrySchema.properties,
+    provenance: { type: 'array', items: inferredProvenanceSchema }
+  }
+});
+
 const CANDIDATE_SCHEMA = Object.freeze({
   type: 'object',
   properties: Object.fromEntries(SECTIONS.map((section) => [section, {
     type: 'array',
-    items: entrySchema
+    items: section === 'INFERRED' ? inferredEntrySchema : entrySchema
   }])),
   required: [...SECTIONS],
   additionalProperties: false
@@ -384,10 +402,86 @@ function canonicalRawTextSpan(sourceText, modelQuote) {
   return unique[0].quote;
 }
 
+function evidenceClauseTokenRanges(content) {
+  const tokens = lexicalTokens(content);
+  if (!tokens.length) return [];
+  const clauseStarts = [0];
+  for (let index = 1; index < tokens.length; index += 1) {
+    const separator = content.slice(tokens[index - 1].end, tokens[index].start);
+    if (/[.!?;]/u.test(separator)) clauseStarts.push(index);
+  }
+  const clauses = clauseStarts.map((start, index) => ({
+    start,
+    end: (clauseStarts[index + 1] || tokens.length) - 1
+  }));
+  const ranges = [];
+  for (let start = 0; start < clauses.length; start += 1) {
+    for (let end = start; end < clauses.length; end += 1) {
+      ranges.push({
+        start: clauses[start].start,
+        end: clauses[end].end,
+        length: clauses[end].end - clauses[start].start + 1,
+        text: content.slice(tokens[clauses[start].start].start, tokens[clauses[end].end].end)
+      });
+    }
+  }
+  return { tokens, ranges };
+}
+
+function canonicalEvidenceComposition(source, modelQuote) {
+  if (typeof modelQuote !== 'string' || !modelQuote) {
+    throw new TypeError('evidence-composed quote must be a non-empty string');
+  }
+  const quoteTokens = lexicalTokens(modelQuote);
+  if (!quoteTokens.length) throw new TypeError('evidence-composed quote has no lexical content');
+
+  const evidenceCandidates = (source.evidence || []).map((item) => ({
+    evidence_id: item.evidence_id,
+    content: item.content,
+    ...evidenceClauseTokenRanges(item.content)
+  }));
+  const paths = Array.from({ length: quoteTokens.length + 1 }, () => []);
+  paths[0].push([]);
+
+  for (let quoteIndex = 0; quoteIndex < quoteTokens.length; quoteIndex += 1) {
+    if (!paths[quoteIndex].length) continue;
+    for (const evidence of evidenceCandidates) {
+      for (const range of evidence.ranges || []) {
+        const quoteEnd = quoteIndex + range.length - 1;
+        if (quoteEnd >= quoteTokens.length) continue;
+        const quoteSlice = modelQuote.slice(quoteTokens[quoteIndex].start, quoteTokens[quoteEnd].end);
+        let canonicalQuote;
+        try {
+          canonicalQuote = canonicalRawTextSpan(range.text, quoteSlice);
+        } catch {
+          continue;
+        }
+        const support = { quote: canonicalQuote, evidence_id: evidence.evidence_id };
+        for (const path of paths[quoteIndex]) paths[quoteEnd + 1].push([...path, support]);
+      }
+    }
+  }
+
+  const completed = paths[quoteTokens.length];
+  const minimumSupportCount = completed.length
+    ? Math.min(...completed.map((path) => path.length))
+    : 0;
+  const coarsest = completed.filter((path) => path.length === minimumSupportCount);
+  const unique = coarsest.filter((path, index, all) => {
+    const identity = stableBytes(path);
+    return all.findIndex((candidate) => stableBytes(candidate) === identity) === index;
+  });
+  if (unique.length !== 1) {
+    throw new TypeError(`evidence-composed quote has ${unique.length} exact source decompositions`);
+  }
+  return unique[0];
+}
+
 function canonicalizeRawTextProvenance(candidate, source) {
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return candidate;
   if (SECTIONS.some((section) => !Array.isArray(candidate[section]))) return candidate;
 
+  const evidence = new Map((source.evidence || []).map((item) => [item.evidence_id, item.content]));
   let candidateChanged = false;
   const canonical = {};
   for (const section of SECTIONS) {
@@ -399,7 +493,26 @@ function canonicalizeRawTextProvenance(candidate, source) {
         let itemChanged = false;
         let next = item;
         if (item.source_type === 'RAW_TEXT' && item.evidence_id === null) {
-          const quote = canonicalRawTextSpan(source.text, item.quote);
+          try {
+            const quote = canonicalRawTextSpan(source.text, item.quote);
+            if (quote !== item.quote) {
+              next = { ...next, quote };
+              itemChanged = true;
+            }
+          } catch (error) {
+            if (!/RAW_TEXT quote has 0 canonical exact source spans/.test(error.message)) throw error;
+            const supports = canonicalEvidenceComposition(source, item.quote);
+            next = supports.length === 1
+              ? { source_type: 'SUPPLIED_EVIDENCE', ...supports[0], supports: [] }
+              : { source_type: 'INFERENCE', quote: null, evidence_id: null, supports };
+            itemChanged = true;
+          }
+        }
+        if (item.source_type === 'SUPPLIED_EVIDENCE'
+          && typeof item.evidence_id === 'string'
+          && evidence.has(item.evidence_id)
+          && typeof item.quote === 'string') {
+          const quote = canonicalRawTextSpan(evidence.get(item.evidence_id), item.quote);
           if (quote !== item.quote) {
             next = { ...next, quote };
             itemChanged = true;
@@ -407,8 +520,12 @@ function canonicalizeRawTextProvenance(candidate, source) {
         }
         if (item.source_type === 'INFERENCE' && Array.isArray(item.supports)) {
           const supports = item.supports.map((reference) => {
-            if (!reference || reference.evidence_id !== null) return reference;
-            const quote = canonicalRawTextSpan(source.text, reference.quote);
+            if (!reference || typeof reference.quote !== 'string') return reference;
+            const supportSource = reference.evidence_id === null
+              ? source.text
+              : evidence.get(reference.evidence_id);
+            if (typeof supportSource !== 'string') return reference;
+            const quote = canonicalRawTextSpan(supportSource, reference.quote);
             if (quote === reference.quote) return reference;
             itemChanged = true;
             return { ...reference, quote };
@@ -515,6 +632,7 @@ module.exports = {
   SECTIONS,
   buildEnvelope,
   canonicalRawTextSpan,
+  canonicalEvidenceComposition,
   canonicalizeRawTextProvenance,
   canonicalJson,
   extractCandidate,

@@ -15,6 +15,7 @@ const CORPUS_PATH = path.join(ROOT, 'corpus', 'blind-corpus.json');
 const GOLD_PATH = path.join(ROOT, 'corpus', 'hidden-gold.json');
 const GENERATE = path.join(ROOT, 'transport', 'run-generation.js');
 const EVALUATE = path.join(ROOT, 'transport', 'run-evaluation.js');
+const REPLAY = path.join(ROOT, 'transport', 'replay-frozen-run.js');
 const V0 = process.env.HUMAN_INTENT_V0_MODULE || path.join(ROOT, '..', '..', 'validation-pr2-ba45a75d', 'intent-layer.js');
 const EVALUATOR = process.env.HII_V0_1_EVALUATOR || path.join(ROOT, '..', 'acceptance-hardening', 'independent-semantic-evaluator.js');
 const corpus = JSON.parse(fs.readFileSync(CORPUS_PATH));
@@ -112,6 +113,21 @@ async function main() {
     const after = verifyFrozenRun(fullOutput, corpus).freeze;
     assert.deepEqual(after, before, 'evaluation must not mutate or regenerate candidates');
 
+    const replayOutput = path.join(tempRoot, 'full-fake-replay');
+    const replayed = run(REPLAY, [
+      '--source-run-dir', fullOutput,
+      '--output', replayOutput,
+      '--corpus', CORPUS_PATH
+    ]);
+    assert.equal(replayed.status, 0, replayed.stderr);
+    const replayFreeze = verifyFrozenRun(replayOutput, corpus).freeze;
+    assert.equal(replayFreeze.replayModelCalls, 0);
+    assert.equal(replayFreeze.replayedFromFrozenRawResponses, true);
+    assert.deepEqual(
+      replayFreeze.artifacts.map(({ id, rawResponseIdentity, candidateIdentity }) => ({ id, rawResponseIdentity, candidateIdentity })),
+      before.artifacts.map(({ id, rawResponseIdentity, candidateIdentity }) => ({ id, rawResponseIdentity, candidateIdentity }))
+    );
+
     const envelope = buildEnvelope(corpus.cases[0]);
     const fakeAdapter = createFakeAdapter();
     const fakeResult = await fakeAdapter.invoke(envelope);
@@ -154,6 +170,7 @@ async function main() {
         candidateHashVerified: true,
         credentialSentinelAbsentFromArtifacts: true,
         fakeAdapterReplaceableAtRealBoundary: true,
+        frozenRawReplayWithoutModelCalls: true,
         failedCandidateRemainsFailedWithoutRegeneration: true,
         realModelAccess: 'BLOCKED_REAL_MODEL_ACCESS'
       },
