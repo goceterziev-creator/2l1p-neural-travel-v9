@@ -93,10 +93,6 @@ async function main() {
     supports: [],
     spans: [{ start: 0, end: 'Alpha requirement is fixed.'.length }]
   }]));
-  // Structured provider schema requires spans on every provenance discriminator.
-  for (const provenance of structuredSingle.EXPLICIT[0].provenance) {
-    if (!Object.hasOwn(provenance, 'spans')) provenance.spans = [];
-  }
   const adapter = createOpenAiResponsesAdapter({ provider: {
     async health() { return { status: 'ready' }; },
     async execute(request) {
@@ -111,8 +107,11 @@ async function main() {
   assert.match(systemText, /UTF-16 code-unit/i);
   assert.match(systemText, /non-contiguous raw locations/i);
   const providerProvenanceSchema = capturedRequest.body.text.format.schema.properties.EXPLICIT.items.properties.provenance.items;
-  assert.equal(providerProvenanceSchema.properties.spans.type, 'array');
-  assert.ok(providerProvenanceSchema.required.includes('spans'));
+  const rawVariant = providerProvenanceSchema.anyOf.find((variant) => variant.properties.source_type.enum[0] === 'RAW_TEXT');
+  assert.ok(rawVariant);
+  assert.equal(rawVariant.properties.spans.type, 'array');
+  assert.equal(rawVariant.properties.spans.minItems, 1);
+  assert.ok(rawVariant.required.includes('spans'));
   assert.equal(capturedRequest.body.temperature, 0);
   assert.ok(adapterResult.rawResponse.output_text.includes('"spans"'));
   assert.ok(!adapterResult.extractionResponse.output_text.includes('"spans"'));
@@ -137,6 +136,7 @@ async function main() {
     positive: 5,
     negative: 7,
     providerFacingStructuredSpans: 'PASS',
+    providerFacingDiscriminator: 'PASS',
     semanticPayloadInvariant: 'PASS',
     noModelCalls: true
   }, null, 2)}\n`);
