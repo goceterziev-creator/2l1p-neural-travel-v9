@@ -43,7 +43,7 @@ jobs:
           corpus_hash="$(sha256sum "$CORPUS" | cut -d ' ' -f 1)"
           gold_hash="$(sha256sum "$GOLD" | cut -d ' ' -f 1)"
           test "$corpus_hash" = "0f082782c5d25a0d47cc5fb9bc4fe1d25d239a0f0d6e294c5500ce5934b39af2"
-          test "$gold_hash" = "93413353453e897d8ae6df6db525964e804d9011107daac7cf9ec9ab0e145c54"
+          test "$gold_hash" = "6e2bec61ebfb3b1ecb41325d0557e386641c85d9035f292454946f11062623c5"
           printf '{"corpus":"%s","hiddenGold":"%s"}\n' "$corpus_hash" "$gold_hash" > "$RUNNER_TEMP/frozen-input-identities.json"
 
       - name: Prove generation sandbox cannot read hidden gold
@@ -79,7 +79,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(sha256sum "$GOLD" | cut -d ' ' -f 1)" = "93413353453e897d8ae6df6db525964e804d9011107daac7cf9ec9ab0e145c54"
+          test "$(sha256sum "$GOLD" | cut -d ' ' -f 1)" = "6e2bec61ebfb3b1ecb41325d0557e386641c85d9035f292454946f11062623c5"
           node "$BASE/transport/run-evaluation.js" \
             --run-dir "$RUN_DIR" \
             --corpus "$CORPUS" \
