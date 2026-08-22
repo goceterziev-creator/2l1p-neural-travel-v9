@@ -33,14 +33,16 @@ function canonicalExtractionResponse(rawResponse, source, manifest, caseManifest
   const representation = manifest.providerRepresentation;
   if (!representation) return rawResponse;
 
-  if (sha256(stableBytes(representation)) !== manifest.providerRepresentationIdentity) {
+  const representationIdentity = sha256(stableBytes(representation));
+  if (representationIdentity !== manifest.providerRepresentationIdentity) {
     throw new Error('provider representation identity mismatch');
   }
 
   if (representation.id === 'canonical-candidate-v1') return rawResponse;
 
   if (representation.id === PROVIDER_REPRESENTATION.id) {
-    if (JSON.stringify(representation) !== JSON.stringify(PROVIDER_REPRESENTATION)) {
+    const acceptedDescriptorIdentity = sha256(stableBytes(PROVIDER_REPRESENTATION));
+    if (representationIdentity !== acceptedDescriptorIdentity) {
       throw new Error('structured provider representation descriptor mismatch');
     }
     const expectedCaseRepresentation = providerRepresentationFor(caseManifest.envelope);
