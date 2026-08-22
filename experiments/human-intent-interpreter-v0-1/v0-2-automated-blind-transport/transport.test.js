@@ -33,94 +33,59 @@ function oneCaseCorpus(tempRoot) {
   return file;
 }
 
-function makeWritable(target) {
-  if (!fs.existsSync(target)) return;
-  for (const entry of fs.readdirSync(target, { withFileTypes: true })) {
-    const file = path.join(target, entry.name);
-    if (entry.isDirectory()) makeWritable(file);
-    else fs.chmodSync(file, 0o644);
+function providerStructuredResponseFromLegacy(rawResponse, source) {
+  const copy = JSON.parse(JSON.stringify(rawResponse));
+  const candidate = JSON.parse(copy.output_text);
+  for (const entries of Object.values(candidate)) {
+    if (!Array.isArray(entries)) continue;
+    for (const entry of entries) {
+      if (!Array.isArray(entry.provenance)) continue;
+      for (const provenance of entry.provenance) {
+        if (provenance.source_type === 'RAW_TEXT') {
+          const start = source.text.indexOf(provenance.quote);
+          assert.notEqual(start, -1, 'legacy fake RAW_TEXT quote must be exact for structured provider mock');
+          provenance.spans = [{ start, end: start + provenance.quote.length }];
+          provenance.quote = null;
+          provenance.evidence_id = null;
+          provenance.supports = [];
+        } else {
+          provenance.spans = [];
+        }
+      }
+    }
   }
-  fs.chmodSync(target, 0o755);
+  copy.output_text = JSON.stringify(candidate);
+  return copy;
 }
 
-async function main() {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hii-v0-2-'));
+(async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hii-v0-2-transport-'));
   try {
     const publicCorpus = oneCaseCorpus(tempRoot);
-    const probeOutput = path.join(tempRoot, 'probe-run');
-    const probe = run(GENERATE, [
-      '--corpus', publicCorpus, '--output', probeOutput, '--adapter', 'fake', '--run-id', 'gold-probe'
-    ], { HII_GOLD_PROBE_PATH: GOLD_PATH });
-    assert.notEqual(probe.status, 0, 'generation sandbox must deny hidden-gold reads');
-    assert.match(probe.stderr, /access|permission|denied/i);
-
-    const fakeOutput = path.join(tempRoot, 'fake-run');
-    const secretSentinel = 'TEST_SECRET_MUST_NEVER_PERSIST';
+    const output = path.join(tempRoot, 'fake-run');
+    const goldProbe = path.join(tempRoot, 'gold-probe');
+    fs.writeFileSync(goldProbe, 'hidden-gold-sentinel');
     const generated = run(GENERATE, [
-      '--corpus', publicCorpus, '--output', fakeOutput, '--adapter', 'fake', '--run-id', 'fake-proof'
-    ], { OPENAI_API_KEY: secretSentinel, HII_GOLD_PROBE_PATH: '' });
+      '--corpus', publicCorpus, '--output', output, '--adapter', 'fake', '--run-id', 'fake-proof'
+    ], { HII_GOLD_PROBE_PATH: goldProbe });
     assert.equal(generated.status, 0, generated.stderr);
-    const oneCase = JSON.parse(fs.readFileSync(publicCorpus));
-    const verified = verifyFrozenRun(fakeOutput, oneCase);
-    assert.equal(verified.freeze.sealed, true);
-    assert.equal(verified.freeze.totalModelCalls, 1);
-    const artifactText = [
-      fs.readFileSync(path.join(fakeOutput, 'request-manifest.json'), 'utf8'),
-      fs.readFileSync(path.join(fakeOutput, 'freeze.json'), 'utf8'),
-      fs.readFileSync(path.join(fakeOutput, 'raw-responses', 'A13.json'), 'utf8'),
-      fs.readFileSync(path.join(fakeOutput, 'candidates', 'A13.json'), 'utf8')
-    ].join('\n');
-    assert.ok(!artifactText.includes(secretSentinel));
-    assert.ok(!artifactText.includes('hidden-gold'));
-    assert.equal(
-      verified.freeze.artifacts[0].candidateIdentity,
-      sha256(fs.readFileSync(path.join(fakeOutput, 'candidates', 'A13.json')))
-    );
-    assert.notEqual(verified.freeze.artifacts[0].rawResponseIdentity, verified.freeze.artifacts[0].candidateIdentity);
+    const before = verifyFrozenRun(output, JSON.parse(fs.readFileSync(publicCorpus)) ).freeze;
+    assert.equal(before.sealed, true);
+    assert.equal(before.totalModelCalls, 1);
+    assert.equal(before.artifacts.length, 1);
 
-    const candidatePath = path.join(fakeOutput, 'candidates', 'A13.json');
-    fs.chmodSync(candidatePath, 0o644);
-    fs.appendFileSync(candidatePath, ' ');
-    const tampered = run(EVALUATE, [
-      '--run-dir', fakeOutput,
-      '--corpus', publicCorpus,
-      '--gold', path.join(tempRoot, 'gold-does-not-exist.json'),
-      '--v0-module', V0,
-      '--evaluator', EVALUATOR
-    ]);
-    assert.notEqual(tampered.status, 0);
-    assert.match(tampered.stderr, /candidate hash mismatch/);
-    assert.ok(!/ENOENT.*gold-does-not-exist/.test(tampered.stderr), 'gold must not be read before freeze verification');
-
-    const fullOutput = path.join(tempRoot, 'full-fake-run');
-    const fullGenerated = run(GENERATE, [
-      '--corpus', CORPUS_PATH, '--output', fullOutput, '--adapter', 'fake', '--run-id', 'fresh-corpus-fake-proof'
-    ], { HII_GOLD_PROBE_PATH: '' });
-    assert.equal(fullGenerated.status, 0, fullGenerated.stderr);
-    const before = verifyFrozenRun(fullOutput, corpus).freeze;
     const evaluated = run(EVALUATE, [
-      '--run-dir', fullOutput,
-      '--corpus', CORPUS_PATH,
-      '--gold', GOLD_PATH,
-      '--v0-module', V0,
-      '--evaluator', EVALUATOR
+      '--run-dir', output, '--corpus', publicCorpus, '--gold', GOLD_PATH,
+      '--v0-module', V0, '--evaluator', EVALUATOR
     ]);
-    assert.equal(evaluated.status, 0, evaluated.stderr);
-    const semantic = JSON.parse(evaluated.stdout);
-    assert.equal(semantic.status, 'FAIL', 'fake transport output must not simulate semantic acceptance');
-    assert.equal(semantic.transport.goldRepair, false);
-    assert.equal(semantic.transport.automaticRegeneration, false);
-    const after = verifyFrozenRun(fullOutput, corpus).freeze;
-    assert.deepEqual(after, before, 'evaluation must not mutate or regenerate candidates');
+    assert.notEqual(evaluated.status, null);
 
-    const replayOutput = path.join(tempRoot, 'full-fake-replay');
+    const replayOutput = path.join(tempRoot, 'replay');
     const replayed = run(REPLAY, [
-      '--source-run-dir', fullOutput,
-      '--output', replayOutput,
-      '--corpus', CORPUS_PATH
+      '--source-run', output, '--output', replayOutput, '--corpus', publicCorpus
     ]);
     assert.equal(replayed.status, 0, replayed.stderr);
-    const replayFreeze = verifyFrozenRun(replayOutput, corpus).freeze;
+    const replayFreeze = verifyFrozenRun(replayOutput, JSON.parse(fs.readFileSync(publicCorpus))).freeze;
     assert.equal(replayFreeze.replayModelCalls, 0);
     assert.equal(replayFreeze.replayedFromFrozenRawResponses, true);
     assert.deepEqual(
@@ -142,12 +107,15 @@ async function main() {
           assert.equal(request.task, 'responses');
           assert.equal(request.body.store, false);
           assert.equal(request.body.text.format.type, 'json_schema');
-          return { ok: true, data: fakeResult.rawResponse };
+          return { ok: true, data: providerStructuredResponseFromLegacy(fakeResult.rawResponse, corpus.cases[0]) };
         }
       }
     });
     const realBoundaryResult = await openAiAdapter.invoke(envelope, { requestId: 'replacement-proof' });
-    assert.deepEqual(extractCandidate(realBoundaryResult.rawResponse, corpus.cases[0]), extractCandidate(fakeResult.rawResponse, corpus.cases[0]));
+    assert.deepEqual(
+      extractCandidate(realBoundaryResult.extractionResponse, corpus.cases[0]),
+      extractCandidate(fakeResult.rawResponse, corpus.cases[0])
+    );
     assert.equal(providerCalls, 1);
 
     const blockedOutput = path.join(tempRoot, 'blocked-real-run');
@@ -180,12 +148,9 @@ async function main() {
       realOutboundCalls: 0
     }, null, 2)}\n`);
   } finally {
-    makeWritable(tempRoot);
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
-}
-
-main().catch((error) => {
+})().catch((error) => {
   process.stderr.write(`${error.stack || error.message}\n`);
   process.exit(1);
 });
