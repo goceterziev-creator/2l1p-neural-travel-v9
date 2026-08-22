@@ -1,6 +1,8 @@
 'use strict';
 
 const RAW_TEXT = 'RAW_TEXT';
+const SUPPLIED_EVIDENCE = 'SUPPLIED_EVIDENCE';
+const INFERENCE = 'INFERENCE';
 
 const spanSchema = Object.freeze({
   type: 'object',
@@ -25,17 +27,63 @@ function isProvenanceSchema(node) {
     && properties.supports;
 }
 
+function emptyArraySchema(items) {
+  return { type: 'array', items: clone(items), maxItems: 0 };
+}
+
+function provenanceVariant(base, sourceType) {
+  const referenceItems = base.properties.supports.items;
+  const common = {
+    source_type: { type: 'string', enum: [sourceType] },
+    quote: clone(base.properties.quote),
+    evidence_id: clone(base.properties.evidence_id),
+    supports: clone(base.properties.supports),
+    spans: {
+      type: 'array',
+      description: 'UTF-16 code-unit [start,end) ranges into the exact raw brief.',
+      items: clone(spanSchema)
+    }
+  };
+
+  if (sourceType === RAW_TEXT) {
+    common.quote = { type: 'null' };
+    common.evidence_id = { type: 'null' };
+    common.supports = emptyArraySchema(referenceItems);
+    common.spans.minItems = 1;
+  } else if (sourceType === SUPPLIED_EVIDENCE) {
+    common.evidence_id = { type: 'string' };
+    common.supports = emptyArraySchema(referenceItems);
+    common.spans.maxItems = 0;
+  } else if (sourceType === INFERENCE) {
+    common.quote = { type: 'null' };
+    common.evidence_id = { type: 'null' };
+    common.supports.minItems = 1;
+    common.spans.maxItems = 0;
+  } else {
+    throw new TypeError(`unsupported provenance source type: ${sourceType}`);
+  }
+
+  return {
+    type: 'object',
+    properties: common,
+    required: ['source_type', 'quote', 'evidence_id', 'supports', 'spans'],
+    additionalProperties: false
+  };
+}
+
 function structuredProvenanceSchema(schema) {
   const root = clone(schema);
   function visit(node) {
     if (!node || typeof node !== 'object') return;
     if (isProvenanceSchema(node)) {
-      node.properties.spans = {
-        type: 'array',
-        description: 'RAW_TEXT only: UTF-16 code-unit [start,end) ranges into the exact raw brief. Must be ordered, non-overlapping, non-empty. For non-RAW_TEXT use an empty array.',
-        items: spanSchema
-      };
-      if (!node.required.includes('spans')) node.required.push('spans');
+      const allowed = node.properties.source_type.enum;
+      const variants = [RAW_TEXT, SUPPLIED_EVIDENCE, INFERENCE]
+        .filter((sourceType) => allowed.includes(sourceType))
+        .map((sourceType) => provenanceVariant(node, sourceType));
+      if (!variants.length) throw new TypeError('provider provenance schema has no supported source type');
+      for (const key of Object.keys(node)) delete node[key];
+      node.anyOf = variants;
+      return;
     }
     for (const value of Object.values(node)) {
       if (Array.isArray(value)) value.forEach(visit);
