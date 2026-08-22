@@ -125,7 +125,7 @@ async function main() {
     const rawBytes = stableBytes(result.rawResponse);
     const rawPath = path.join(outputDir, 'raw-responses', `${source.id}.json`);
     writeFrozen(rawPath, rawBytes);
-    const candidate = extractCandidate(result.rawResponse, source);
+    const candidate = extractCandidate(result.extractionResponse || result.rawResponse, source);
     const candidateBytes = stableBytes(candidate);
     const candidatePath = path.join(outputDir, 'candidates', `${source.id}.json`);
     writeFrozen(candidatePath, candidateBytes);
