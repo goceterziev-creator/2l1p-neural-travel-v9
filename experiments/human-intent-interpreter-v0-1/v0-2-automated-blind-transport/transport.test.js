@@ -16,7 +16,7 @@ const GOLD_PATH = path.join(ROOT, 'corpus', 'hidden-gold.json');
 const GENERATE = path.join(ROOT, 'transport', 'run-generation.js');
 const EVALUATE = path.join(ROOT, 'transport', 'run-evaluation.js');
 const REPLAY = path.join(ROOT, 'transport', 'replay-frozen-run.js');
-const V0 = process.env.HUMAN_INTENT_V0_MODULE || path.join(ROOT, '..', '..', 'validation-pr2-ba45a75d', 'intent-layer.js');
+const V0 = process.env.HUMAN_INTENT_V0_MODULE || path.join(ROOT, '..', '..', 'human-intent-layer-v0', 'intent-layer.js');
 const EVALUATOR = process.env.HII_V0_1_EVALUATOR || path.join(ROOT, '..', 'acceptance-hardening', 'independent-semantic-evaluator.js');
 const corpus = JSON.parse(fs.readFileSync(CORPUS_PATH));
 
@@ -101,7 +101,7 @@ function providerStructuredResponseFromLegacy(rawResponse, source) {
 
     const replayOutput = path.join(tempRoot, 'replay');
     const replayed = run(REPLAY, [
-      '--source-run', output, '--output', replayOutput, '--corpus', publicCorpus
+      '--source-run-dir', output, '--output', replayOutput, '--corpus', publicCorpus
     ]);
     assert.equal(replayed.status, 0, replayed.stderr);
     const replayFreeze = verifyFrozenRun(replayOutput, JSON.parse(fs.readFileSync(publicCorpus))).freeze;
