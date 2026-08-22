@@ -62,12 +62,20 @@ function providerStructuredResponseFromLegacy(rawResponse, source) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hii-v0-2-transport-'));
   try {
     const publicCorpus = oneCaseCorpus(tempRoot);
-    const output = path.join(tempRoot, 'fake-run');
     const goldProbe = path.join(tempRoot, 'gold-probe');
     fs.writeFileSync(goldProbe, 'hidden-gold-sentinel');
+
+    const deniedOutput = path.join(tempRoot, 'gold-probe-denied-run');
+    const denied = run(GENERATE, [
+      '--corpus', publicCorpus, '--output', deniedOutput, '--adapter', 'fake', '--run-id', 'gold-probe-denied'
+    ], { HII_GOLD_PROBE_PATH: goldProbe });
+    assert.notEqual(denied.status, 0, 'gold probe must be denied by the generation permission sandbox');
+    assert.match(denied.stderr, /ERR_ACCESS_DENIED|Access to this API has been restricted/);
+
+    const output = path.join(tempRoot, 'fake-run');
     const generated = run(GENERATE, [
       '--corpus', publicCorpus, '--output', output, '--adapter', 'fake', '--run-id', 'fake-proof'
-    ], { HII_GOLD_PROBE_PATH: goldProbe });
+    ], { HII_GOLD_PROBE_PATH: '' });
     assert.equal(generated.status, 0, generated.stderr);
     const before = verifyFrozenRun(output, JSON.parse(fs.readFileSync(publicCorpus)) ).freeze;
     assert.equal(before.sealed, true);
