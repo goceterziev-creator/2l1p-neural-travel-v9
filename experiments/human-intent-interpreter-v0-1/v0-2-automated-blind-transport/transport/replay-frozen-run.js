@@ -45,9 +45,22 @@ function canonicalExtractionResponse(rawResponse, source, manifest, caseManifest
     if (representationIdentity !== acceptedDescriptorIdentity) {
       throw new Error('structured provider representation descriptor mismatch');
     }
-    const expectedCaseRepresentation = providerRepresentationFor(caseManifest.envelope);
-    if (sha256(stableBytes(expectedCaseRepresentation)) !== caseManifest.providerRepresentationIdentity) {
-      throw new Error(`${source.id}: provider representation contract identity mismatch`);
+
+    if (caseManifest.providerRepresentation) {
+      const frozenRepresentationIdentity = sha256(stableBytes(caseManifest.providerRepresentation));
+      if (frozenRepresentationIdentity !== caseManifest.providerRepresentationIdentity) {
+        throw new Error(`${source.id}: frozen provider representation identity mismatch`);
+      }
+      const frozenDescriptorIdentity = sha256(stableBytes(caseManifest.providerRepresentation.descriptor));
+      if (frozenDescriptorIdentity !== representationIdentity) {
+        throw new Error(`${source.id}: frozen provider representation descriptor mismatch`);
+      }
+    } else {
+      // Compatibility path for historical manifests that froze only the identity.
+      const expectedCaseRepresentation = providerRepresentationFor(caseManifest.envelope);
+      if (sha256(stableBytes(expectedCaseRepresentation)) !== caseManifest.providerRepresentationIdentity) {
+        throw new Error(`${source.id}: provider representation contract identity mismatch`);
+      }
     }
     return extractionResponseFromStructured(rawResponse, source.text);
   }
