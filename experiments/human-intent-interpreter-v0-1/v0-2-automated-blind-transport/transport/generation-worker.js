@@ -68,6 +68,18 @@ function assertCorpus(corpus) {
   }
 }
 
+function providerRepresentationFor(adapter, envelope) {
+  if (typeof adapter.providerRepresentationFor === 'function') {
+    return adapter.providerRepresentationFor(envelope);
+  }
+  return {
+    descriptor: Object.freeze({
+      id: 'canonical-candidate-v1',
+      projection: 'direct-extractCandidate'
+    })
+  };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const corpusBytes = fs.readFileSync(path.resolve(args.corpus));
@@ -77,6 +89,7 @@ async function main() {
   const outputDir = path.resolve(args.output);
   const adapter = loadAdapter(args);
   const envelopes = corpus.cases.map((source) => withSemanticPolicy(buildEnvelope(source)));
+  const providerRepresentations = envelopes.map((envelope) => providerRepresentationFor(adapter, envelope));
   const pricing = adapter.parameters.pricing_usd_per_million || { input: 0, output: 0 };
   const inputTokenUpperBound = envelopes.reduce((total, envelope) => total + Buffer.byteLength(stableBytes(envelope)), 0);
   const outputTokenUpperBound = corpus.cases.length * Number(adapter.parameters.max_output_tokens || 0);
@@ -88,6 +101,7 @@ async function main() {
     throw new Error(`projected maximum model cost ${maximumEstimatedCostUsd} exceeds adapter budget`);
   }
   const effectiveProtocol = envelopes[0].instructions;
+  const providerRepresentation = providerRepresentations[0].descriptor;
   const requestManifest = {
     manifestVersion: 'hii-v0.2-generation-request-v1',
     runId: args['run-id'],
@@ -99,6 +113,8 @@ async function main() {
     semanticPolicyVersion: SEMANTIC_POLICY_VERSION,
     semanticPolicyIdentity: sha256(renderSemanticPolicy()),
     effectiveProtocolIdentity: sha256(effectiveProtocol),
+    providerRepresentation,
+    providerRepresentationIdentity: sha256(stableBytes(providerRepresentation)),
     costBoundary: {
       inputTokenUpperBound,
       outputTokenUpperBound,
@@ -107,7 +123,13 @@ async function main() {
     },
     cases: corpus.cases.map((source, index) => {
       const envelope = envelopes[index];
-      return { id: source.id, envelopeIdentity: sha256(stableBytes(envelope)), envelope };
+      const representation = providerRepresentations[index];
+      return {
+        id: source.id,
+        envelopeIdentity: sha256(stableBytes(envelope)),
+        providerRepresentationIdentity: sha256(stableBytes(representation)),
+        envelope
+      };
     })
   };
   const manifestBytes = stableBytes(requestManifest);
