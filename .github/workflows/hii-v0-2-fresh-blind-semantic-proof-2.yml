@@ -40,7 +40,7 @@ jobs:
           gold_hash="$(sha256sum "$GOLD" | cut -d ' ' -f 1)"
           test "$corpus_hash" = "a22768e5e907afe44a6fdaca227a6ee453633df35344f7a64ac42e17e11f54eb"
           test "$gold_hash" = "f93ea57634e6c6c51b5f3d6296a9171d4d3bc91b417646b07131dba7d419b4fa"
-          test "$(node -e 'const c=require(process.argv[1]); process.stdout.write(String(c.cases.length))' "$CORPUS")" = "8"
+          test "$(node -e 'const fs=require("node:fs"); const c=JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(String(c.cases.length))' "$CORPUS")" = "8"
           printf '{"corpus":"%s","hiddenGold":"%s","cases":8}\n' "$corpus_hash" "$gold_hash" > "$RUNNER_TEMP/frozen-input-identities.json"
 
       - name: Prove generation cannot read hidden gold
