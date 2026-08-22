@@ -20,6 +20,7 @@ jobs:
     env:
       BASE: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport
       OPENAI_API_KEY: ""
+      HUMAN_INTENT_V0_MODULE: ${{ github.workspace }}/experiments/human-intent-layer-v0/intent-layer.js
       HISTORICAL_RUN: "32554370872"
       HISTORICAL_RAW_SHA: "30404f2cd18da8cb67584e4a7f52f73af1ddfe0ecdc7891dc123911fee2a5c55"
       GH_TOKEN: ${{ github.token }}
