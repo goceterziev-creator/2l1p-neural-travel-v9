@@ -86,21 +86,38 @@ async function main() {
   assert.deepEqual(semanticAfter, semanticBefore);
 
   let capturedRequest = null;
+  const structuredSingle = candidateWith('EXPLICIT', entry('p4', 'Single span statement.', [{
+    source_type: 'RAW_TEXT',
+    quote: null,
+    evidence_id: null,
+    supports: [],
+    spans: [{ start: 0, end: 'Alpha requirement is fixed.'.length }]
+  }]));
+  // Structured provider schema requires spans on every provenance discriminator.
+  for (const provenance of structuredSingle.EXPLICIT[0].provenance) {
+    if (!Object.hasOwn(provenance, 'spans')) provenance.spans = [];
+  }
   const adapter = createOpenAiResponsesAdapter({ provider: {
     async health() { return { status: 'ready' }; },
     async execute(request) {
       capturedRequest = request;
-      return { ok: true, data: response(single) };
+      return { ok: true, data: response(structuredSingle) };
     }
   }});
   const envelope = buildEnvelope(source);
-  await adapter.invoke(envelope, { requestId: 'provider-free-multi-span' });
+  const adapterResult = await adapter.invoke(envelope, { requestId: 'provider-free-multi-span' });
   const systemText = capturedRequest.body.input[0].content[0].text;
   assert.ok(systemText.includes(PROVIDER_PROVENANCE_INSTRUCTIONS));
-  assert.match(systemText, /two or more non-contiguous raw-text spans, emit two or more separate RAW_TEXT provenance elements/i);
-  assert.match(systemText, /do not create additional semantic claims/i);
-  assert.equal(capturedRequest.body.text.format.schema, envelope.outputSchema);
+  assert.match(systemText, /UTF-16 code-unit/i);
+  assert.match(systemText, /multiple non-contiguous raw-text regions/i);
+  const providerProvenanceSchema = capturedRequest.body.text.format.schema.properties.EXPLICIT.items.properties.provenance.items;
+  assert.equal(providerProvenanceSchema.properties.spans.type, 'array');
+  assert.ok(providerProvenanceSchema.required.includes('spans'));
   assert.equal(capturedRequest.body.temperature, 0);
+  assert.ok(adapterResult.rawResponse.output_text.includes('"spans"'));
+  assert.ok(!adapterResult.extractionResponse.output_text.includes('"spans"'));
+  const adapterExtracted = extractCandidate(adapterResult.extractionResponse, source);
+  assert.equal(adapterExtracted.EXPLICIT[0].provenance[0].quote, 'Alpha requirement is fixed.');
 
   expectReject(source, 'Alpha requirement is fixed. Omega decision is reserved.', /0 exact source decompositions|0 canonical exact source spans/);
   expectReject(source, 'Alpha requirement fixed.', /0 exact source decompositions|0 canonical exact source spans/);
@@ -119,7 +136,7 @@ async function main() {
     status: 'PASS',
     positive: 5,
     negative: 7,
-    providerFacingMultiSpanInstruction: 'PASS',
+    providerFacingStructuredSpans: 'PASS',
     semanticPayloadInvariant: 'PASS',
     noModelCalls: true
   }, null, 2)}\n`);
