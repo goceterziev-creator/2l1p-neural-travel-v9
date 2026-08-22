@@ -1,0 +1,22 @@
+name: HII V0.2 fresh structured proof preflight
+on:
+  push:
+    branches:
+      - experiment/hii-v0-2-fresh-blind-structured-provenance-acceptance
+    paths:
+      - .github/workflows/hii-v0-2-fresh-structured-proof-preflight.yml
+permissions:
+  contents: read
+jobs:
+  identities:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report frozen Git-byte identities
+        run: |
+          set -euo pipefail
+          C=experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/fresh-structured-proof/blind-corpus.json
+          G=experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/fresh-structured-proof/hidden-gold.json
+          echo "CORPUS_SHA256=$(sha256sum "$C" | cut -d ' ' -f 1)"
+          echo "GOLD_SHA256=$(sha256sum "$G" | cut -d ' ' -f 1)"
+          test "$(node -e 'const fs=require("node:fs");const c=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(String(c.cases.length))' "$C")" = 8
