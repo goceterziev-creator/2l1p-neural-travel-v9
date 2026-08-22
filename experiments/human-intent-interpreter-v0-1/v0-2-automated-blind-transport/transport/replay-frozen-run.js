@@ -3,6 +3,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { extractCandidate, sha256, stableBytes } = require('./contract');
+const { extractionResponseFromStructured } = require('./structured-provenance');
+const {
+  PROVIDER_REPRESENTATION,
+  providerRepresentationFor
+} = require('./adapters/openai-responses-adapter');
 
 function parseArgs(argv) {
   const args = {};
@@ -22,6 +27,30 @@ function ensureFreshOutput(outputDir) {
   fs.mkdirSync(outputDir, { recursive: false, mode: 0o755 });
   fs.mkdirSync(path.join(outputDir, 'raw-responses'), { mode: 0o755 });
   fs.mkdirSync(path.join(outputDir, 'candidates'), { mode: 0o755 });
+}
+
+function canonicalExtractionResponse(rawResponse, source, manifest, caseManifest) {
+  const representation = manifest.providerRepresentation;
+  if (!representation) return rawResponse;
+
+  if (sha256(stableBytes(representation)) !== manifest.providerRepresentationIdentity) {
+    throw new Error('provider representation identity mismatch');
+  }
+
+  if (representation.id === 'canonical-candidate-v1') return rawResponse;
+
+  if (representation.id === PROVIDER_REPRESENTATION.id) {
+    if (JSON.stringify(representation) !== JSON.stringify(PROVIDER_REPRESENTATION)) {
+      throw new Error('structured provider representation descriptor mismatch');
+    }
+    const expectedCaseRepresentation = providerRepresentationFor(caseManifest.envelope);
+    if (sha256(stableBytes(expectedCaseRepresentation)) !== caseManifest.providerRepresentationIdentity) {
+      throw new Error(`${source.id}: provider representation contract identity mismatch`);
+    }
+    return extractionResponseFromStructured(rawResponse, source.text);
+  }
+
+  throw new Error(`unsupported provider representation: ${representation.id}`);
 }
 
 function main() {
@@ -46,13 +75,16 @@ function main() {
   const artifacts = [];
   let inputTokens = 0;
   let outputTokens = 0;
-  for (const source of corpus.cases) {
+  for (let index = 0; index < corpus.cases.length; index += 1) {
+    const source = corpus.cases[index];
+    const caseManifest = manifest.cases[index];
     const rawBytes = fs.readFileSync(path.join(sourceRunDir, 'raw-responses', `${source.id}.json`));
     const rawResponse = JSON.parse(rawBytes);
     const canonicalRawBytes = stableBytes(rawResponse);
     if (!rawBytes.equals(Buffer.from(canonicalRawBytes))) throw new Error(`${source.id}: raw response is not canonical`);
     writeFrozen(path.join(outputDir, 'raw-responses', `${source.id}.json`), rawBytes);
-    const candidateBytes = stableBytes(extractCandidate(rawResponse, source));
+    const extractionResponse = canonicalExtractionResponse(rawResponse, source, manifest, caseManifest);
+    const candidateBytes = stableBytes(extractCandidate(extractionResponse, source));
     writeFrozen(path.join(outputDir, 'candidates', `${source.id}.json`), candidateBytes);
     artifacts.push({
       id: source.id,
@@ -91,6 +123,7 @@ function main() {
     runId: manifest.runId,
     originalModelCalls: corpus.cases.length,
     replayModelCalls: 0,
+    providerRepresentation: manifest.providerRepresentation?.id || 'legacy-unversioned-canonical',
     freezeIdentity: sha256(stableBytes(freeze))
   })}\n`);
 }
