@@ -21,8 +21,8 @@ providerCandidate.EXPLICIT.push({
     evidence_id: null,
     supports: [],
     spans: [
-      { start: 0, end: 12 },
-      { start: 18, end: 30 }
+      { start: 0, end: 13 },
+      { start: 19, end: 31 }
     ]
   }],
   targets: [],
@@ -54,7 +54,7 @@ const provider = {
   assert.equal(result.rawResponse.output_text.includes('"spans"'), true);
   assert.equal(result.extractionResponse.output_text.includes('"spans"'), false);
   const extracted = JSON.parse(result.extractionResponse.output_text);
-  assert.deepEqual(extracted.EXPLICIT[0].provenance.map((item) => item.quote), ['First clause', 'Last clause.']);
+  assert.deepEqual(extracted.EXPLICIT[0].provenance.map((item) => item.quote), ['First clause.', 'Last clause.']);
   assert.equal(extracted.EXPLICIT[0].statement, providerCandidate.EXPLICIT[0].statement);
   process.stdout.write(`${JSON.stringify({
     status: 'PASS',
