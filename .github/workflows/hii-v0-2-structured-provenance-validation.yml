@@ -62,6 +62,7 @@ jobs:
           OUT="$RUNNER_TEMP/run1"; mkdir -p "$OUT"
           node "$BASE/structured-provenance-span.test.js" > "$OUT/spans.json"
           node "$BASE/structured-provenance-adapter.test.js" > "$OUT/adapter.json"
+          node "$BASE/structured-provenance-replay.test.js" > "$OUT/replay.json"
           node "$BASE/multi-span-provenance-representation.test.js" > "$OUT/multi-span.json"
           node --test experiments/human-intent-layer-v0/intent-layer.test.js > "$OUT/v0.tap"
           FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js > "$OUT/v01.json"
@@ -80,6 +81,7 @@ jobs:
           OUT="$RUNNER_TEMP/run2"; mkdir -p "$OUT"
           node "$BASE/structured-provenance-span.test.js" > "$OUT/spans.json"
           node "$BASE/structured-provenance-adapter.test.js" > "$OUT/adapter.json"
+          node "$BASE/structured-provenance-replay.test.js" > "$OUT/replay.json"
           node "$BASE/multi-span-provenance-representation.test.js" > "$OUT/multi-span.json"
           node --test experiments/human-intent-layer-v0/intent-layer.test.js > "$OUT/v0.tap"
           FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js > "$OUT/v01.json"
@@ -99,7 +101,7 @@ jobs:
             sed -E '/^[[:space:]]*duration_ms:[[:space:]]*[0-9.]+[[:space:]]*$/d; /^# duration_ms[[:space:]]+[0-9.]+[[:space:]]*$/d' "$RUNNER_TEMP/run$n/v0.tap" > "$RUNNER_TEMP/run$n/v0.stable.tap"
           done
           cmp "$RUNNER_TEMP/run1/v0.stable.tap" "$RUNNER_TEMP/run2/v0.stable.tap"
-          for file in spans.json adapter.json multi-span.json v01.json v01-adversarial.json transport.json id.json reference.json provenance.json semantic-positive.json semantic-adversarial.json; do
+          for file in spans.json adapter.json replay.json multi-span.json v01.json v01-adversarial.json transport.json id.json reference.json provenance.json semantic-positive.json semantic-adversarial.json; do
             cmp "$RUNNER_TEMP/run1/$file" "$RUNNER_TEMP/run2/$file"
           done
           echo 'PASS: two complete provider-free executions are materially deterministic'
