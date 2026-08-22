@@ -124,6 +124,7 @@ function makeWritable(target) {
       cases: [{
         id: src.id,
         envelopeIdentity: sha256(stableBytes(envelope)),
+        providerRepresentation: representation,
         providerRepresentationIdentity: sha256(stableBytes(representation)),
         envelope
       }]
@@ -140,13 +141,33 @@ function makeWritable(target) {
     assert.equal(freeze.replayModelCalls, 0);
     assert.equal(freeze.replayedFromFrozenRawResponses, true);
 
+    const historicalContractRoot = path.join(tempRoot, 'historical-contract');
+    const historicalRepresentation = JSON.parse(JSON.stringify(representation));
+    historicalRepresentation.instructions += '\nHistorical provider wording retained in frozen request evidence.';
+    const historicalManifest = JSON.parse(JSON.stringify(manifest));
+    historicalManifest.runId = 'historical-structured-replay';
+    historicalManifest.cases[0].providerRepresentation = historicalRepresentation;
+    historicalManifest.cases[0].providerRepresentationIdentity = sha256(stableBytes(historicalRepresentation));
+    const historicalRun = makeRun(historicalContractRoot, historicalManifest, raw);
+    const historicalResult = runReplay(historicalRun, path.join(historicalContractRoot, 'out'), corpusPath);
+    assert.equal(historicalResult.status, 0, historicalResult.stderr);
+    const historicalCandidate = JSON.parse(fs.readFileSync(path.join(historicalContractRoot, 'out', 'candidates', 'R1.json')));
+    assert.deepEqual(historicalCandidate, expected, 'replay must use the frozen compatible representation snapshot rather than current provider wording');
+
     const tamperRoot = path.join(tempRoot, 'tampered');
     const tamperedManifest = JSON.parse(JSON.stringify(manifest));
-    tamperedManifest.cases[0].providerRepresentationIdentity = '0'.repeat(64);
+    tamperedManifest.cases[0].providerRepresentation.instructions += '\nTampered after freeze.';
     const tamperedRun = makeRun(tamperRoot, tamperedManifest, raw);
     const tampered = runReplay(tamperedRun, path.join(tamperRoot, 'out'), corpusPath);
     assert.notEqual(tampered.status, 0);
-    assert.match(tampered.stderr, /provider representation contract identity mismatch/);
+    assert.match(tampered.stderr, /frozen provider representation identity mismatch/);
+
+    const identityOnlyRoot = path.join(tempRoot, 'identity-only');
+    const identityOnlyManifest = JSON.parse(JSON.stringify(manifest));
+    delete identityOnlyManifest.cases[0].providerRepresentation;
+    const identityOnlyRun = makeRun(identityOnlyRoot, identityOnlyManifest, raw);
+    const identityOnlyResult = runReplay(identityOnlyRun, path.join(identityOnlyRoot, 'out'), corpusPath);
+    assert.equal(identityOnlyResult.status, 0, identityOnlyResult.stderr);
 
     const legacyRoot = path.join(tempRoot, 'legacy');
     const legacyManifest = {
@@ -169,7 +190,10 @@ function makeWritable(target) {
         structuredRepresentationFrozen: true,
         structuredReplayProjection: 'PASS',
         canonicalCandidateIdentityRecovered: sha256(stableBytes(replayed)),
+        frozenRepresentationSnapshotAuthoritative: true,
+        historicalCompatibleSnapshotReplayed: true,
         representationTamperRejected: true,
+        identityOnlyStructuredReplayPreserved: true,
         legacyUnversionedReplayPreserved: true,
         replayModelCalls: 0
       }
