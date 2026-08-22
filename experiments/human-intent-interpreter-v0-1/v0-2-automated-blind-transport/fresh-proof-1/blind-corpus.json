@@ -1,0 +1,98 @@
+{
+  "cases": [
+    {
+      "domain": "architecture",
+      "evidence": [],
+      "id": "A21",
+      "language": "en",
+      "style": "conversational",
+      "text": "For the gallery lobby, move the freestanding information desk to the opposite wall so the entry view stays open. Keep the stone floor pattern, ceiling slots, fire doors and artwork locations exactly where they are. I have not decided whether the desk should be straight or curved; show the relocated desk as a neutral block for now, and wait for me before choosing its final shape."
+    },
+    {
+      "domain": "architecture",
+      "evidence": [
+        {
+          "content": "The consultant note permits absorptive treatment on the rear wall and ceiling rafts, but does not approve covering the original timber side panels.",
+          "evidence_id": "acoustic-note-7"
+        }
+      ],
+      "id": "A22",
+      "language": "en",
+      "style": "mixed",
+      "text": "Use acoustic-note-7 while developing the small auditorium acoustic concept. You can select the pattern and spacing of the ceiling rafts yourself, provided sightlines and sprinkler clearances stay unchanged. Do not cover the original timber side panels. If acceptable reverberation cannot be reached without treating those side panels, bring that decision back to me rather than changing them."
+    },
+    {
+      "domain": "software",
+      "evidence": [],
+      "id": "S21",
+      "language": "en",
+      "style": "concise",
+      "text": "The CSV export sometimes sorts equal timestamps differently between runs. Make the export deterministic. Keep the public column names, timestamp values and row set unchanged. You may choose the internal tie-break rule and add tests. Whether the database collation contributes is not established and does not need to be resolved if the export can be fixed without changing the database. No migration, dependency change, merge or deploy."
+    },
+    {
+      "domain": "software",
+      "evidence": [
+        {
+          "content": "Trace 2 shows an expired profile object being served once immediately after a cache node restart; subsequent reads fetch a fresh object.",
+          "evidence_id": "cache-trace-2"
+        }
+      ],
+      "id": "S22",
+      "language": "en",
+      "style": "conversational",
+      "text": "Please use cache-trace-2 to investigate the stale profile read after restart and correct the restart path. Keep the API response shape and the configured five-minute TTL. Internal cache bookkeeping is yours to change. A teammate suggested increasing the TTL to hide the symptom; you can mention that idea in the analysis, but do not change the TTL. If the only viable fix requires changing the persistent cache format, ask me first. No release."
+    },
+    {
+      "domain": "travel",
+      "evidence": [],
+      "id": "T21",
+      "language": "en",
+      "style": "fragmented",
+      "text": "Family trip: Copenhagen, 2 adults + 1 child, second half of March 2029, about 4 nights. Start with neighborhoods and family-friendly hotel areas. Exact dates still depend on school approval. Rail from Hamburg is an option worth comparing with flying once dates are known. No reservations. Do not assume the child can miss school before approval."
+    },
+    {
+      "domain": "travel",
+      "evidence": [
+        {
+          "content": "One traveler has submitted a passport renewal application; the replacement passport number and issue date are not yet available.",
+          "evidence_id": "passport-note"
+        }
+      ],
+      "id": "T22",
+      "language": "en",
+      "style": "mixed",
+      "text": "Plan the parts of a Japan spring itinerary that do not depend on ticketing for two adults, roughly 12 days, arriving in Tokyo and leaving from Osaka. Use passport-note only as a constraint: do not invent the new passport details. You may compare route structures, cities and hotel areas now. Hold any booking or ticket issuance that requires the renewed passport until we provide it. A two-night Koyasan stay may be presented as an optional addition, but do not put it into the base itinerary unless we approve it."
+    },
+    {
+      "domain": "knowledge",
+      "evidence": [
+        {
+          "content": "The 2025 policy manual states that quarterly access reviews are required for privileged accounts.",
+          "evidence_id": "policy-2025"
+        },
+        {
+          "content": "The supplied audit sample contains completed reviews for Q1 and Q2; no Q3 record is included in the sample.",
+          "evidence_id": "audit-sample"
+        }
+      ],
+      "id": "K21",
+      "language": "en",
+      "style": "concise",
+      "text": "Using only the supplied policy and audit sample, state what is established about the access-review requirement and the observed records. Do not treat absence from the sample as proof that Q3 was not performed. Keep Q3 completion unresolved. You may recommend one evidence source to check next, but do not contact anyone or modify records."
+    },
+    {
+      "domain": "knowledge",
+      "evidence": [
+        {
+          "content": "The schema documentation defines field legacyCode as optional for imported records.",
+          "evidence_id": "schema-doc"
+        }
+      ],
+      "id": "K22",
+      "language": "en",
+      "style": "conversational",
+      "text": "Can you determine from the repository whether legacyCode is still required by any live import path? The schema document only tells us the field is optional at the documented contract level; it does not establish runtime usage. Inspect read-only repository evidence. If no live path can be proven, say that the runtime requirement is unresolved rather than assuming the field is safe to remove. You may separately recommend removal for later consideration if the evidence supports it, but do not edit the schema or code."
+    }
+  ],
+  "corpusVersion": "0.2.1-fresh-blind-semantic-proof-1"
+}
