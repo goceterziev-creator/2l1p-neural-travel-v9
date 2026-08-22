@@ -1,0 +1,127 @@
+name: HII V0.2 fresh blind semantic proof 3
+
+on:
+  push:
+    branches:
+      - experiment/hii-v0-2-fresh-blind-semantic-proof-3
+    paths:
+      - .github/workflows/hii-v0-2-fresh-blind-semantic-proof-3.yml
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      BASE: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport
+      CORPUS: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/fresh-proof-3/blind-corpus.json
+      GOLD: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/fresh-proof-3/hidden-gold.json
+      RUN_DIR: /tmp/hii-v0-2-fresh-proof-3-run
+      EVIDENCE_DIR: /tmp/hii-v0-2-fresh-proof-3-evidence
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      HUMAN_INTENT_V0_MODULE: ${{ github.workspace }}/experiments/human-intent-layer-v0/intent-layer.js
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Verify frozen semantic identities
+        id: frozen
+        shell: bash
+        run: |
+          set -euo pipefail
+          canonical_hash() { node -e 'const fs=require("node:fs"),crypto=require("node:crypto"); const o=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write(crypto.createHash("sha256").update(JSON.stringify(o)).digest("hex"))' "$1"; }
+          corpus_hash="$(canonical_hash "$CORPUS")"
+          gold_hash="$(canonical_hash "$GOLD")"
+          test "$corpus_hash" = "fb8f24932ba7959784c0904a3783c7d4417b357e1fadd01098b7b779c335ee47"
+          test "$gold_hash" = "2704730c3ef4947640094b17e02c3846b496ac02da485a29e12f7131df02478b"
+          test "$(node -e 'const fs=require("node:fs"); const c=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write(String(c.cases.length))' "$CORPUS")" = "8"
+          printf '{"corpusCanonicalSha256":"%s","hiddenGoldCanonicalSha256":"%s","cases":8}\n' "$corpus_hash" "$gold_hash" > "$RUNNER_TEMP/frozen.json"
+
+      - name: Prove generation cannot read hidden gold
+        id: blindness
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          node --permission --allow-fs-read="$CORPUS" -e 'require("node:fs").readFileSync(process.argv[1])' "$GOLD" > "$RUNNER_TEMP/gold-probe.stdout" 2> "$RUNNER_TEMP/gold-probe.stderr"
+          s=$?
+          set -e
+          test "$s" -ne 0
+          grep -Eqi 'permission|access|denied|ERR_ACCESS_DENIED' "$RUNNER_TEMP/gold-probe.stderr"
+          printf '{"hiddenGoldReadDenied":true,"probeExit":%s}\n' "$s" > "$RUNNER_TEMP/blindness.json"
+
+      - name: Generate exactly once and seal eight candidates
+        id: generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          env -u GOLD node "$BASE/transport/run-generation.js" --corpus "$CORPUS" --output "$RUN_DIR" --adapter openai --run-id v0-2-fresh-blind-semantic-proof-3 > "$RUNNER_TEMP/generation.json"
+          test -f "$RUN_DIR/freeze.json"
+          test "$(node -e 'const f=require(process.argv[1]);process.stdout.write(String(f.totalModelCalls))' "$RUN_DIR/freeze.json")" = "8"
+          test "$(node -e 'const f=require(process.argv[1]);process.stdout.write(String(f.artifacts.length))' "$RUN_DIR/freeze.json")" = "8"
+          test "$(node -e 'const f=require(process.argv[1]);process.stdout.write(String(f.sealed))' "$RUN_DIR/freeze.json")" = "true"
+
+      - name: Evaluate sealed candidates independently
+        id: evaluation
+        if: steps.generation.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node "$BASE/transport/run-evaluation.js" --run-dir "$RUN_DIR" --corpus "$CORPUS" --gold "$GOLD" --v0-module "$HUMAN_INTENT_V0_MODULE" --evaluator experiments/human-intent-interpreter-v0-1/acceptance-hardening/independent-semantic-evaluator.js > "$RUNNER_TEMP/evaluation.json"
+
+      - name: Accepted and V0.2 provider-free regressions
+        id: regressions
+        if: steps.generation.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node experiments/human-intent-layer-v0/intent-layer.test.js > "$RUNNER_TEMP/v0.json"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$HUMAN_INTENT_V0_MODULE" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js > "$RUNNER_TEMP/v01.json"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$HUMAN_INTENT_V0_MODULE" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/adversarial-sensitivity.test.js > "$RUNNER_TEMP/v01-adversarial.json"
+          node "$BASE/transport.test.js" > "$RUNNER_TEMP/transport.json"
+          node "$BASE/transport-id-contract.test.js" > "$RUNNER_TEMP/id.json"
+          node "$BASE/transport-reference-contract.test.js" > "$RUNNER_TEMP/reference.json"
+          node "$BASE/transport-provenance-contract.test.js" > "$RUNNER_TEMP/provenance.json"
+          node "$BASE/semantic-correction-policy.test.js" > "$RUNNER_TEMP/semantic-positive.json"
+          node "$BASE/semantic-adversarial-boundaries.test.js" > "$RUNNER_TEMP/semantic-adversarial.json"
+          node "$BASE/multi-span-provenance-representation.test.js" > "$RUNNER_TEMP/multispan.json"
+          node "$BASE/structured-provenance-span-contract.test.js" > "$RUNNER_TEMP/structured-span.json"
+          node "$BASE/structured-provenance-adapter.test.js" > "$RUNNER_TEMP/structured-adapter.json"
+          node "$BASE/structured-provenance-replay.test.js" > "$RUNNER_TEMP/structured-replay.json"
+
+      - name: Assemble immutable evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$EVIDENCE_DIR"
+          if test -d "$RUN_DIR"; then cp -a "$RUN_DIR" "$EVIDENCE_DIR/run"; fi
+          for f in frozen.json blindness.json gold-probe.stderr generation.json evaluation.json v0.json v01.json v01-adversarial.json transport.json id.json reference.json provenance.json semantic-positive.json semantic-adversarial.json multispan.json structured-span.json structured-adapter.json structured-replay.json; do test ! -f "$RUNNER_TEMP/$f" || cp "$RUNNER_TEMP/$f" "$EVIDENCE_DIR/$f"; done
+          printf '{"commit":"%s","runId":"%s","frozen":"%s","blindness":"%s","generation":"%s","evaluation":"%s","regressions":"%s"}\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "${{ steps.frozen.outcome }}" "${{ steps.blindness.outcome }}" "${{ steps.generation.outcome }}" "${{ steps.evaluation.outcome }}" "${{ steps.regressions.outcome }}" > "$EVIDENCE_DIR/workflow-evidence.json"
+
+      - name: Upload proof evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hii-v0-2-fresh-blind-semantic-proof-3
+          path: /tmp/hii-v0-2-fresh-proof-3-evidence
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce terminal verdict
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.frozen.outcome }}" = success || { echo 'BLOCKED: frozen identity'; exit 20; }
+          test "${{ steps.blindness.outcome }}" = success || { echo 'BLOCKED: blindness'; exit 20; }
+          test "${{ steps.generation.outcome }}" = success || { echo 'BLOCKED: sealed candidate set not created'; exit 20; }
+          test "${{ steps.evaluation.outcome }}" = success || { echo 'BLOCKED: evaluation incomplete'; exit 20; }
+          test "${{ steps.regressions.outcome }}" = success || { echo 'FAIL: accepted/provider-free regression'; exit 1; }
+          status="$(node -e 'const r=require(process.argv[1]);process.stdout.write(r.status)' "$RUNNER_TEMP/evaluation.json")"
+          test "$status" = PASS || { echo 'FAIL: fresh sealed candidates missed semantic thresholds'; exit 1; }
+          echo 'PASS: HII V0.2 fresh blind semantic proof 3'
