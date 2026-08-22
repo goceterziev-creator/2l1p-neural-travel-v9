@@ -9,6 +9,7 @@ const {
   sha256,
   stableBytes
 } = require('./contract');
+const { applySemanticProtocol } = require('./semantic-policy');
 const { createFakeAdapter } = require('./adapters/fake-adapter');
 const { createOpenAiResponsesAdapter } = require('./adapters/openai-responses-adapter');
 
@@ -47,13 +48,17 @@ function loadAdapter(args) {
   throw new TypeError(`unsupported adapter: ${args.adapter}`);
 }
 
+function semanticEnvelope(source) {
+  return applySemanticProtocol(buildEnvelope(source));
+}
+
 function assertCorpus(corpus) {
   if (!corpus || !Array.isArray(corpus.cases) || !corpus.cases.length) throw new TypeError('corpus requires cases');
   const ids = new Set();
   for (const source of corpus.cases) {
     if (ids.has(source.id)) throw new TypeError(`duplicate corpus case: ${source.id}`);
     ids.add(source.id);
-    buildEnvelope(source);
+    semanticEnvelope(source);
   }
 }
 
@@ -65,7 +70,7 @@ async function main() {
   ensureFreshOutput(path.resolve(args.output));
   const outputDir = path.resolve(args.output);
   const adapter = loadAdapter(args);
-  const envelopes = corpus.cases.map((source) => buildEnvelope(source));
+  const envelopes = corpus.cases.map((source) => semanticEnvelope(source));
   const pricing = adapter.parameters.pricing_usd_per_million || { input: 0, output: 0 };
   const inputTokenUpperBound = envelopes.reduce((total, envelope) => total + Buffer.byteLength(stableBytes(envelope)), 0);
   const outputTokenUpperBound = corpus.cases.length * Number(adapter.parameters.max_output_tokens || 0);
@@ -84,6 +89,7 @@ async function main() {
     parameters: adapter.parameters,
     corpusIdentity: sha256(corpusBytes),
     publicProtocolIdentity: sha256(PUBLIC_PROTOCOL),
+    semanticProtocolIdentity: sha256(envelopes[0].instructions.slice(PUBLIC_PROTOCOL.length)),
     costBoundary: {
       inputTokenUpperBound,
       outputTokenUpperBound,
