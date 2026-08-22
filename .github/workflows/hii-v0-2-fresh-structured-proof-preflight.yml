@@ -20,3 +20,4 @@ jobs:
           echo "CORPUS_SHA256=$(sha256sum "$C" | cut -d ' ' -f 1)"
           echo "GOLD_SHA256=$(sha256sum "$G" | cut -d ' ' -f 1)"
           test "$(node -e 'const fs=require("node:fs");const c=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(String(c.cases.length))' "$C")" = 8
+      # provider-free preflight trigger only
