@@ -1,0 +1,102 @@
+name: HII V0.2 multi-span provenance validation
+
+on:
+  push:
+    branches:
+      - experiment/hii-v0-2-fresh-blind-semantic-proof-1
+    paths:
+      - .github/workflows/hii-v0-2-multi-span-provenance-validation.yml
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/transport/adapters/openai-responses-adapter.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/multi-span-provenance-representation.test.js
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  provider-free-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport
+      OPENAI_API_KEY: ""
+      HISTORICAL_RUN: "32554370872"
+      HISTORICAL_RAW_SHA: "30404f2cd18da8cb67584e4a7f52f73af1ddfe0ecdc7891dc123911fee2a5c55"
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout bounded correction
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Historical A21 replay remains rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/historical"
+          gh run download "$HISTORICAL_RUN" -n hii-v0-2-fresh-blind-semantic-proof-1 -D "$RUNNER_TEMP/historical"
+          RAW="$RUNNER_TEMP/historical/run/raw-responses/A21.json"
+          test -f "$RAW"
+          test "$(sha256sum "$RAW" | cut -d ' ' -f 1)" = "$HISTORICAL_RAW_SHA"
+          test ! -e "$RUNNER_TEMP/historical/run/candidates/A21.json"
+          test ! -e "$RUNNER_TEMP/historical/run/freeze.json"
+          node - "$RAW" "$BASE/fresh-proof-1/blind-corpus.json" <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const { extractCandidate } = require('./experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/transport/contract');
+          const raw = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const corpus = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+          const source = corpus.cases.find((item) => item.id === 'A21');
+          assert.ok(source);
+          assert.throws(
+            () => extractCandidate(raw, source),
+            /evidence-composed quote has 0 exact source decompositions/
+          );
+          process.stdout.write(JSON.stringify({status:'PASS',historicalA21StillRejected:true,noCandidateRepair:true,noGoldRead:true,noModelCall:true}) + '\n');
+          NODE
+
+      - name: Provider-free validation run 1
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/run1"
+          mkdir -p "$OUT"
+          node "$BASE/multi-span-provenance-representation.test.js" > "$OUT/multi-span.json"
+          node --test experiments/human-intent-layer-v0/intent-layer.test.js > "$OUT/v0.tap"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$GITHUB_WORKSPACE/experiments/human-intent-layer-v0/intent-layer.js" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js > "$OUT/v01.json"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$GITHUB_WORKSPACE/experiments/human-intent-layer-v0/intent-layer.js" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/adversarial-sensitivity.test.js > "$OUT/v01-adversarial.json"
+          node "$BASE/transport.test.js" > "$OUT/transport.json"
+          node "$BASE/transport-id-contract.test.js" > "$OUT/id.json"
+          node "$BASE/transport-reference-contract.test.js" > "$OUT/reference.json"
+          node "$BASE/transport-provenance-contract.test.js" > "$OUT/provenance.json"
+          node "$BASE/semantic-correction-policy.test.js" > "$OUT/semantic-positive.json"
+          node "$BASE/semantic-adversarial-boundaries.test.js" > "$OUT/semantic-adversarial.json"
+
+      - name: Provider-free validation run 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/run2"
+          mkdir -p "$OUT"
+          node "$BASE/multi-span-provenance-representation.test.js" > "$OUT/multi-span.json"
+          node --test experiments/human-intent-layer-v0/intent-layer.test.js > "$OUT/v0.tap"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$GITHUB_WORKSPACE/experiments/human-intent-layer-v0/intent-layer.js" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js > "$OUT/v01.json"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$GITHUB_WORKSPACE/experiments/human-intent-layer-v0/intent-layer.js" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/adversarial-sensitivity.test.js > "$OUT/v01-adversarial.json"
+          node "$BASE/transport.test.js" > "$OUT/transport.json"
+          node "$BASE/transport-id-contract.test.js" > "$OUT/id.json"
+          node "$BASE/transport-reference-contract.test.js" > "$OUT/reference.json"
+          node "$BASE/transport-provenance-contract.test.js" > "$OUT/provenance.json"
+          node "$BASE/semantic-correction-policy.test.js" > "$OUT/semantic-positive.json"
+          node "$BASE/semantic-adversarial-boundaries.test.js" > "$OUT/semantic-adversarial.json"
+
+      - name: Determinism proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in multi-span.json v0.tap v01.json v01-adversarial.json transport.json id.json reference.json provenance.json semantic-positive.json semantic-adversarial.json; do
+            cmp "$RUNNER_TEMP/run1/$file" "$RUNNER_TEMP/run2/$file"
+          done
+          echo 'PASS: both complete provider-free validation runs are byte-identical'
