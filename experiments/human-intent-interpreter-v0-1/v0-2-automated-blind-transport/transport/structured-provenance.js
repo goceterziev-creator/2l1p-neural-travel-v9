@@ -19,7 +19,7 @@ function clone(value) {
 function isProvenanceSchema(node) {
   const properties = node?.properties;
   return node?.type === 'object'
-    && properties?.source_type?.enum?.includes(RAW_TEXT)
+    && Array.isArray(properties?.source_type?.enum)
     && properties.quote
     && properties.evidence_id
     && properties.supports;
