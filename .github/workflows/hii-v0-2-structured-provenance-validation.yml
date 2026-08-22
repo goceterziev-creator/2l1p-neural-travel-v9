@@ -1,9 +1,15 @@
-name: HII V0.2 structured provenance span validation
+name: HII V0.2 structured provenance discriminator validation
 
 on:
   push:
     branches:
-      - experiment/hii-v0-2-structured-provenance-spans
+      - experiment/hii-v0-2-provenance-discriminator
+    paths:
+      - .github/workflows/hii-v0-2-structured-provenance-validation.yml
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/transport/structured-provenance.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-discriminator.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-span.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-adapter.test.js
 
 permissions:
   contents: read
@@ -24,13 +30,14 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Historical A21 and A31 remain rejected
+      - name: Historical A21 A31 and S41 remain rejected evidence
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/a21" "$RUNNER_TEMP/a31"
+          mkdir -p "$RUNNER_TEMP/a21" "$RUNNER_TEMP/a31" "$RUNNER_TEMP/proof3"
           gh run download 32554370872 -n hii-v0-2-fresh-blind-semantic-proof-1 -D "$RUNNER_TEMP/a21"
           gh run download 32556374975 -n hii-v0-2-fresh-blind-semantic-proof-2 -D "$RUNNER_TEMP/a31"
+          gh run download 32574627267 -n hii-v0-2-fresh-blind-semantic-proof-3 -D "$RUNNER_TEMP/proof3"
           A21="$RUNNER_TEMP/a21/run/raw-responses/A21.json"
           A31="$RUNNER_TEMP/a31/run/raw-responses/A31.json"
           test "$(sha256sum "$A21" | cut -d ' ' -f 1)" = "30404f2cd18da8cb67584e4a7f52f73af1ddfe0ecdc7891dc123911fee2a5c55"
@@ -52,14 +59,24 @@ jobs:
             const source = corpus.cases.find((item) => item.id === id);
             assert.throws(() => extractCandidate(raw, source));
           }
-          process.stdout.write(JSON.stringify({status:'PASS',historicalA21StillRejected:true,historicalA31StillRejected:true,noCandidateRepair:true,noGoldRead:true,noModelCall:true}) + '\n');
           NODE
+          test -f "$RUNNER_TEMP/proof3/run/raw-responses/A41.json"
+          test -f "$RUNNER_TEMP/proof3/run/candidates/A41.json"
+          test -f "$RUNNER_TEMP/proof3/run/raw-responses/A42.json"
+          test -f "$RUNNER_TEMP/proof3/run/candidates/A42.json"
+          test ! -e "$RUNNER_TEMP/proof3/run/raw-responses/S41.json"
+          test ! -e "$RUNNER_TEMP/proof3/run/candidates/S41.json"
+          test ! -e "$RUNNER_TEMP/proof3/run/freeze.json"
+          gh run view 32574627267 --log > "$RUNNER_TEMP/proof3.log"
+          grep -Fq 'GENERATION_FAILED: RAW_TEXT structured provenance must use spans only' "$RUNNER_TEMP/proof3.log"
+          printf '%s\n' '{"status":"PASS","historicalA21StillRejected":true,"historicalA31StillRejected":true,"historicalS41ProjectionRejected":true,"proof3AcceptanceReuse":false,"candidateRepair":false,"modelCalls":0}'
 
       - name: Provider-free validation run 1
         shell: bash
         run: |
           set -euo pipefail
           OUT="$RUNNER_TEMP/run1"; mkdir -p "$OUT"
+          node "$BASE/structured-provenance-discriminator.test.js" > "$OUT/discriminator.json"
           node "$BASE/structured-provenance-span.test.js" > "$OUT/spans.json"
           node "$BASE/structured-provenance-adapter.test.js" > "$OUT/adapter.json"
           node "$BASE/structured-provenance-replay.test.js" > "$OUT/replay.json"
@@ -79,6 +96,7 @@ jobs:
         run: |
           set -euo pipefail
           OUT="$RUNNER_TEMP/run2"; mkdir -p "$OUT"
+          node "$BASE/structured-provenance-discriminator.test.js" > "$OUT/discriminator.json"
           node "$BASE/structured-provenance-span.test.js" > "$OUT/spans.json"
           node "$BASE/structured-provenance-adapter.test.js" > "$OUT/adapter.json"
           node "$BASE/structured-provenance-replay.test.js" > "$OUT/replay.json"
@@ -97,7 +115,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in v0.json spans.json adapter.json replay.json multi-span.json v01.json v01-adversarial.json transport.json id.json reference.json provenance.json semantic-positive.json semantic-adversarial.json; do
+          for file in v0.json discriminator.json spans.json adapter.json replay.json multi-span.json v01.json v01-adversarial.json transport.json id.json reference.json provenance.json semantic-positive.json semantic-adversarial.json; do
             cmp "$RUNNER_TEMP/run1/$file" "$RUNNER_TEMP/run2/$file"
           done
           echo 'PASS: two complete provider-free executions are byte-identical on deterministic outputs'
