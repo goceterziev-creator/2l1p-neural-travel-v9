@@ -97,10 +97,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sed -E '/^[[:space:]]*duration_ms:/d; /^# duration_ms /d' "$RUNNER_TEMP/run1/v0.tap" > "$RUNNER_TEMP/run1/v0.stable.tap"
-          sed -E '/^[[:space:]]*duration_ms:/d; /^# duration_ms /d' "$RUNNER_TEMP/run2/v0.tap" > "$RUNNER_TEMP/run2/v0.stable.tap"
+          sed -E '/^[[:space:]]*duration_ms:[[:space:]]*[0-9.]+[[:space:]]*$/d; /^# duration_ms[[:space:]]+[0-9.]+[[:space:]]*$/d' "$RUNNER_TEMP/run1/v0.tap" > "$RUNNER_TEMP/run1/v0.stable.tap"
+          sed -E '/^[[:space:]]*duration_ms:[[:space:]]*[0-9.]+[[:space:]]*$/d; /^# duration_ms[[:space:]]+[0-9.]+[[:space:]]*$/d' "$RUNNER_TEMP/run2/v0.tap" > "$RUNNER_TEMP/run2/v0.stable.tap"
           cmp "$RUNNER_TEMP/run1/v0.stable.tap" "$RUNNER_TEMP/run2/v0.stable.tap"
           for file in multi-span.json v01.json v01-adversarial.json transport.json id.json reference.json provenance.json semantic-positive.json semantic-adversarial.json; do
             cmp "$RUNNER_TEMP/run1/$file" "$RUNNER_TEMP/run2/$file"
           done
-          echo 'PASS: V0 verdict/count TAP is identical after removing duration_ms runtime metadata; all other deterministic artifacts are byte-identical'
+          echo 'PASS: V0 verdict/count TAP is identical after removing numeric duration_ms runtime metadata; all other deterministic artifacts are byte-identical'
