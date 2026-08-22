@@ -7,6 +7,12 @@ const {
 } = require('../structured-provenance');
 
 const EXPERIMENTAL_MODEL = 'gpt-4.1-mini-2025-04-14';
+const PROVIDER_REPRESENTATION = Object.freeze({
+  id: 'structured-provenance-spans-v1',
+  rawTextCoordinateSystem: 'UTF-16-code-units',
+  rawTextRangeConvention: '[start,end)',
+  projection: 'structured-provider-response-to-canonical-candidate'
+});
 
 const PROVIDER_PROVENANCE_INSTRUCTIONS = `Provider-facing provenance representation:
 RAW_TEXT provenance is structural. Do not author a RAW_TEXT quotation. Set quote=null, evidence_id=null, supports=[] and select one or more exact UTF-16 code-unit [start,end) spans from the raw brief in spans. Each span is contiguous, non-empty, ordered and non-overlapping. If one semantic statement depends on non-contiguous raw locations, put each location in the same RAW_TEXT provenance item's spans array. The transport copies canonical quote text directly from those source locations.
@@ -35,6 +41,7 @@ function createOpenAiResponsesAdapter(options = {}) {
     id: 'openai-responses-native-fetch',
     model,
     parameters,
+    providerRepresentation: PROVIDER_REPRESENTATION,
     async invoke(envelope, context = {}) {
       if (!provider) {
         if (!process.env.OPENAI_API_KEY) {
@@ -90,4 +97,9 @@ function createOpenAiResponsesAdapter(options = {}) {
   });
 }
 
-module.exports = { EXPERIMENTAL_MODEL, PROVIDER_PROVENANCE_INSTRUCTIONS, createOpenAiResponsesAdapter };
+module.exports = {
+  EXPERIMENTAL_MODEL,
+  PROVIDER_REPRESENTATION,
+  PROVIDER_PROVENANCE_INSTRUCTIONS,
+  createOpenAiResponsesAdapter
+};
