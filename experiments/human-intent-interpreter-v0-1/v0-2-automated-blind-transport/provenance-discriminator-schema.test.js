@@ -38,7 +38,11 @@ function valid(schema, value) {
   return true;
 }
 
-const schema = structuredProvenanceSchema(CANDIDATE_SCHEMA);
+const schema = structuredProvenanceSchema(CANDIDATE_SCHEMA, [
+  'survey-7',
+  'gallery-survey-N2',
+  'courtyard-record-6'
+]);
 const provenance = schema.properties.EXPLICIT.items.properties.provenance.items;
 assert.equal(provenance.anyOf.length, 3);
 assert.deepEqual(provenance.anyOf.map((variant) => variant.properties.source_type.enum[0]), [
@@ -62,7 +66,7 @@ const inference = { source_type: 'INFERENCE', quote: null, evidence_id: null, su
 
 for (const item of [raw1, raw2, supplied, inference]) assert.equal(valid(provenance, item), true);
 
-// Historical A41/A42 valid representation classes remain accepted.
+// Historical A41/A42 valid representation classes remain accepted when the matching supplied evidence IDs are present in the envelope schema.
 const a41Style = [
   { source_type: 'RAW_TEXT', quote: null, evidence_id: null, supports: [], spans: [{ start: 0, end: 88 }] },
   { source_type: 'SUPPLIED_EVIDENCE', quote: 'The measured survey shows the north gallery wall is 8.4 m long.', evidence_id: 'gallery-survey-N2', supports: [], spans: [] },
