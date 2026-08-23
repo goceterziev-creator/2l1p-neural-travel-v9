@@ -1,6 +1,8 @@
 'use strict';
 
 const RAW_TEXT = 'RAW_TEXT';
+const SUPPLIED_EVIDENCE = 'SUPPLIED_EVIDENCE';
+const INFERENCE = 'INFERENCE';
 
 const spanSchema = Object.freeze({
   type: 'object',
@@ -25,17 +27,58 @@ function isProvenanceSchema(node) {
     && properties.supports;
 }
 
+function emptyArraySchema(items) {
+  return {
+    type: 'array',
+    items: clone(items),
+    maxItems: 0
+  };
+}
+
+function provenanceVariant(sourceType, original) {
+  const supportItems = original.properties.supports.items;
+  const properties = {
+    source_type: { type: 'string', enum: [sourceType] },
+    quote: { type: 'null' },
+    evidence_id: { type: 'null' },
+    supports: emptyArraySchema(supportItems),
+    spans: emptyArraySchema(spanSchema)
+  };
+
+  if (sourceType === RAW_TEXT) {
+    properties.spans = {
+      type: 'array',
+      description: 'RAW_TEXT only: one or more UTF-16 code-unit [start,end) ranges into the exact raw brief.',
+      minItems: 1,
+      items: clone(spanSchema)
+    };
+  } else if (sourceType === SUPPLIED_EVIDENCE) {
+    properties.quote = { type: 'string', minLength: 1 };
+    properties.evidence_id = { type: 'string', minLength: 1 };
+  } else if (sourceType === INFERENCE) {
+    properties.supports = clone(original.properties.supports);
+  } else {
+    throw new TypeError(`unsupported provenance source_type in provider schema: ${sourceType}`);
+  }
+
+  return {
+    type: 'object',
+    properties,
+    required: ['source_type', 'quote', 'evidence_id', 'supports', 'spans'],
+    additionalProperties: false
+  };
+}
+
 function structuredProvenanceSchema(schema) {
   const root = clone(schema);
   function visit(node) {
     if (!node || typeof node !== 'object') return;
     if (isProvenanceSchema(node)) {
-      node.properties.spans = {
-        type: 'array',
-        description: 'RAW_TEXT only: UTF-16 code-unit [start,end) ranges into the exact raw brief. Must be ordered, non-overlapping, non-empty. For non-RAW_TEXT use an empty array.',
-        items: spanSchema
-      };
-      if (!node.required.includes('spans')) node.required.push('spans');
+      const allowed = node.properties.source_type.enum;
+      const variants = allowed.map((sourceType) => provenanceVariant(sourceType, node));
+      for (const key of Object.keys(node)) delete node[key];
+      node.anyOf = variants;
+      return;
     }
     for (const value of Object.values(node)) {
       if (Array.isArray(value)) value.forEach(visit);
