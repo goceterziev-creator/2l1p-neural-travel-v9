@@ -39,12 +39,20 @@ function valid(schema, value) {
 
 const schema = structuredProvenanceSchema(CANDIDATE_SCHEMA);
 const provenance = schema.properties.EXPLICIT.items.properties.provenance.items;
-assert.equal(provenance.properties.spans.type, 'array');
-assert.ok(provenance.required.includes('spans'));
 assert.equal(provenance.anyOf.length, 3);
 assert.deepEqual(provenance.anyOf.map((variant) => variant.properties.source_type.enum[0]), [
   'RAW_TEXT', 'SUPPLIED_EVIDENCE', 'INFERENCE'
 ]);
+for (const variant of provenance.anyOf) {
+  assert.equal(variant.properties.spans.type, 'array');
+  assert.ok(variant.required.includes('spans'));
+}
+const rawVariant = provenance.anyOf.find((variant) => variant.properties.source_type.enum[0] === 'RAW_TEXT');
+assert.equal(rawVariant.properties.spans.minItems, 1);
+const suppliedVariant = provenance.anyOf.find((variant) => variant.properties.source_type.enum[0] === 'SUPPLIED_EVIDENCE');
+const inferenceVariant = provenance.anyOf.find((variant) => variant.properties.source_type.enum[0] === 'INFERENCE');
+assert.equal(suppliedVariant.properties.spans.maxItems, 0);
+assert.equal(inferenceVariant.properties.spans.maxItems, 0);
 
 const raw1 = { source_type: 'RAW_TEXT', quote: null, evidence_id: null, supports: [], spans: [{ start: 0, end: 5 }] };
 const raw2 = { source_type: 'RAW_TEXT', quote: null, evidence_id: null, supports: [], spans: [{ start: 0, end: 5 }, { start: 8, end: 12 }] };
@@ -85,6 +93,7 @@ for (const item of invalid) assert.equal(valid(provenance, item), false, JSON.st
 const inferred = schema.properties.INFERRED.items.properties.provenance.items;
 assert.equal(inferred.anyOf.length, 1);
 assert.equal(inferred.anyOf[0].properties.source_type.enum[0], 'INFERENCE');
+assert.equal(inferred.anyOf[0].properties.spans.maxItems, 0);
 assert.equal(valid(inferred, inference), true);
 assert.equal(valid(inferred, raw1), false);
 
