@@ -1,0 +1,83 @@
+name: HII V0.2 deterministic raw text span resolution validation
+
+on:
+  push:
+    branches:
+      - experiment/hii-v0-2-deterministic-raw-text-span-resolution
+    paths:
+      - .github/workflows/hii-v0-2-deterministic-raw-text-span-resolution-validation.yml
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/transport/**
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-span.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-adapter.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-replay.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/provenance-discriminator-schema.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/multi-span-provenance-representation.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/inference-support-reference-discriminator.test.js
+
+permissions:
+  contents: read
+
+jobs:
+  provider-free-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport
+      OPENAI_API_KEY: ""
+      HUMAN_INTENT_V0_MODULE: ${{ github.workspace }}/experiments/human-intent-layer-v0/intent-layer.js
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Provider-free validation run 1
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/run1"; mkdir -p "$OUT"
+          node "$BASE/structured-provenance-span.test.js" > "$OUT/span-resolution.json"
+          node "$BASE/structured-provenance-adapter.test.js" > "$OUT/adapter.json"
+          node "$BASE/structured-provenance-replay.test.js" > "$OUT/replay.json"
+          node "$BASE/provenance-discriminator-schema.test.js" > "$OUT/discriminator.json"
+          node "$BASE/multi-span-provenance-representation.test.js" > "$OUT/multi-span.json"
+          node "$BASE/inference-support-reference-discriminator.test.js" > "$OUT/inference-reference.json"
+          node experiments/human-intent-layer-v0/intent-layer.test.js > "$OUT/v0.json"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js > "$OUT/v01.json"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/adversarial-sensitivity.test.js > "$OUT/v01-adversarial.json"
+          node "$BASE/transport.test.js" > "$OUT/transport.json"
+          node "$BASE/transport-id-contract.test.js" > "$OUT/id.json"
+          node "$BASE/transport-reference-contract.test.js" > "$OUT/reference.json"
+          node "$BASE/transport-provenance-contract.test.js" > "$OUT/provenance.json"
+          node "$BASE/semantic-correction-policy.test.js" > "$OUT/semantic-positive.json"
+          node "$BASE/semantic-adversarial-boundaries.test.js" > "$OUT/semantic-adversarial.json"
+
+      - name: Provider-free validation run 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/run2"; mkdir -p "$OUT"
+          node "$BASE/structured-provenance-span.test.js" > "$OUT/span-resolution.json"
+          node "$BASE/structured-provenance-adapter.test.js" > "$OUT/adapter.json"
+          node "$BASE/structured-provenance-replay.test.js" > "$OUT/replay.json"
+          node "$BASE/provenance-discriminator-schema.test.js" > "$OUT/discriminator.json"
+          node "$BASE/multi-span-provenance-representation.test.js" > "$OUT/multi-span.json"
+          node "$BASE/inference-support-reference-discriminator.test.js" > "$OUT/inference-reference.json"
+          node experiments/human-intent-layer-v0/intent-layer.test.js > "$OUT/v0.json"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js > "$OUT/v01.json"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/adversarial-sensitivity.test.js > "$OUT/v01-adversarial.json"
+          node "$BASE/transport.test.js" > "$OUT/transport.json"
+          node "$BASE/transport-id-contract.test.js" > "$OUT/id.json"
+          node "$BASE/transport-reference-contract.test.js" > "$OUT/reference.json"
+          node "$BASE/transport-provenance-contract.test.js" > "$OUT/provenance.json"
+          node "$BASE/semantic-correction-policy.test.js" > "$OUT/semantic-positive.json"
+          node "$BASE/semantic-adversarial-boundaries.test.js" > "$OUT/semantic-adversarial.json"
+
+      - name: Determinism proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in span-resolution.json adapter.json replay.json discriminator.json multi-span.json inference-reference.json v0.json v01.json v01-adversarial.json transport.json id.json reference.json provenance.json semantic-positive.json semantic-adversarial.json; do
+            cmp "$RUNNER_TEMP/run1/$file" "$RUNNER_TEMP/run2/$file"
+          done
+          echo 'PASS: deterministic exact text selection resolution validated twice; zero model calls'
