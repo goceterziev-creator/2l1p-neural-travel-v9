@@ -74,10 +74,15 @@ function structuredProvenanceSchema(schema) {
   function visit(node) {
     if (!node || typeof node !== 'object') return;
     if (isProvenanceSchema(node)) {
-      const allowed = node.properties.source_type.enum;
-      const variants = allowed.map((sourceType) => provenanceVariant(sourceType, node));
-      for (const key of Object.keys(node)) delete node[key];
-      node.anyOf = variants;
+      const allowed = [...node.properties.source_type.enum];
+      const original = clone(node);
+      node.properties.spans = {
+        type: 'array',
+        description: 'Provider structured provenance spans. Variant constraints are enforced by anyOf.',
+        items: clone(spanSchema)
+      };
+      if (!node.required.includes('spans')) node.required.push('spans');
+      node.anyOf = allowed.map((sourceType) => provenanceVariant(sourceType, original));
       return;
     }
     for (const value of Object.values(node)) {
