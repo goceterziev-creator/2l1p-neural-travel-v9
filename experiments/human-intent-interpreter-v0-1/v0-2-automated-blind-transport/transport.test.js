@@ -71,15 +71,16 @@ function providerStructuredResponseFromLegacy(rawResponse, source) {
     for (const entry of entries) {
       if (!Array.isArray(entry.provenance)) continue;
       for (const provenance of entry.provenance) {
+        provenance.spans = [];
         if (provenance.source_type === 'RAW_TEXT') {
-          const start = source.text.indexOf(provenance.quote);
-          assert.notEqual(start, -1, 'legacy fake RAW_TEXT quote must be exact for structured provider mock');
-          provenance.spans = [{ start, end: start + provenance.quote.length }];
+          assert.equal(typeof provenance.quote, 'string');
+          assert.equal(source.text.includes(provenance.quote), true, 'legacy fake RAW_TEXT quote must be exact for structured provider mock');
+          provenance.selections = [{ text: provenance.quote }];
           provenance.quote = null;
           provenance.evidence_id = null;
           provenance.supports = [];
         } else {
-          provenance.spans = [];
+          provenance.selections = [];
         }
       }
     }
