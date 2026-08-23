@@ -20,10 +20,8 @@ providerCandidate.EXPLICIT.push({
     quote: null,
     evidence_id: null,
     supports: [],
-    spans: [
-      { start: 0, end: 13 },
-      { start: 19, end: 31 }
-    ]
+    selections: [{ text: 'First clause.' }, { text: 'Last clause.' }],
+    spans: []
   }],
   targets: [],
   required: false,
@@ -49,12 +47,15 @@ const provider = {
   const p = schema.properties.EXPLICIT.items.properties.provenance.items;
   assert.equal(p.anyOf.length, 3);
   const rawSchema = p.anyOf.find((variant) => variant.properties.source_type.enum[0] === 'RAW_TEXT');
-  assert.equal(rawSchema.properties.spans.type, 'array');
-  assert.equal(rawSchema.properties.spans.minItems, 1);
+  assert.equal(rawSchema.properties.selections.type, 'array');
+  assert.equal(rawSchema.properties.selections.minItems, 1);
+  assert.equal(rawSchema.properties.spans.maxItems, 0);
+  assert.ok(rawSchema.required.includes('selections'));
   assert.ok(rawSchema.required.includes('spans'));
   assert.equal(captured.body.temperature, 0);
   assert.strictEqual(result.rawResponse, providerRaw);
-  assert.equal(result.rawResponse.output_text.includes('"spans"'), true);
+  assert.equal(result.rawResponse.output_text.includes('"selections"'), true);
+  assert.equal(result.extractionResponse.output_text.includes('"selections"'), false);
   assert.equal(result.extractionResponse.output_text.includes('"spans"'), false);
   const extracted = JSON.parse(result.extractionResponse.output_text);
   assert.deepEqual(extracted.EXPLICIT[0].provenance.map((item) => item.quote), ['First clause.', 'Last clause.']);
@@ -62,8 +63,9 @@ const provider = {
   process.stdout.write(`${JSON.stringify({
     status: 'PASS',
     providerRawPreserved: true,
-    providerSchemaStructured: true,
-    providerSchemaDiscriminated: true,
+    providerSchemaExactSelections: true,
+    providerAuthoredOffsets: false,
+    machineResolvedCoordinates: true,
     temperature: captured.body.temperature,
     semanticStatementUnchanged: true
   })}\n`);
