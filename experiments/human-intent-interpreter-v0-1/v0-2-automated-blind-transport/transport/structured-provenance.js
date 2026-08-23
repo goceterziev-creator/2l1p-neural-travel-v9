@@ -35,7 +35,31 @@ function emptyArraySchema(items) {
   };
 }
 
-function provenanceVariant(sourceType, original) {
+function inferenceSupportSchema(original, evidenceIds) {
+  const base = clone(original.properties.supports.items);
+  const rawTextSupport = {
+    type: 'object',
+    properties: {
+      quote: { type: 'string', minLength: 1 },
+      evidence_id: { type: 'null' }
+    },
+    required: ['quote', 'evidence_id'],
+    additionalProperties: false
+  };
+  if (!evidenceIds.length) return rawTextSupport;
+  const suppliedEvidenceSupport = {
+    type: 'object',
+    properties: {
+      quote: { type: 'string', minLength: 1 },
+      evidence_id: { type: 'string', enum: [...evidenceIds] }
+    },
+    required: ['quote', 'evidence_id'],
+    additionalProperties: false
+  };
+  return { anyOf: [rawTextSupport, suppliedEvidenceSupport], description: base.description };
+}
+
+function provenanceVariant(sourceType, original, evidenceIds) {
   const supportItems = original.properties.supports.items;
   const properties = {
     source_type: { type: 'string', enum: [sourceType] },
@@ -54,9 +78,15 @@ function provenanceVariant(sourceType, original) {
     };
   } else if (sourceType === SUPPLIED_EVIDENCE) {
     properties.quote = { type: 'string', minLength: 1 };
-    properties.evidence_id = { type: 'string', minLength: 1 };
+    properties.evidence_id = evidenceIds.length
+      ? { type: 'string', enum: [...evidenceIds] }
+      : { type: 'string', enum: [] };
   } else if (sourceType === INFERENCE) {
-    properties.supports = clone(original.properties.supports);
+    properties.supports = {
+      type: 'array',
+      minItems: 1,
+      items: inferenceSupportSchema(original, evidenceIds)
+    };
   } else {
     throw new TypeError(`unsupported provenance source_type in provider schema: ${sourceType}`);
   }
@@ -69,8 +99,9 @@ function provenanceVariant(sourceType, original) {
   };
 }
 
-function structuredProvenanceSchema(schema) {
+function structuredProvenanceSchema(schema, evidenceIds = []) {
   const root = clone(schema);
+  const allowedEvidenceIds = [...new Set(evidenceIds.filter((id) => typeof id === 'string' && id.length > 0))];
   function visit(node) {
     if (!node || typeof node !== 'object') return;
     if (isProvenanceSchema(node)) {
@@ -82,7 +113,7 @@ function structuredProvenanceSchema(schema) {
         items: clone(spanSchema)
       };
       if (!node.required.includes('spans')) node.required.push('spans');
-      node.anyOf = allowed.map((sourceType) => provenanceVariant(sourceType, original));
+      node.anyOf = allowed.map((sourceType) => provenanceVariant(sourceType, original, allowedEvidenceIds));
       return;
     }
     for (const value of Object.values(node)) {
