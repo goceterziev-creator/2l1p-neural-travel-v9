@@ -16,15 +16,16 @@ const PROVIDER_REPRESENTATION = Object.freeze({
 
 const PROVIDER_PROVENANCE_INSTRUCTIONS = `Provider-facing provenance representation:
 RAW_TEXT provenance is structural. Do not author a RAW_TEXT quotation. Set quote=null, evidence_id=null, supports=[] and select one or more exact UTF-16 code-unit [start,end) spans from the raw brief in spans. Each span is contiguous, non-empty, ordered and non-overlapping. If one semantic statement depends on non-contiguous raw locations, put each location in the same RAW_TEXT provenance item's spans array. The transport copies canonical quote text directly from those source locations.
-For SUPPLIED_EVIDENCE, use the accepted evidence_id/quote representation and spans=[].
-For INFERENCE, use INFERENCE provenance with supports as defined by the accepted contract and spans=[].
+For SUPPLIED_EVIDENCE, use only an evidence_id supplied in the current envelope, use an exact quote from that evidence item, and spans=[].
+For INFERENCE, use INFERENCE provenance with one or more supports. A support may reference the raw brief with evidence_id=null and an exact raw quote, or may reference only an evidence_id supplied in the current envelope with an exact quote from that evidence item. Never invent an evidence_id. Use spans=[].
 Spans are evidence grounding only. Their number must not create, remove, move or reclassify semantic entries.`;
 
 function providerRepresentationFor(envelope) {
+  const evidenceIds = (envelope.evidence || []).map((item) => item.evidence_id);
   return {
     descriptor: PROVIDER_REPRESENTATION,
     instructions: PROVIDER_PROVENANCE_INSTRUCTIONS,
-    outputSchema: structuredProvenanceSchema(envelope.outputSchema)
+    outputSchema: structuredProvenanceSchema(envelope.outputSchema, evidenceIds)
   };
 }
 
