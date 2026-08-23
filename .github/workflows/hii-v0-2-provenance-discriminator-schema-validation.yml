@@ -6,6 +6,12 @@ on:
       - experiment/hii-v0-2-provenance-discriminator-schema
     paths:
       - .github/workflows/hii-v0-2-provenance-discriminator-schema-validation.yml
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/provenance-discriminator-schema.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-span.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-adapter.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-replay.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/multi-span-provenance-representation.test.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/transport/**
 
 permissions:
   contents: read
