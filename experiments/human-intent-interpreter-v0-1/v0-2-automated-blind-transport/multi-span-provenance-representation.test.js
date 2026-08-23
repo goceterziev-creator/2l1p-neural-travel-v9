@@ -111,8 +111,11 @@ async function main() {
   assert.match(systemText, /UTF-16 code-unit/i);
   assert.match(systemText, /non-contiguous raw locations/i);
   const providerProvenanceSchema = capturedRequest.body.text.format.schema.properties.EXPLICIT.items.properties.provenance.items;
-  assert.equal(providerProvenanceSchema.properties.spans.type, 'array');
-  assert.ok(providerProvenanceSchema.required.includes('spans'));
+  assert.equal(providerProvenanceSchema.anyOf.length, 3);
+  const providerRawSchema = providerProvenanceSchema.anyOf.find((variant) => variant.properties.source_type.enum[0] === 'RAW_TEXT');
+  assert.equal(providerRawSchema.properties.spans.type, 'array');
+  assert.equal(providerRawSchema.properties.spans.minItems, 1);
+  assert.ok(providerRawSchema.required.includes('spans'));
   assert.equal(capturedRequest.body.temperature, 0);
   assert.ok(adapterResult.rawResponse.output_text.includes('"spans"'));
   assert.ok(!adapterResult.extractionResponse.output_text.includes('"spans"'));
@@ -137,6 +140,7 @@ async function main() {
     positive: 5,
     negative: 7,
     providerFacingStructuredSpans: 'PASS',
+    providerFacingDiscriminatedSchema: 'PASS',
     semanticPayloadInvariant: 'PASS',
     noModelCalls: true
   }, null, 2)}\n`);
