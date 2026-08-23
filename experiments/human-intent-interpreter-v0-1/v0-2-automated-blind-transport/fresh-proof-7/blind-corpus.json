@@ -1,0 +1,86 @@
+{
+  "version": "hii-v0.2-fresh-blind-semantic-proof-7",
+  "cases": [
+    {
+      "id": "A71",
+      "language": "bg",
+      "text": "Фасадният ритъм остава. Провери само дали новата табела влиза в свободното поле между двата отвора и ми предложи корекция само ако размерите го позволяват. Не мести отвори и не измисляй липсващ размер.",
+      "evidence": []
+    },
+    {
+      "id": "A72",
+      "language": "en",
+      "text": "Keep the approved ceiling layout. Check the speaker conflict with the service hatch and resolve only the speaker position if the documented clearance permits it. Any change to the hatch or ceiling grid comes back to me first.",
+      "evidence": [
+        {
+          "evidence_id": "ceiling-clearance-note-4",
+          "text": "Service hatch clear zone: 450 mm from hatch perimeter. Speaker relocation is permitted within the adjacent ceiling tile provided the clear zone remains unobstructed."
+        }
+      ]
+    },
+    {
+      "id": "S71",
+      "language": "en",
+      "text": "The retry queue is producing duplicate notifications. Verify whether the idempotency key is actually reused before changing anything. If that is the cause, correct only the key reuse path. Do not alter delivery timing or add another queue library without approval.",
+      "evidence": []
+    },
+    {
+      "id": "S72",
+      "language": "bg",
+      "text": "Импортът приема старото име на полето, но не знаем дали това още е договорено поведение. Провери приложената спецификация. Ако тя допуска само новото име, маркирай старото като несъответствие, но не го премахвай от production без отделно решение.",
+      "evidence": [
+        {
+          "evidence_id": "import-contract-v3",
+          "text": "Import Contract v3: accepted request field is customerReference. The legacy field clientRef is not part of the accepted v3 request schema. Removal of legacy runtime compatibility is outside this contract."
+        }
+      ]
+    },
+    {
+      "id": "T71",
+      "language": "bg",
+      "text": "Хотелът в Осака остава. Провери само дали ранният полет позволява да стигнем до летището с обществен транспорт. Ако разписанието за тази дата още не е публикувано, кажи че не знаем; не резервирай такси и не сменяй полета.",
+      "evidence": []
+    },
+    {
+      "id": "T72",
+      "language": "en",
+      "text": "Don't change the safari quote yet. I only need to know whether the park fee is already included in the quoted total. Use the supplier note I gave you; if it does not explicitly establish inclusion, keep the fee unresolved rather than assuming either way.",
+      "evidence": [
+        {
+          "evidence_id": "safari-supplier-note-9",
+          "text": "Quoted total: USD 5,960 for two guests. Accommodation and listed game drives are included. Government and conservation charges are subject to the final operating invoice."
+        }
+      ]
+    },
+    {
+      "id": "K71",
+      "language": "bg",
+      "text": "В работната бележка пише, че архивът може да се трие след 30 дни, но одобреното решение казва 90. Не ги изглаждай. Покажи конфликта и не променяй retention правилото, докато човек не реши кое е валидно.",
+      "evidence": [
+        {
+          "evidence_id": "retention-decision-22",
+          "text": "Decision 22 — Approved retention: preserve audit archives for 90 days. Any reduction requires a new approved decision."
+        }
+      ]
+    },
+    {
+      "id": "K72",
+      "language": "en",
+      "text": "Two measurements support the same conclusion and a third source only says the sensor was offline. Summarize what the evidence supports, keep the outage as a limitation, and do not turn the missing reading into evidence for or against the conclusion.",
+      "evidence": [
+        {
+          "evidence_id": "measurement-east",
+          "text": "East sensor measurement: 18.4 units. Result is within the accepted 17–20 range."
+        },
+        {
+          "evidence_id": "measurement-west",
+          "text": "West sensor measurement: 18.7 units. Result is within the accepted 17–20 range."
+        },
+        {
+          "evidence_id": "measurement-north",
+          "text": "North sensor status: offline during the measurement window; no reading recorded."
+        }
+      ]
+    }
+  ]
+}
