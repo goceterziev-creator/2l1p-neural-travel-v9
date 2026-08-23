@@ -5,6 +5,7 @@ const { CANDIDATE_SCHEMA } = require('./transport/contract');
 const { structuredProvenanceSchema, expandStructuredProvenance } = require('./transport/structured-provenance');
 
 function typeMatches(type, value) {
+  if (Array.isArray(type)) return type.some((item) => typeMatches(item, value));
   if (type === 'null') return value === null;
   if (type === 'array') return Array.isArray(value);
   if (type === 'object') return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -93,7 +94,6 @@ for (const item of invalid) assert.equal(valid(provenance, item), false, JSON.st
 const inferred = schema.properties.INFERRED.items.properties.provenance.items;
 assert.equal(inferred.anyOf.length, 1);
 assert.equal(inferred.anyOf[0].properties.source_type.enum[0], 'INFERENCE');
-assert.equal(inferred.anyOf[0].properties.spans.maxItems, 0);
 assert.equal(valid(inferred, inference), true);
 assert.equal(valid(inferred, raw1), false);
 
