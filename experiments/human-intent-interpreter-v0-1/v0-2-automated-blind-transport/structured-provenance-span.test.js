@@ -47,8 +47,11 @@ const betaStart = source.indexOf('beta');
 const gammaStart = source.indexOf('Gamma');
 const schema = structuredProvenanceSchema(CANDIDATE_SCHEMA);
 const provenanceSchema = schema.properties.EXPLICIT.items.properties.provenance.items;
-assert.equal(provenanceSchema.properties.spans.type, 'array');
-assert.ok(provenanceSchema.required.includes('spans'));
+assert.equal(provenanceSchema.anyOf.length, 3);
+const rawSchema = provenanceSchema.anyOf.find((variant) => variant.properties.source_type.enum[0] === 'RAW_TEXT');
+assert.equal(rawSchema.properties.spans.type, 'array');
+assert.equal(rawSchema.properties.spans.minItems, 1);
+assert.ok(rawSchema.required.includes('spans'));
 assert.deepEqual(CANDIDATE_SCHEMA.properties.EXPLICIT.items.properties.provenance.items.required,
   ['source_type', 'quote', 'evidence_id', 'supports']);
 
