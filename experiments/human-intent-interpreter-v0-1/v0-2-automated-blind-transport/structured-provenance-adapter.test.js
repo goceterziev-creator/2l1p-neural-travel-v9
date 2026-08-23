@@ -47,8 +47,11 @@ const provider = {
   const result = await adapter.invoke(envelope, { requestId: 'provider-free' });
   const schema = captured.body.text.format.schema;
   const p = schema.properties.EXPLICIT.items.properties.provenance.items;
-  assert.equal(p.properties.spans.type, 'array');
-  assert.ok(p.required.includes('spans'));
+  assert.equal(p.anyOf.length, 3);
+  const rawSchema = p.anyOf.find((variant) => variant.properties.source_type.enum[0] === 'RAW_TEXT');
+  assert.equal(rawSchema.properties.spans.type, 'array');
+  assert.equal(rawSchema.properties.spans.minItems, 1);
+  assert.ok(rawSchema.required.includes('spans'));
   assert.equal(captured.body.temperature, 0);
   assert.strictEqual(result.rawResponse, providerRaw);
   assert.equal(result.rawResponse.output_text.includes('"spans"'), true);
@@ -60,6 +63,7 @@ const provider = {
     status: 'PASS',
     providerRawPreserved: true,
     providerSchemaStructured: true,
+    providerSchemaDiscriminated: true,
     temperature: captured.body.temperature,
     semanticStatementUnchanged: true
   })}\n`);
