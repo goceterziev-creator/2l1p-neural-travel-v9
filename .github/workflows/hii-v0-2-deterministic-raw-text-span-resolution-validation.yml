@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/hii-v0-2-deterministic-raw-text-span-resolution-validation.yml
       - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/transport/**
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/transport.test.js
       - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-span.test.js
       - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-adapter.test.js
       - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/structured-provenance-replay.test.js
