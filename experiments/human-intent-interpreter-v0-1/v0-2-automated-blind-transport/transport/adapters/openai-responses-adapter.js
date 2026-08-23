@@ -8,17 +8,18 @@ const {
 
 const EXPERIMENTAL_MODEL = 'gpt-4.1-mini-2025-04-14';
 const PROVIDER_REPRESENTATION = Object.freeze({
-  id: 'structured-provenance-spans-v1',
-  rawTextCoordinateSystem: 'UTF-16-code-units',
-  rawTextRangeConvention: '[start,end)',
-  projection: 'structured-provider-response-to-canonical-candidate'
+  id: 'structured-provenance-exact-selections-v1',
+  rawTextSelection: 'exact-contiguous-verbatim-substring',
+  machineCoordinateSystem: 'UTF-16-code-units',
+  machineRangeConvention: '[start,end)',
+  projection: 'provider-exact-selection-to-machine-resolved-span-to-canonical-candidate'
 });
 
 const PROVIDER_PROVENANCE_INSTRUCTIONS = `Provider-facing provenance representation:
-RAW_TEXT provenance is structural. Do not author a RAW_TEXT quotation. Set quote=null, evidence_id=null, supports=[] and select one or more exact UTF-16 code-unit [start,end) spans from the raw brief in spans. Each span is contiguous, non-empty, ordered and non-overlapping. If one semantic statement depends on non-contiguous raw locations, put each location in the same RAW_TEXT provenance item's spans array. The transport copies canonical quote text directly from those source locations.
-For SUPPLIED_EVIDENCE, use only an evidence_id supplied in the current envelope, use an exact quote from that evidence item, and spans=[].
-For INFERENCE, use INFERENCE provenance with one or more supports. A support may reference the raw brief with evidence_id=null and an exact raw quote, or may reference only an evidence_id supplied in the current envelope with an exact quote from that evidence item. Never invent an evidence_id. Use spans=[].
-Spans are evidence grounding only. Their number must not create, remove, move or reclassify semantic entries.`;
+RAW_TEXT grounding is selected by exact text, not by character arithmetic. Do not calculate or author character offsets. Set quote=null, evidence_id=null, supports=[], spans=[] and put one or more exact, contiguous, verbatim substrings copied from the raw brief into selections as {"text":"..."}. Each selection must independently occur exactly once in the raw brief. Do not concatenate non-contiguous fragments into one selection, omit words, add words, reorder words, summarize, normalize, or bridge gaps. If one semantic statement depends on multiple non-contiguous raw locations, use multiple independent selections. MACHINE resolves every selection by unique exact match and computes canonical UTF-16 [start,end) coordinates deterministically; zero or multiple exact matches are rejected.
+For SUPPLIED_EVIDENCE, use only an evidence_id supplied in the current envelope, use an exact quote from that evidence item, and set selections=[], spans=[].
+For INFERENCE, use INFERENCE provenance with one or more supports. A support may reference the raw brief with evidence_id=null and an exact raw quote, or may reference only an evidence_id supplied in the current envelope with an exact quote from that evidence item. Never invent an evidence_id. Set selections=[], spans=[].
+Selections and resolved spans are evidence grounding only. Their number must not create, remove, move or reclassify semantic entries.`;
 
 function providerRepresentationFor(envelope) {
   const evidenceIds = (envelope.evidence || []).map((item) => item.evidence_id);
