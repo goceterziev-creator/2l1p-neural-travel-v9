@@ -5,21 +5,26 @@ const {
   structuredProvenanceSchema,
   extractionResponseFromStructured
 } = require('../structured-provenance');
+const {
+  inferenceSupportSelectionSchema,
+  projectInferenceSupportSelectionsInResponse
+} = require('../inference-support-selection');
 
 const EXPERIMENTAL_MODEL = 'gpt-4.1-mini-2025-04-14';
 const FORENSIC_EVIDENCE_PERSISTENCE_FAILED = 'FORENSIC_EVIDENCE_PERSISTENCE_FAILED';
 const PROVIDER_REPRESENTATION = Object.freeze({
-  id: 'structured-provenance-exact-selections-v1',
+  id: 'structured-provenance-exact-selections-v2',
   rawTextSelection: 'exact-contiguous-verbatim-substring',
+  inferenceRawTextSupport: 'one-support-one-exact-selection',
   machineCoordinateSystem: 'UTF-16-code-units',
   machineRangeConvention: '[start,end)',
-  projection: 'provider-exact-selection-to-machine-resolved-span-to-canonical-candidate'
+  projection: 'provider-exact-selection-to-machine-resolved-canonical-evidence'
 });
 
 const PROVIDER_PROVENANCE_INSTRUCTIONS = `Provider-facing provenance representation:
 RAW_TEXT grounding is selected by exact text, not by character arithmetic. Do not calculate or author character offsets. Set quote=null, evidence_id=null, supports=[], spans=[] and put one or more exact, contiguous, verbatim substrings copied from the raw brief into selections as {"text":"..."}. Each selection must independently occur exactly once in the raw brief. Do not concatenate non-contiguous fragments into one selection, omit words, add words, reorder words, summarize, normalize, or bridge gaps. If one semantic statement depends on multiple non-contiguous raw locations, use multiple independent selections. MACHINE resolves every selection by unique exact match and computes canonical UTF-16 [start,end) coordinates deterministically; zero or multiple exact matches are rejected.
 For SUPPLIED_EVIDENCE, use only an evidence_id supplied in the current envelope, use an exact quote from that evidence item, and set selections=[], spans=[].
-For INFERENCE, use INFERENCE provenance with one or more supports. A support may reference the raw brief with evidence_id=null and an exact raw quote, or may reference only an evidence_id supplied in the current envelope with an exact quote from that evidence item. Never invent an evidence_id. Set selections=[], spans=[].
+For INFERENCE, use INFERENCE provenance with one or more independent supports. For a RAW_TEXT support set quote=null, evidence_id=null, spans=[] and provide exactly one exact, contiguous, verbatim raw-brief selection in selections as {"text":"..."}. One RAW_TEXT inference support means one exact selection. If the inference depends on multiple non-contiguous raw regions, use multiple independent support objects; never concatenate or bridge them. For a SUPPLIED_EVIDENCE support use only an evidence_id supplied in the current envelope with an exact quote from that evidence item and set selections=[], spans=[]. MACHINE deterministically materializes RAW_TEXT support quotes from unique exact selections; zero or multiple matches are rejected. Never invent an evidence_id.
 Selections and resolved spans are evidence grounding only. Their number must not create, remove, move or reclassify semantic entries.`;
 
 function providerRepresentationFor(envelope) {
@@ -27,7 +32,7 @@ function providerRepresentationFor(envelope) {
   return {
     descriptor: PROVIDER_REPRESENTATION,
     instructions: PROVIDER_PROVENANCE_INSTRUCTIONS,
-    outputSchema: structuredProvenanceSchema(envelope.outputSchema, evidenceIds)
+    outputSchema: inferenceSupportSelectionSchema(structuredProvenanceSchema(envelope.outputSchema, evidenceIds))
   };
 }
 
@@ -142,9 +147,10 @@ function createOpenAiResponsesAdapter(options = {}) {
       }
 
       try {
+        const supportProjected = projectInferenceSupportSelectionsInResponse(result.data, envelope.text);
         return {
           rawResponse: result.data,
-          extractionResponse: extractionResponseFromStructured(result.data, envelope.text)
+          extractionResponse: extractionResponseFromStructured(supportProjected, envelope.text)
         };
       } catch (error) {
         emitForensicEvidence(context, {
