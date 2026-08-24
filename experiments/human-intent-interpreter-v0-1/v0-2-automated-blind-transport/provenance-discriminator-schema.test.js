@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const { CANDIDATE_SCHEMA } = require('./transport/contract');
 const { structuredProvenanceSchema, expandStructuredProvenance } = require('./transport/structured-provenance');
+const { inferenceSupportSelectionSchema } = require('./transport/inference-support-selection');
 
 function typeMatches(type, value) {
   if (Array.isArray(type)) return type.some((item) => typeMatches(item, value));
@@ -33,7 +34,7 @@ function valid(schema, value) {
   return true;
 }
 
-const schema = structuredProvenanceSchema(CANDIDATE_SCHEMA, ['survey-7', 'gallery-survey-N2', 'courtyard-record-6']);
+const schema = inferenceSupportSelectionSchema(structuredProvenanceSchema(CANDIDATE_SCHEMA, ['survey-7', 'gallery-survey-N2', 'courtyard-record-6']));
 const provenance = schema.properties.EXPLICIT.items.properties.provenance.items;
 assert.deepEqual(provenance.anyOf.map((variant) => variant.properties.source_type.enum[0]), ['RAW_TEXT', 'SUPPLIED_EVIDENCE', 'INFERENCE']);
 const rawVariant = provenance.anyOf.find((variant) => variant.properties.source_type.enum[0] === 'RAW_TEXT');
@@ -49,7 +50,7 @@ assert.equal(inferenceVariant.properties.spans.maxItems, 0);
 const raw1 = { source_type: 'RAW_TEXT', quote: null, evidence_id: null, supports: [], selections: [{ text: 'Alpha' }], spans: [] };
 const raw2 = { source_type: 'RAW_TEXT', quote: null, evidence_id: null, supports: [], selections: [{ text: 'Alpha' }, { text: 'Omega' }], spans: [] };
 const supplied = { source_type: 'SUPPLIED_EVIDENCE', quote: 'Survey confirms datum.', evidence_id: 'survey-7', supports: [], selections: [], spans: [] };
-const inference = { source_type: 'INFERENCE', quote: null, evidence_id: null, supports: [{ quote: 'Keep the wall.', evidence_id: null }], selections: [], spans: [] };
+const inference = { source_type: 'INFERENCE', quote: null, evidence_id: null, supports: [{ quote: null, evidence_id: null, selections: [{ text: 'Keep the wall.' }], spans: [] }], selections: [], spans: [] };
 for (const item of [raw1, raw2, supplied, inference]) assert.equal(valid(provenance, item), true, JSON.stringify(item));
 
 const invalid = [
@@ -64,6 +65,7 @@ const invalid = [
   { ...inference, spans: [{ start: 0, end: 1 }] },
   { ...inference, quote: 'authored' },
   { ...inference, evidence_id: 'doc' },
+  { ...inference, supports: [{ quote: null, evidence_id: null, selections: [{ text: 'A' }, { text: 'B' }], spans: [] }] },
   { ...raw1, source_type: 'UNKNOWN_SOURCE' },
   { ...raw1, unexpected: true }
 ];
@@ -75,7 +77,6 @@ assert.equal(inferred.anyOf[0].properties.source_type.enum[0], 'INFERENCE');
 assert.equal(valid(inferred, inference), true);
 assert.equal(valid(inferred, raw1), false);
 
-// Independent span extractor still rejects malformed internally resolved spans.
 const internalRaw = { source_type: 'RAW_TEXT', quote: null, evidence_id: null, supports: [], spans: [{ start: 0, end: 5 }] };
 assert.equal(expandStructuredProvenance({ EXPLICIT: [{ provenance: [internalRaw] }] }, 'Alpha beta').EXPLICIT[0].provenance[0].quote, 'Alpha');
 assert.throws(() => expandStructuredProvenance({ EXPLICIT: [{ provenance: [{ ...internalRaw, quote: 'Alpha' }] }] }, 'Alpha beta'), /spans only/);
@@ -84,6 +85,7 @@ process.stdout.write(`${JSON.stringify({
   status: 'PASS',
   discriminator: 'anyOf-source_type',
   rawTextProviderSurface: 'exact-selections-only',
+  inferenceRawTextSupportSurface: 'one-exact-selection-per-support',
   providerAuthoredSpans: 'schema-invalid',
   suppliedEvidenceIdsBound: true,
   extractorStillStrict: true,
