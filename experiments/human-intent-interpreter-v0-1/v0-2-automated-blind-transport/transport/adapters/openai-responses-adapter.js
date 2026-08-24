@@ -7,6 +7,7 @@ const {
 } = require('../structured-provenance');
 
 const EXPERIMENTAL_MODEL = 'gpt-4.1-mini-2025-04-14';
+const FORENSIC_EVIDENCE_PERSISTENCE_FAILED = 'FORENSIC_EVIDENCE_PERSISTENCE_FAILED';
 const PROVIDER_REPRESENTATION = Object.freeze({
   id: 'structured-provenance-exact-selections-v1',
   rawTextSelection: 'exact-contiguous-verbatim-substring',
@@ -28,6 +29,28 @@ function providerRepresentationFor(envelope) {
     instructions: PROVIDER_PROVENANCE_INSTRUCTIONS,
     outputSchema: structuredProvenanceSchema(envelope.outputSchema, evidenceIds)
   };
+}
+
+function emitForensicEvidence(context = {}, event) {
+  if (typeof context.forensicSink !== 'function') return;
+  try {
+    context.forensicSink(Object.freeze(event));
+  } catch (error) {
+    const failure = new Error(`forensic evidence persistence failed: ${error.message}`);
+    failure.code = FORENSIC_EVIDENCE_PERSISTENCE_FAILED;
+    failure.cause = error;
+    throw failure;
+  }
+}
+
+function outputTextForEvidence(rawResponse) {
+  if (typeof rawResponse?.output_text === 'string') return rawResponse.output_text;
+  for (const item of rawResponse?.output || []) {
+    for (const content of item?.content || []) {
+      if (content?.type === 'output_text' && typeof content.text === 'string') return content.text;
+    }
+  }
+  return null;
 }
 
 function createOpenAiResponsesAdapter(options = {}) {
@@ -94,17 +117,44 @@ function createOpenAiResponsesAdapter(options = {}) {
             }
           }
         }
-      }, { requestId: context.requestId || envelope.caseId });
+      }, {
+        requestId: context.requestId || envelope.caseId,
+        forensicSink: context.forensicSink
+      });
 
       if (!result.ok) {
         const error = new Error(result.errors?.[0]?.message || 'OpenAI provider request failed');
         error.code = result.errors?.[0]?.code || 'PROVIDER_REQUEST_FAILED';
         throw error;
       }
-      return {
-        rawResponse: result.data,
-        extractionResponse: extractionResponseFromStructured(result.data, envelope.text)
-      };
+
+      emitForensicEvidence(context, {
+        stage: 'parsed_provider_response',
+        response: result.data
+      });
+      const outputText = outputTextForEvidence(result.data);
+      if (typeof outputText === 'string') {
+        emitForensicEvidence(context, {
+          stage: 'output_text',
+          text: outputText,
+          length: outputText.length
+        });
+      }
+
+      try {
+        return {
+          rawResponse: result.data,
+          extractionResponse: extractionResponseFromStructured(result.data, envelope.text)
+        };
+      } catch (error) {
+        emitForensicEvidence(context, {
+          stage: 'interpretation_failure',
+          interpretationStage: error instanceof SyntaxError ? 'candidate_json_parse' : 'structured_provenance_projection',
+          errorName: error.name,
+          errorMessage: error.message
+        });
+        throw error;
+      }
     }
   });
 }
