@@ -21,6 +21,23 @@ assert.equal(raw.properties.selections.maxItems, 1);
 assert.equal(raw.properties.spans.maxItems, 0);
 assert.deepEqual(supplied.properties.evidence_id.enum, ['doc-1']);
 assert.equal(supplied.properties.selections.maxItems, 0);
+assert.equal(supplied.properties.spans.maxItems, 0);
+
+function assertEveryNestedObjectStrict(node, path = 'support') {
+  if (!node || typeof node !== 'object') return;
+  if (node.type === 'object') {
+    assert.equal(node.additionalProperties, false, `${path} must set additionalProperties:false`);
+  }
+  for (const [key, value] of Object.entries(node)) {
+    if (Array.isArray(value)) value.forEach((item, index) => assertEveryNestedObjectStrict(item, `${path}.${key}[${index}]`));
+    else assertEveryNestedObjectStrict(value, `${path}.${key}`);
+  }
+}
+
+assertEveryNestedObjectStrict(raw, 'rawSupport');
+assertEveryNestedObjectStrict(supplied, 'suppliedSupport');
+assert.equal(raw.properties.spans.items.additionalProperties, false);
+assert.equal(supplied.properties.spans.items.additionalProperties, false);
 
 function candidate(supports) {
   return { INFERRED: [{ provenance: [{ source_type: 'INFERENCE', quote: null, evidence_id: null, supports, selections: [], spans: [] }] }] };
@@ -61,6 +78,9 @@ assert.equal(stableA, stableB);
 process.stdout.write(`${JSON.stringify({
   status: 'PASS',
   invariant: 'one-raw-text-inference-support-one-exact-selection',
+  allTransformationNestedObjectsStrict: true,
+  rawSupportSpanItemsStrict: true,
+  suppliedSupportSpanItemsStrict: true,
   canonicalRepresentationUnchanged: true,
   suppliedEvidenceUnchanged: true,
   zeroMatchRejected: true,
