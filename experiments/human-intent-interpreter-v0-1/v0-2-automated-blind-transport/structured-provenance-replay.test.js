@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { buildEnvelope, extractCandidate, sha256, stableBytes } = require('./transport/contract');
+const { segmentRawText } = require('./transport/raw-text-addressing');
 const { PROVIDER_REPRESENTATION, providerRepresentationFor } = require('./transport/adapters/openai-responses-adapter');
 
 const REPLAY = path.join(__dirname, 'transport', 'replay-frozen-run.js');
@@ -23,9 +24,20 @@ function canonicalCandidate() {
   value.LOCKED.push({ id: 'locked.1', statement: 'Keep the cornice unchanged.', provenance: [{ source_type: 'RAW_TEXT', quote: 'Keep the cornice unchanged.', evidence_id: null, supports: [] }], targets: [], required: false, requiredFor: '' });
   return value;
 }
-function selectionCandidate() {
+function addressSelection(sourceText, quote) {
+  const map = segmentRawText(sourceText);
+  const start = sourceText.indexOf(quote);
+  assert.notEqual(start, -1);
+  assert.equal(sourceText.indexOf(quote, start + 1), -1);
+  const end = start + quote.length;
+  const startUnit = map.units.find((unit) => unit.start === start);
+  const endUnit = map.units.find((unit) => unit.end === end);
+  assert.ok(startUnit && endUnit);
+  return { source_id: map.source_id, start_id: startUnit.id, end_id: endUnit.id };
+}
+function selectionCandidate(src) {
   const value = candidate();
-  value.LOCKED.push({ id: 'locked.1', statement: 'Keep the cornice unchanged.', provenance: [{ source_type: 'RAW_TEXT', quote: null, evidence_id: null, supports: [], selections: [{ text: 'Keep the cornice unchanged.' }], spans: [] }], targets: [], required: false, requiredFor: { kind: 'NONE', text: '', section: '', entry_id: '' } });
+  value.LOCKED.push({ id: 'locked.1', statement: 'Keep the cornice unchanged.', provenance: [{ source_type: 'RAW_TEXT', quote: null, evidence_id: null, supports: [], selections: [addressSelection(src.text, 'Keep the cornice unchanged.')], spans: [] }], targets: [], required: false, requiredFor: { kind: 'NONE', text: '', section: '', entry_id: '' } });
   return value;
 }
 function legacySpanCandidate(src) {
@@ -68,7 +80,7 @@ function makeWritable(target) {
     };
     const expected = extractCandidate(rawResponse(canonicalCandidate()), src);
 
-    const currentRun = makeRun(path.join(tempRoot, 'current'), manifest, rawResponse(selectionCandidate()));
+    const currentRun = makeRun(path.join(tempRoot, 'current'), manifest, rawResponse(selectionCandidate(src)));
     const currentOut = path.join(tempRoot, 'current-out');
     const currentResult = runReplay(currentRun, currentOut, corpusPath);
     assert.equal(currentResult.status, 0, currentResult.stderr);
@@ -90,7 +102,7 @@ function makeWritable(target) {
 
     const tampered = JSON.parse(JSON.stringify(manifest));
     tampered.cases[0].providerRepresentation.instructions += '\nTampered after freeze.';
-    const tamperedRun = makeRun(path.join(tempRoot, 'tampered'), tampered, rawResponse(selectionCandidate()));
+    const tamperedRun = makeRun(path.join(tempRoot, 'tampered'), tampered, rawResponse(selectionCandidate(src)));
     const tamperedResult = runReplay(tamperedRun, path.join(tempRoot, 'tampered-out'), corpusPath);
     assert.notEqual(tamperedResult.status, 0);
     assert.match(tamperedResult.stderr, /frozen provider representation identity mismatch/);
