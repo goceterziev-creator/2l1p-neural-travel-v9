@@ -1,0 +1,23 @@
+{
+  "version": "hii-v0.2-fresh-unseen-blind-semantic-proof-8",
+  "status": "FROZEN_PRE_GENERATION",
+  "providerCallsAtFreeze": 0,
+  "caseCount": 8,
+  "corpus": {
+    "path": "experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/fresh-proof-8/blind-corpus.json",
+    "gitBlob": "898fc3e8bde6ef51b4ce7bdca93f49ab82c6579e",
+    "sha256": "a571d9440abbfce59eb8c1f602dbe2600e4ceeae0b4f2560dcad1b7846649b40"
+  },
+  "hiddenGold": {
+    "path": "experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/fresh-proof-8/hidden-gold.json",
+    "gitBlob": "dced47e2e581cdb26f170302998cb7d35c3e9622",
+    "sha256": "dc0927f35435628f99d7f97d239de7564e5f5fdad7ca368dd5654b5e6696f65d"
+  },
+  "generationPolicy": {
+    "corpusAndGoldMustMatchFrozenIdentities": true,
+    "hiddenGoldReadableDuringGeneration": false,
+    "goldEnvironmentRemovedDuringGeneration": true,
+    "candidateMustBeSealedBeforeEvaluation": true,
+    "postFreezeSemanticEditing": false
+  }
+}
