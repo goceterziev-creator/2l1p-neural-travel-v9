@@ -39,6 +39,39 @@ function ensureFreshOutput(outputDir) {
   }
   fs.mkdirSync(path.join(outputDir, 'raw-responses'), { mode: 0o755 });
   fs.mkdirSync(path.join(outputDir, 'candidates'), { mode: 0o755 });
+  fs.mkdirSync(path.join(outputDir, 'forensics'), { mode: 0o755 });
+}
+
+function createForensicSink(outputDir, caseId) {
+  const caseDir = path.join(outputDir, 'forensics', caseId);
+  fs.mkdirSync(caseDir, { mode: 0o755 });
+  let sequence = 0;
+  return (event) => {
+    sequence += 1;
+    const material = Object.prototype.hasOwnProperty.call(event, 'body')
+      ? event.body
+      : Object.prototype.hasOwnProperty.call(event, 'text')
+        ? event.text
+        : Object.prototype.hasOwnProperty.call(event, 'response')
+          ? event.response
+          : null;
+    const materialBytes = typeof material === 'string' ? material : stableBytes(material);
+    const record = {
+      forensicVersion: 'hii-v0.2-provider-response-forensics-v1',
+      caseId,
+      sequence,
+      stage: event.stage,
+      providerStatus: event.providerStatus ?? null,
+      interpretationStage: event.interpretationStage ?? null,
+      errorName: event.errorName ?? null,
+      errorMessage: event.errorMessage ?? null,
+      materialLengthBytes: Buffer.byteLength(materialBytes),
+      materialIdentity: sha256(materialBytes),
+      material
+    };
+    const safeStage = String(event.stage || 'unknown').replace(/[^a-z0-9_-]/gi, '-');
+    writeFrozen(path.join(caseDir, `${String(sequence).padStart(2, '0')}-${safeStage}.json`), stableBytes(record));
+  };
 }
 
 function loadAdapter(args) {
@@ -144,7 +177,11 @@ async function main() {
     const source = corpus.cases[index];
     const envelope = envelopes[index];
     totalCalls += 1;
-    const result = await adapter.invoke(envelope, { requestId: `${args['run-id']}:${source.id}` });
+    const forensicSink = createForensicSink(outputDir, source.id);
+    const result = await adapter.invoke(envelope, {
+      requestId: `${args['run-id']}:${source.id}`,
+      forensicSink
+    });
     const rawBytes = stableBytes(result.rawResponse);
     const rawPath = path.join(outputDir, 'raw-responses', `${source.id}.json`);
     writeFrozen(rawPath, rawBytes);
