@@ -83,16 +83,17 @@ async function main() {
   const adapterResult = await adapter.invoke(envelope, { requestId: 'provider-free-multi-span' });
   const systemText = capturedRequest.body.input[0].content[0].text;
   assert.ok(systemText.includes(PROVIDER_PROVENANCE_INSTRUCTIONS));
-  assert.match(systemText, /do not calculate or author character offsets/i);
+  assert.match(systemText, /do not copy, rewrite, normalize, quote, or calculate character offsets from the raw brief/i);
+  assert.match(systemText, /MACHINE alone materializes original frozen characters and canonical UTF-16 \[start,end\) coordinates/i);
   assert.match(systemText, /multiple independent selections/i);
   const providerProvenanceSchema = capturedRequest.body.text.format.schema.properties.EXPLICIT.items.properties.provenance.items;
   const providerRawSchema = providerProvenanceSchema.anyOf.find((variant) => variant.properties.source_type.enum[0] === 'RAW_TEXT');
   assert.equal(providerRawSchema.properties.selections.minItems, 1);
   assert.equal(providerRawSchema.properties.spans.maxItems, 0);
   assert.equal(capturedRequest.body.temperature, 0);
-  assert.ok(adapterResult.rawResponse.output_text.includes('"selections"'));
-  assert.ok(!adapterResult.extractionResponse.output_text.includes('"selections"'));
-  assert.ok(!adapterResult.extractionResponse.output_text.includes('"spans"'));
+  assert.ok(adapterResult.rawResponse.output_text.includes('\"selections\"'));
+  assert.ok(!adapterResult.extractionResponse.output_text.includes('\"selections\"'));
+  assert.ok(!adapterResult.extractionResponse.output_text.includes('\"spans\"'));
   const adapterExtracted = extractCandidate(adapterResult.extractionResponse, source);
   assert.deepEqual(adapterExtracted.EXPLICIT[0].provenance.map((p) => p.quote), ['Alpha requirement is fixed.', 'Omega decision is reserved.']);
 
