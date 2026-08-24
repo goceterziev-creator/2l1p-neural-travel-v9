@@ -1,0 +1,49 @@
+name: HII V0.2 fresh proof evidence contract validation
+
+on:
+  push:
+    branches:
+      - experiment/hii-v0-2-fresh-proof-evidence-contract-enforcement
+    paths:
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/transport/fresh-proof-corpus-contract.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/fresh-proof-corpus-contract.test.js
+      - .github/workflows/hii-v0-2-fresh-proof-evidence-contract-validation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  provider-free-validation:
+    runs-on: ubuntu-latest
+    env:
+      BASE: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Assert no provider credential is exposed
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${OPENAI_API_KEY:-}"
+      - name: Provider-free validation run 1
+        shell: bash
+        run: |
+          set -euo pipefail
+          node "$BASE/fresh-proof-corpus-contract.test.js" > /tmp/run1.json
+          cat /tmp/run1.json
+      - name: Provider-free validation run 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          node "$BASE/fresh-proof-corpus-contract.test.js" > /tmp/run2.json
+          cat /tmp/run2.json
+      - name: Determinism
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmp /tmp/run1.json /tmp/run2.json
+          test "$(node -e 'const r=require("/tmp/run1.json");process.stdout.write(r.status)')" = PASS
+          test "$(node -e 'const r=require("/tmp/run1.json");process.stdout.write(String(r.modelCalls))')" = 0
+          echo 'PASS: provider-free outputs byte-identical; zero model calls'
