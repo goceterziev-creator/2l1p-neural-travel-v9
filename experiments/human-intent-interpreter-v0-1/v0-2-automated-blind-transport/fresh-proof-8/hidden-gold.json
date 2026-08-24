@@ -1,0 +1,196 @@
+{
+  "version": "hii-v0.2-fresh-unseen-blind-semantic-proof-8",
+  "cases": {
+    "A81": {
+      "expected": {
+        "EXPLICIT": [
+          "Keep the stair and opening unchanged.",
+          "Explore a lighter railing with thinner verticals, but do not change the model before human review.",
+          "Do not invent an unknown permitted spacing."
+        ],
+        "LOCKED": [
+          "Stair remains unchanged.",
+          "Opening remains unchanged.",
+          "Model remains unchanged pending review."
+        ],
+        "UNKNOWN": [
+          "Permitted spacing between verticals is unresolved if not established."
+        ],
+        "PROPOSED": [
+          "A railing variant with thinner verticals for human review."
+        ],
+        "NOT_AUTHORIZED": [
+          "Changing the model before human review.",
+          "Inventing a permitted spacing."
+        ],
+        "HUMAN_GATES": [
+          "Implementing a railing variant in the model requires human review."
+        ]
+      }
+    },
+    "A82": {
+      "expected": {
+        "EXPLICIT": [
+          "Keep the kitchen island in place.",
+          "Resolve pendant spacing using the electrical note.",
+          "Do not move the ceiling feed.",
+          "If two compliant layouts remain, show both before choosing."
+        ],
+        "LOCKED": [
+          "Kitchen island remains in place.",
+          "Existing ceiling feed remains fixed."
+        ],
+        "AUTHORIZED": [
+          "Resolve pendant spacing within the electrical-note constraints."
+        ],
+        "HUMAN_GATES": [
+          "Choosing between two remaining compliant layouts returns to the human."
+        ],
+        "NOT_AUTHORIZED": [
+          "Moving the ceiling feed."
+        ]
+      }
+    },
+    "S81": {
+      "expected": {
+        "EXPLICIT": [
+          "Isolate the failing handler and correct it if the API contract can remain unchanged.",
+          "A new middleware may be suggested but not added now."
+        ],
+        "AUTHORIZED": [
+          "Correct submitOrderHandler if the API contract remains unchanged.",
+          "Present a middleware idea."
+        ],
+        "PROPOSED": [
+          "Using a new middleware as an optional improvement."
+        ],
+        "NOT_AUTHORIZED": [
+          "Adding new middleware now.",
+          "Changing the API contract as part of this correction."
+        ],
+        "INFERRED": [
+          "The validated input path is upstream of the first observed exception."
+        ]
+      }
+    },
+    "S82": {
+      "expected": {
+        "EXPLICIT": [
+          "Keep the current cache TTL.",
+          "Check why the two requests receive different keys.",
+          "If the tenant prefix is missing, fix only key construction.",
+          "Leave old cached entries unchanged because purge authority is unresolved."
+        ],
+        "LOCKED": [
+          "Current cache TTL remains unchanged.",
+          "Old cached entries remain unchanged for now."
+        ],
+        "UNKNOWN": [
+          "Whether old cached entries should be purged is not established.",
+          "Whether the tenant prefix is actually missing remains to be verified."
+        ],
+        "AUTHORIZED": [
+          "Fix key construction only if the missing tenant prefix is established."
+        ],
+        "NOT_AUTHORIZED": [
+          "Changing cache TTL.",
+          "Purging old cached entries."
+        ]
+      }
+    },
+    "T81": {
+      "expected": {
+        "EXPLICIT": [
+          "Keep Rome and the travel dates unchanged.",
+          "Check the airport train.",
+          "If the last train departs before arrival, propose two other ways to reach the hotel.",
+          "Do not buy anything.",
+          "Get a price before proceeding with a private transfer."
+        ],
+        "LOCKED": [
+          "Destination remains Rome.",
+          "Travel dates remain unchanged."
+        ],
+        "AUTHORIZED": [
+          "Check the airport train.",
+          "Present two alternative transport options if the train condition fails."
+        ],
+        "PROPOSED": [
+          "Alternative ways to reach the hotel if the train is unavailable after arrival."
+        ],
+        "NOT_AUTHORIZED": [
+          "Purchasing transport."
+        ],
+        "HUMAN_GATES": [
+          "A private transfer requires price review before proceeding."
+        ]
+      }
+    },
+    "T82": {
+      "expected": {
+        "EXPLICIT": [
+          "Keep the selected hotel.",
+          "Price the breakfast option.",
+          "Do not add breakfast to the booking yet.",
+          "Keep child breakfast pricing unresolved unless the supplier sheet establishes it."
+        ],
+        "LOCKED": [
+          "Selected hotel remains unchanged.",
+          "Booking remains unamended for breakfast."
+        ],
+        "AUTHORIZED": [
+          "Price the breakfast option using supplied evidence."
+        ],
+        "UNKNOWN": [
+          "Child breakfast price is unresolved because the supplier sheet says on request."
+        ],
+        "NOT_AUTHORIZED": [
+          "Adding breakfast to the booking now."
+        ]
+      }
+    },
+    "K81": {
+      "expected": {
+        "EXPLICIT": [
+          "Summarize the Orion notes.",
+          "Treat the old document as history, not current policy.",
+          "An automatic-archiving idea may be shown separately but not recorded as an accepted decision."
+        ],
+        "LOCKED": [
+          "Manual archive review remains the current decision."
+        ],
+        "AUTHORIZED": [
+          "Create a summary.",
+          "Present automatic archiving separately as an idea."
+        ],
+        "PROPOSED": [
+          "Automatic archiving as an unaccepted idea."
+        ],
+        "NOT_AUTHORIZED": [
+          "Recording automatic archiving as an accepted decision."
+        ]
+      }
+    },
+    "K82": {
+      "expected": {
+        "EXPLICIT": [
+          "Record the sign-off ownership disagreement without resolving it.",
+          "Duplicate terminology elsewhere may be reconciled.",
+          "Do not assign the sign-off role until the signed charter is available."
+        ],
+        "UNKNOWN": [
+          "Final sign-off owner is unresolved pending the signed charter."
+        ],
+        "AUTHORIZED": [
+          "Reconcile duplicate terminology elsewhere in the summary."
+        ],
+        "NOT_AUTHORIZED": [
+          "Assigning the final sign-off role before the signed charter is available."
+        ],
+        "LOCKED": [
+          "The ownership disagreement must remain represented as unresolved."
+        ]
+      }
+    }
+  }
+}
