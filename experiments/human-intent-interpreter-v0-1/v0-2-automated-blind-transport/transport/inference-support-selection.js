@@ -47,7 +47,6 @@ function inferenceSupportSelectionSchema(schema) {
       node.properties.supports.items = supplied
         ? { anyOf: [rawSupportProviderSchema(), suppliedSupportProviderSchema(supplied)] }
         : rawSupportProviderSchema();
-      return;
     }
     for (const value of Object.values(node)) {
       if (Array.isArray(value)) value.forEach(visit);
