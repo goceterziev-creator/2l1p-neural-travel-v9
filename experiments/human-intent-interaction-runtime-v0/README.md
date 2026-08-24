@@ -31,7 +31,8 @@ persistence port for deterministic tests.
   keyword matching are implemented by the Bootstrap itself. Capability A adds
   a separate provider-neutral, context-bound resolver behind that port.
 - The Presentation layer is an injected port only. No human-facing copy or UI
-  rendering is implemented.
+  integration is implemented by the Bootstrap. Capability B adds the isolated
+  provider-neutral consumer in `gate-presenter.js`.
 - Continuation authority is bound to one interaction, gate revision, scope and
   target, and is single-consumption.
 
@@ -43,7 +44,10 @@ version, or production runtime integration. It does not implement Approval
 Resolution inside the Bootstrap or Gate Presentation capabilities. Capability
 A is isolated in `approval-resolver.js`; it composes linguistic speech-act
 guards with exact pending-gate context rather than treating approval vocabulary
-as authority.
+as authority. Capability B consumes only `HUMAN_GATE_REQUIRED` plus pending-gate
+context and emits `HUMAN GATE — APPROVAL REQUIRED`. It emits nothing for other
+governance states, fails closed when pending-gate context is missing, and never
+creates or consumes authority. No production UI/output integration is claimed.
 
 ## Validation
 
@@ -52,6 +56,7 @@ No dependencies or provider calls are required:
 ```bash
 node experiments/human-intent-interaction-runtime-v0/interaction-runtime.test.js
 node experiments/human-intent-interaction-runtime-v0/approval-resolver.test.js
+node experiments/human-intent-interaction-runtime-v0/gate-presenter.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
