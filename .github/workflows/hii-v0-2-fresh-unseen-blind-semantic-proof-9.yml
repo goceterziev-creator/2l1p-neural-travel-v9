@@ -1,0 +1,181 @@
+name: HII V0.2 fresh unseen blind semantic proof 9
+
+on:
+  push:
+    branches:
+      - experiment/hii-v0-2-fresh-unseen-blind-semantic-proof-9
+    paths:
+      - .github/workflows/hii-v0-2-fresh-unseen-blind-semantic-proof-9.yml
+
+permissions:
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      BASE: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport
+      CORPUS: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/fresh-proof-9/blind-corpus.json
+      GOLD: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/fresh-proof-9/hidden-gold.json
+      MANIFEST: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/fresh-proof-9/freeze-manifest.json
+      RUN_DIR: /tmp/hii-v0-2-fresh-proof-9-run
+      EVIDENCE_DIR: /tmp/hii-v0-2-fresh-proof-9-evidence
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      HUMAN_INTENT_V0_MODULE: ${{ github.workspace }}/experiments/human-intent-layer-v0/intent-layer.js
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Verify frozen corpus gold and manifest identities
+        id: frozen
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse "HEAD:$CORPUS")" = "3b692c50811bb3a14ab9e863e1c6f9508d9fad25"
+          test "$(git rev-parse "HEAD:$GOLD")" = "dd7a754911f09d23614297eca985799f9c39fbe7"
+          node - "$MANIFEST" <<'NODE'
+          const fs = require('node:fs');
+          const m = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (m.status !== 'FROZEN_PRE_GENERATION') process.exit(1);
+          if (m.baselineCommit !== '2706fcca2b6ffbe451ddb54d698e9d0850d27717') process.exit(1);
+          if (m.providerCallsAtFreeze !== 0 || m.caseCount !== 8) process.exit(1);
+          if (m.corpus.gitBlob !== '3b692c50811bb3a14ab9e863e1c6f9508d9fad25') process.exit(1);
+          if (m.hiddenGold.gitBlob !== 'dd7a754911f09d23614297eca985799f9c39fbe7') process.exit(1);
+          if (JSON.stringify(m.suppliedEvidenceContract.exactFields) !== JSON.stringify(['evidence_id','content'])) process.exit(1);
+          if (m.suppliedEvidenceContract.aliasesAccepted !== false) process.exit(1);
+          NODE
+          test "$(node -e 'const fs=require("node:fs");const c=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));process.stdout.write(String(c.cases.length))' "$CORPUS")" = "8"
+          corpus_sha256="$(sha256sum "$CORPUS" | cut -d ' ' -f 1)"
+          gold_sha256="$(sha256sum "$GOLD" | cut -d ' ' -f 1)"
+          manifest_sha256="$(sha256sum "$MANIFEST" | cut -d ' ' -f 1)"
+          printf '{"corpusGitBlob":"%s","hiddenGoldGitBlob":"%s","corpusSha256":"%s","hiddenGoldSha256":"%s","manifestSha256":"%s","cases":8,"providerCallsAtFreeze":0}\n' \
+            "3b692c50811bb3a14ab9e863e1c6f9508d9fad25" \
+            "dd7a754911f09d23614297eca985799f9c39fbe7" \
+            "$corpus_sha256" "$gold_sha256" "$manifest_sha256" > "$RUNNER_TEMP/frozen.json"
+
+      - name: Fresh corpus supplied-evidence contract preflight
+        id: preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - "$CORPUS" "$BASE/transport/fresh-proof-corpus-contract.js" <<'NODE' > "$RUNNER_TEMP/preflight.json"
+          const fs = require('node:fs');
+          const corpus = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const { validateFreshProofCorpusEvidence } = require(require('node:path').resolve(process.argv[3]));
+          validateFreshProofCorpusEvidence(corpus);
+          process.stdout.write(JSON.stringify({status:'PASS', canonicalSuppliedEvidenceFields:['evidence_id','content'], providerCalls:0}) + '\n');
+          NODE
+          test "$(node -e 'const r=require(process.argv[1]);process.stdout.write(r.status)' "$RUNNER_TEMP/preflight.json")" = PASS
+          test "$(node -e 'const r=require(process.argv[1]);process.stdout.write(String(r.providerCalls))' "$RUNNER_TEMP/preflight.json")" = 0
+
+      - name: Prove generation cannot read hidden gold
+        id: blindness
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          node --permission --allow-fs-read="$CORPUS" -e 'require("node:fs").readFileSync(process.argv[1])' "$GOLD" > "$RUNNER_TEMP/gold-probe.stdout" 2> "$RUNNER_TEMP/gold-probe.stderr"
+          s=$?
+          set -e
+          test "$s" -ne 0
+          grep -Eqi 'permission|access|denied|ERR_ACCESS_DENIED' "$RUNNER_TEMP/gold-probe.stderr"
+          printf '{"hiddenGoldReadDenied":true,"probeExit":%s,"providerCalls":0}\n' "$s" > "$RUNNER_TEMP/blindness.json"
+
+      - name: Generate exactly once per case and seal complete candidate set
+        id: generation
+        shell: bash
+        run: |
+          set -euo pipefail
+          env -u GOLD node "$BASE/transport/run-generation.js" \
+            --corpus "$CORPUS" \
+            --output "$RUN_DIR" \
+            --adapter openai \
+            --run-id v0-2-fresh-unseen-blind-semantic-proof-9 \
+            > "$RUNNER_TEMP/generation.json"
+          test -f "$RUN_DIR/freeze.json"
+          test "$(node -e 'const f=require(process.argv[1]);process.stdout.write(String(f.totalModelCalls))' "$RUN_DIR/freeze.json")" = "8"
+          test "$(node -e 'const f=require(process.argv[1]);process.stdout.write(String(f.artifacts.length))' "$RUN_DIR/freeze.json")" = "8"
+          test "$(node -e 'const f=require(process.argv[1]);process.stdout.write(String(f.sealed))' "$RUN_DIR/freeze.json")" = "true"
+
+      - name: Evaluate sealed candidates independently
+        id: evaluation
+        if: steps.generation.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node "$BASE/transport/run-evaluation.js" \
+            --run-dir "$RUN_DIR" \
+            --corpus "$CORPUS" \
+            --gold "$GOLD" \
+            --v0-module "$HUMAN_INTENT_V0_MODULE" \
+            --evaluator experiments/human-intent-interpreter-v0-1/acceptance-hardening/independent-semantic-evaluator.js \
+            > "$RUNNER_TEMP/evaluation.json"
+
+      - name: Complete accepted and V0.2 regressions after freeze
+        id: regressions
+        if: steps.generation.outcome == 'success' && steps.evaluation.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node experiments/human-intent-layer-v0/intent-layer.test.js > "$RUNNER_TEMP/v0.json"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$HUMAN_INTENT_V0_MODULE" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js > "$RUNNER_TEMP/v01.json"
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$HUMAN_INTENT_V0_MODULE" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/adversarial-sensitivity.test.js > "$RUNNER_TEMP/v01-adversarial.json"
+          node "$BASE/transport.test.js" > "$RUNNER_TEMP/transport.json"
+          node "$BASE/transport-id-contract.test.js" > "$RUNNER_TEMP/id.json"
+          node "$BASE/transport-reference-contract.test.js" > "$RUNNER_TEMP/reference.json"
+          node "$BASE/transport-provenance-contract.test.js" > "$RUNNER_TEMP/provenance.json"
+          node "$BASE/semantic-correction-policy.test.js" > "$RUNNER_TEMP/semantic-positive.json"
+          node "$BASE/semantic-adversarial-boundaries.test.js" > "$RUNNER_TEMP/semantic-adversarial.json"
+          node "$BASE/provenance-discriminator-schema.test.js" > "$RUNNER_TEMP/discriminator.json"
+          node "$BASE/inference-support-reference-discriminator.test.js" > "$RUNNER_TEMP/inference-reference.json"
+          node "$BASE/structured-provenance-span.test.js" > "$RUNNER_TEMP/structured-span.json"
+          node "$BASE/structured-provenance-adapter.test.js" > "$RUNNER_TEMP/structured-adapter.json"
+          node "$BASE/structured-provenance-replay.test.js" > "$RUNNER_TEMP/structured-replay.json"
+          node "$BASE/multi-span-provenance-representation.test.js" > "$RUNNER_TEMP/multispan.json"
+          node "$BASE/provider-response-forensic-evidence-preservation.test.js" > "$RUNNER_TEMP/forensics-regression.json"
+          node "$BASE/fresh-proof-corpus-contract.test.js" > "$RUNNER_TEMP/corpus-contract-regression.json"
+
+      - name: Assemble immutable Proof 9 evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$EVIDENCE_DIR"
+          if test -d "$RUN_DIR"; then cp -a "$RUN_DIR" "$EVIDENCE_DIR/run"; fi
+          cp "$MANIFEST" "$EVIDENCE_DIR/freeze-manifest.json"
+          for f in frozen.json preflight.json blindness.json gold-probe.stderr generation.json evaluation.json v0.json v01.json v01-adversarial.json transport.json id.json reference.json provenance.json semantic-positive.json semantic-adversarial.json discriminator.json inference-reference.json structured-span.json structured-adapter.json structured-replay.json multispan.json forensics-regression.json corpus-contract-regression.json; do
+            test ! -f "$RUNNER_TEMP/$f" || cp "$RUNNER_TEMP/$f" "$EVIDENCE_DIR/$f"
+          done
+          printf '{"commit":"%s","runId":"%s","frozen":"%s","preflight":"%s","blindness":"%s","generation":"%s","evaluation":"%s","regressions":"%s"}\n' \
+            "$GITHUB_SHA" "$GITHUB_RUN_ID" \
+            "${{ steps.frozen.outcome }}" "${{ steps.preflight.outcome }}" "${{ steps.blindness.outcome }}" \
+            "${{ steps.generation.outcome }}" "${{ steps.evaluation.outcome }}" "${{ steps.regressions.outcome }}" \
+            > "$EVIDENCE_DIR/workflow-evidence.json"
+          find "$EVIDENCE_DIR" -type f -print0 | sort -z | xargs -0 sha256sum > "$EVIDENCE_DIR/evidence-sha256.txt"
+
+      - name: Upload Proof 9 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hii-v0-2-fresh-unseen-blind-semantic-proof-9
+          path: /tmp/hii-v0-2-fresh-proof-9-evidence
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce evidence-backed terminal verdict
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.frozen.outcome }}" = success || { echo 'BLOCKED: frozen identity boundary failed'; exit 20; }
+          test "${{ steps.preflight.outcome }}" = success || { echo 'BLOCKED: fresh corpus contract preflight failed'; exit 20; }
+          test "${{ steps.blindness.outcome }}" = success || { echo 'BLOCKED: hidden gold isolation failed'; exit 20; }
+          test "${{ steps.generation.outcome }}" = success || { echo 'BLOCKED: complete sealed candidate set not created'; exit 20; }
+          test "${{ steps.evaluation.outcome }}" = success || { echo 'BLOCKED: independent evaluation incomplete'; exit 20; }
+          test "${{ steps.regressions.outcome }}" = success || { echo 'BLOCKED: accepted regression evidence incomplete or failed'; exit 20; }
+          status="$(node -e 'const r=require(process.argv[1]);process.stdout.write(r.status)' "$RUNNER_TEMP/evaluation.json")"
+          test "$status" = PASS || { echo 'SEMANTIC_FAIL: complete sealed candidates missed frozen semantic thresholds'; exit 1; }
+          echo 'PASS: HII V0.2 fresh unseen blind semantic proof 9'
