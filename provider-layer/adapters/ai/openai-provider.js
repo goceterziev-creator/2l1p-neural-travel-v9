@@ -12,6 +12,19 @@ const {
 } = require("../../errors/provider-errors");
 
 const DEFAULT_OPENAI_VISION_MODEL = "gpt-4.1-mini";
+const FORENSIC_EVIDENCE_PERSISTENCE_FAILED = "FORENSIC_EVIDENCE_PERSISTENCE_FAILED";
+
+function emitForensicEvidence(context = {}, event) {
+  if (typeof context.forensicSink !== "function") return;
+  try {
+    context.forensicSink(Object.freeze(event));
+  } catch (error) {
+    const failure = new Error(`forensic evidence persistence failed: ${error.message}`);
+    failure.code = FORENSIC_EVIDENCE_PERSISTENCE_FAILED;
+    failure.cause = error;
+    throw failure;
+  }
+}
 
 function createOpenAiProvider(config = {}) {
   const openAiConfig = config.ai?.openai || config.openai || {};
@@ -66,7 +79,29 @@ function createOpenAiProvider(config = {}) {
           })
         });
 
-        const payload = await response.json().catch(() => ({}));
+        const rawHttpBody = await response.text();
+        emitForensicEvidence(context, {
+          stage: "raw_http_body",
+          provider: "openai",
+          providerStatus: response.status,
+          body: rawHttpBody
+        });
+
+        let payload = {};
+        try {
+          payload = JSON.parse(rawHttpBody);
+        } catch (error) {
+          emitForensicEvidence(context, {
+            stage: "outer_json_parse_failure",
+            provider: "openai",
+            providerStatus: response.status,
+            errorName: error.name,
+            errorMessage: error.message
+          });
+          // Preserve existing functional behavior: malformed provider JSON falls back to {}.
+          payload = {};
+        }
+
         if (!response.ok) {
           return providerFailure(classifyProviderHttpError(response.status, payload?.error?.message || `HTTP ${response.status}`), {
             provenance: provenance(context),
@@ -89,6 +124,7 @@ function createOpenAiProvider(config = {}) {
           }
         });
       } catch (error) {
+        if (error.code === FORENSIC_EVIDENCE_PERSISTENCE_FAILED) throw error;
         return providerFailure(classifyProviderHttpError(error.statusCode || error.status || 0, error.message), {
           provenance: provenance(context),
           meta: {
@@ -115,5 +151,6 @@ function provenance(context = {}) {
 
 module.exports = {
   DEFAULT_OPENAI_VISION_MODEL,
+  FORENSIC_EVIDENCE_PERSISTENCE_FAILED,
   createOpenAiProvider
 };
