@@ -8,6 +8,7 @@ const { spawnSync } = require('node:child_process');
 const { buildEnvelope, extractCandidate, sha256, stableBytes } = require('./transport/contract');
 const { createFakeAdapter } = require('./transport/adapters/fake-adapter');
 const { EXPERIMENTAL_MODEL, createOpenAiResponsesAdapter } = require('./transport/adapters/openai-responses-adapter');
+const { segmentRawText } = require('./transport/raw-text-addressing');
 const { verifyFrozenRun } = require('./transport/run-evaluation');
 
 const ROOT = __dirname;
@@ -62,6 +63,18 @@ function outputTextSlot(rawResponse) {
   throw new TypeError('provider mock response has no output_text payload');
 }
 
+function addressSelection(sourceText, quote) {
+  const map = segmentRawText(sourceText);
+  const start = sourceText.indexOf(quote);
+  assert.notEqual(start, -1, 'legacy fake RAW_TEXT quote must be exact for structured provider mock');
+  assert.equal(sourceText.indexOf(quote, start + 1), -1, 'legacy fake RAW_TEXT quote must resolve uniquely for structured provider mock');
+  const end = start + quote.length;
+  const startUnit = map.units.find((unit) => unit.start === start);
+  const endUnit = map.units.find((unit) => unit.end === end);
+  assert.ok(startUnit && endUnit, 'legacy fake RAW_TEXT quote must align to structural address units');
+  return { source_id: map.source_id, start_id: startUnit.id, end_id: endUnit.id };
+}
+
 function providerStructuredResponseFromLegacy(rawResponse, source) {
   const copy = JSON.parse(JSON.stringify(rawResponse));
   const slot = outputTextSlot(copy);
@@ -75,7 +88,7 @@ function providerStructuredResponseFromLegacy(rawResponse, source) {
         if (provenance.source_type === 'RAW_TEXT') {
           assert.equal(typeof provenance.quote, 'string');
           assert.equal(source.text.includes(provenance.quote), true, 'legacy fake RAW_TEXT quote must be exact for structured provider mock');
-          provenance.selections = [{ text: provenance.quote }];
+          provenance.selections = [addressSelection(source.text, provenance.quote)];
           provenance.quote = null;
           provenance.evidence_id = null;
           provenance.supports = [];
