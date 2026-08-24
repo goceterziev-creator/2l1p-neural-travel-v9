@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { extractCandidate, sha256, stableBytes } = require('./contract');
 const { extractionResponseFromStructured, expandStructuredProvenance } = require('./structured-provenance');
+const { projectAddressSelectionsInResponse } = require('./raw-text-addressing');
+const { projectInferenceSupportSelectionsInResponse } = require('./inference-support-selection');
 const {
   PROVIDER_REPRESENTATION,
   providerRepresentationFor
@@ -81,7 +83,9 @@ function canonicalExtractionResponse(rawResponse, source, manifest, caseManifest
     const acceptedDescriptorIdentity = sha256(stableBytes(PROVIDER_REPRESENTATION));
     if (representationIdentity !== acceptedDescriptorIdentity) throw new Error('structured provider representation descriptor mismatch');
     verifyFrozenCaseRepresentation(caseManifest, representationIdentity, source, true);
-    return extractionResponseFromStructured(rawResponse, source.text);
+    const addressProjected = projectAddressSelectionsInResponse(rawResponse, source.text);
+    const supportProjected = projectInferenceSupportSelectionsInResponse(addressProjected, source.text);
+    return extractionResponseFromStructured(supportProjected, source.text);
   }
 
   if (representation.id === LEGACY_STRUCTURED_SPANS_V1.id) {
