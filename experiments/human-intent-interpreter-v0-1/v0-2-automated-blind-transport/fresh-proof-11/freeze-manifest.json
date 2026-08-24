@@ -1,0 +1,12 @@
+{
+  "status": "FROZEN_PRE_GENERATION",
+  "proof": "HII V0.2 Fresh Unseen Blind Semantic Proof 11",
+  "baselineCommit": "743884eba017dc2741b36d91eb32572c950d2c0c",
+  "providerCallsAtFreeze": 0,
+  "caseCount": 8,
+  "corpus": {"gitBlob": "da2fb0e12493ffb48f13e803c313c811a9db60ce"},
+  "hiddenGold": {"gitBlob": "44824901e015395490070f730d8e4368d0216be9"},
+  "suppliedEvidenceContract": {"exactFields": ["evidence_id", "content"], "aliasesAccepted": false},
+  "historicalProofs": {"proof9": "BLOCKED_EVIDENCE_ONLY", "proof10": "BLOCKED_EVIDENCE_ONLY"},
+  "generationRules": {"oneCallPerCase": true, "retry": false, "repair": false, "adaptiveMutation": false, "evaluationOnlyAfterSeal": true}
+}
