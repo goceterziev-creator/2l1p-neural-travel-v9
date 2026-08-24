@@ -1,0 +1,86 @@
+name: HII V0.2 provider response forensic evidence preservation validation
+
+on:
+  push:
+    branches:
+      - experiment/hii-v0-2-provider-response-forensic-evidence-preservation
+    paths:
+      - .github/workflows/hii-v0-2-provider-response-forensic-evidence-preservation-validation.yml
+      - provider-layer/adapters/ai/openai-provider.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/transport/adapters/openai-responses-adapter.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/transport/generation-worker.js
+      - experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport/provider-response-forensic-evidence-preservation.test.js
+
+permissions:
+  contents: read
+
+jobs:
+  provider-free-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE: experiments/human-intent-interpreter-v0-1/v0-2-automated-blind-transport
+      HUMAN_INTENT_V0_MODULE: ${{ github.workspace }}/experiments/human-intent-layer-v0/intent-layer.js
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Provider-free validation run 1
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/hii-forensics-run1
+          node "$BASE/provider-response-forensic-evidence-preservation.test.js" > /tmp/hii-forensics-run1/forensics.json
+          node scripts/provider-layer-openai-boundary-regression.js > /tmp/hii-forensics-run1/provider-openai.json
+          node experiments/human-intent-layer-v0/intent-layer.test.js > /tmp/hii-forensics-run1/v0.tap
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$HUMAN_INTENT_V0_MODULE" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js > /tmp/hii-forensics-run1/v01.json
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$HUMAN_INTENT_V0_MODULE" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/adversarial-sensitivity.test.js > /tmp/hii-forensics-run1/v01-adversarial.json
+          node "$BASE/transport.test.js" > /tmp/hii-forensics-run1/transport.json
+          node "$BASE/transport-id-contract.test.js" > /tmp/hii-forensics-run1/id.json
+          node "$BASE/transport-reference-contract.test.js" > /tmp/hii-forensics-run1/reference.json
+          node "$BASE/transport-provenance-contract.test.js" > /tmp/hii-forensics-run1/provenance.json
+          node "$BASE/semantic-correction-policy.test.js" > /tmp/hii-forensics-run1/semantic-positive.json
+          node "$BASE/semantic-adversarial-boundaries.test.js" > /tmp/hii-forensics-run1/semantic-adversarial.json
+          node "$BASE/provenance-discriminator-schema.test.js" > /tmp/hii-forensics-run1/discriminator.json
+          node "$BASE/inference-support-reference-discriminator.test.js" > /tmp/hii-forensics-run1/inference-reference.json
+          node "$BASE/structured-provenance-span.test.js" > /tmp/hii-forensics-run1/structured-span.json
+          node "$BASE/structured-provenance-adapter.test.js" > /tmp/hii-forensics-run1/structured-adapter.json
+          node "$BASE/structured-provenance-replay.test.js" > /tmp/hii-forensics-run1/structured-replay.json
+          node "$BASE/multi-span-provenance-representation.test.js" > /tmp/hii-forensics-run1/multispan.json
+
+      - name: Provider-free validation run 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/hii-forensics-run2
+          node "$BASE/provider-response-forensic-evidence-preservation.test.js" > /tmp/hii-forensics-run2/forensics.json
+          node scripts/provider-layer-openai-boundary-regression.js > /tmp/hii-forensics-run2/provider-openai.json
+          node experiments/human-intent-layer-v0/intent-layer.test.js > /tmp/hii-forensics-run2/v0.tap
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$HUMAN_INTENT_V0_MODULE" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/run-independent-acceptance.js > /tmp/hii-forensics-run2/v01.json
+          FROZEN_EVIDENCE_DIR="$GITHUB_WORKSPACE/experiments/human-intent-interpreter-v0-1/autonomous-completion-pass-2" HUMAN_INTENT_V0_MODULE="$HUMAN_INTENT_V0_MODULE" node experiments/human-intent-interpreter-v0-1/acceptance-hardening/adversarial-sensitivity.test.js > /tmp/hii-forensics-run2/v01-adversarial.json
+          node "$BASE/transport.test.js" > /tmp/hii-forensics-run2/transport.json
+          node "$BASE/transport-id-contract.test.js" > /tmp/hii-forensics-run2/id.json
+          node "$BASE/transport-reference-contract.test.js" > /tmp/hii-forensics-run2/reference.json
+          node "$BASE/transport-provenance-contract.test.js" > /tmp/hii-forensics-run2/provenance.json
+          node "$BASE/semantic-correction-policy.test.js" > /tmp/hii-forensics-run2/semantic-positive.json
+          node "$BASE/semantic-adversarial-boundaries.test.js" > /tmp/hii-forensics-run2/semantic-adversarial.json
+          node "$BASE/provenance-discriminator-schema.test.js" > /tmp/hii-forensics-run2/discriminator.json
+          node "$BASE/inference-support-reference-discriminator.test.js" > /tmp/hii-forensics-run2/inference-reference.json
+          node "$BASE/structured-provenance-span.test.js" > /tmp/hii-forensics-run2/structured-span.json
+          node "$BASE/structured-provenance-adapter.test.js" > /tmp/hii-forensics-run2/structured-adapter.json
+          node "$BASE/structured-provenance-replay.test.js" > /tmp/hii-forensics-run2/structured-replay.json
+          node "$BASE/multi-span-provenance-representation.test.js" > /tmp/hii-forensics-run2/multispan.json
+
+      - name: Determinism proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -E 's/duration_ms: [0-9.]+/duration_ms: <runtime>/g' /tmp/hii-forensics-run1/v0.tap > /tmp/hii-forensics-run1/v0.normalized.tap
+          sed -E 's/duration_ms: [0-9.]+/duration_ms: <runtime>/g' /tmp/hii-forensics-run2/v0.tap > /tmp/hii-forensics-run2/v0.normalized.tap
+          cmp /tmp/hii-forensics-run1/v0.normalized.tap /tmp/hii-forensics-run2/v0.normalized.tap
+          for f in forensics.json provider-openai.json v01.json v01-adversarial.json transport.json id.json reference.json provenance.json semantic-positive.json semantic-adversarial.json discriminator.json inference-reference.json structured-span.json structured-adapter.json structured-replay.json multispan.json; do
+            cmp "/tmp/hii-forensics-run1/$f" "/tmp/hii-forensics-run2/$f"
+          done
+          printf '{"status":"PASS","runs":2,"deterministicMaterialOutputs":true,"v0TimingNormalizedOnly":true,"realModelCalls":0}\n'
