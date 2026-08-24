@@ -117,19 +117,16 @@ function structuredProvenanceSchema(schema, evidenceIds = []) {
     if (isProvenanceSchema(node)) {
       const allowed = [...node.properties.source_type.enum];
       const original = clone(node);
-      node.properties.selections = {
-        type: 'array',
-        description: 'Provider-authored exact RAW_TEXT selections. Variant constraints are enforced by anyOf.',
-        items: clone(selectionSchema)
-      };
-      node.properties.spans = {
-        type: 'array',
-        description: 'MACHINE-resolved UTF-16 spans. Provider must leave this empty.',
-        items: clone(spanSchema)
-      };
-      if (!node.required.includes('selections')) node.required.push('selections');
-      if (!node.required.includes('spans')) node.required.push('spans');
-      node.anyOf = allowed.map((sourceType) => provenanceVariant(sourceType, original, allowedEvidenceIds));
+      const variants = allowed.map((sourceType) => provenanceVariant(sourceType, original, allowedEvidenceIds));
+
+      // Provider-facing source-type variants are authoritative. Keeping the
+      // legacy canonical properties/required/additionalProperties alongside
+      // these variants would intersect both representations and can make an
+      // authorized variant impossible (for example quote:string AND
+      // quote:null for INFERENCE RAW_TEXT support selection).
+      for (const key of Object.keys(node)) delete node[key];
+      node.type = 'object';
+      node.anyOf = variants;
       return;
     }
     for (const value of Object.values(node)) {
