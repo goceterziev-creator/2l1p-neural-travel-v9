@@ -1,0 +1,86 @@
+{
+  "version": "hii-v0.2-fresh-unseen-blind-semantic-proof-9",
+  "cases": [
+    {
+      "id": "A91",
+      "language": "bg",
+      "text": "Терасата си остава със същия размер и не местим вратата. Искам сенникът да изглежда по-лек — покажи ми два варианта с по-тънка конструкция. Ако за единия трябва нова колона, не я добавяй без да ме питаш. За натоварването от вятър още нямаме становище, така че не приемай стойност на око.",
+      "evidence": []
+    },
+    {
+      "id": "A92",
+      "language": "en",
+      "text": "Keep the lobby desk exactly where it is. Use the fire note to work out which wall panels can be replaced with timber slats. You can choose the slat spacing if the note leaves it open, but don't touch the exit-width geometry. If the note does not establish whether the timber finish is allowed in the escape route, flag that before specifying the material.",
+      "evidence": [
+        {
+          "evidence_id": "fire-note-92",
+          "content": "Required clear exit width is 1800 mm and must not be reduced. Wall finish within the marked lobby zone shall achieve Class B-s1,d0 or better. Decorative panel spacing is not prescribed by this note."
+        }
+      ]
+    },
+    {
+      "id": "S91",
+      "language": "bg",
+      "text": "Не пипай формата на API отговора. Намери защо export-ът пропуска последния ред и оправи само това, ако причината е в CSV writer-а. Ако според теб streaming вариант е по-добър, запиши го като идея за после, не го вкарвай сега.",
+      "evidence": [
+        {
+          "evidence_id": "export-trace-91",
+          "content": "The export service receives 241 records. The CSV writer callback reports 240 rows written. Response serialization begins after the writer callback completes."
+        }
+      ]
+    },
+    {
+      "id": "S92",
+      "language": "en",
+      "text": "Leave the retry count at three. Trace the duplicate webhook deliveries and, if the idempotency key is built without the event version, fix that key only. We still don't know whether the partner retries on every 5xx or only timeouts, so don't change our retry policy based on that assumption.",
+      "evidence": []
+    },
+    {
+      "id": "T91",
+      "language": "bg",
+      "text": "Хотелът във Виена не го сменяме. Провери дали можем да добавим късно напускане за последния ден и ми дай цената. Не потвърждавай услугата. Ако хотелът предлага само до 14:00, покажи и вариант за дневна стая наблизо, но пак без резервация.",
+      "evidence": []
+    },
+    {
+      "id": "T92",
+      "language": "en",
+      "text": "Use the flights we already picked. Compare the two rail passes for the middle part of the trip using the operator sheet. You can recommend one if the included routes clearly cover our plan, but don't buy it. The sheet doesn't say whether the airport express is included, so keep that separate unless another supplied note settles it.",
+      "evidence": [
+        {
+          "evidence_id": "rail-pass-sheet-92",
+          "content": "Pass A covers regional rail on days 3-7 and excludes reserved-seat supplements. Pass B covers regional and intercity rail on days 3-7. Airport express inclusion is not stated in this sheet."
+        }
+      ]
+    },
+    {
+      "id": "K91",
+      "language": "bg",
+      "text": "Направи кратко резюме на решенията за Atlas. Бележката от март я остави като исторически контекст, не като действащо правило. Може да отбележиш, че автоматичното одобрение би спестило време, но не го записвай като решение и не променяй текущия approval flow.",
+      "evidence": [
+        {
+          "evidence_id": "atlas-current-91",
+          "content": "Current approved process: every publication requires one human reviewer before release."
+        },
+        {
+          "evidence_id": "atlas-march-91",
+          "content": "March workshop note: automatic approval for low-risk publications was discussed but not adopted."
+        }
+      ]
+    },
+    {
+      "id": "K92",
+      "language": "en",
+      "text": "The migration notes disagree on whether the old taxonomy was retired or merely deprecated. Keep that disagreement visible. You may normalize spelling and duplicate labels elsewhere, but don't mark the taxonomy as retired until the signed migration record says so. If that record is missing, say that plainly.",
+      "evidence": [
+        {
+          "evidence_id": "migration-note-a-92",
+          "content": "Team A notes describe the legacy taxonomy as retired after phase two."
+        },
+        {
+          "evidence_id": "migration-note-b-92",
+          "content": "Team B notes describe the legacy taxonomy as deprecated and still referenced by two integrations."
+        }
+      ]
+    }
+  ]
+}
