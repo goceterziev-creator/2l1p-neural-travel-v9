@@ -11,6 +11,16 @@ const selectionSchema = Object.freeze({
   additionalProperties: false
 });
 
+const strictSpanItemSchema = Object.freeze({
+  type: 'object',
+  properties: {
+    start: { type: 'integer', minimum: 0 },
+    end: { type: 'integer', minimum: 1 }
+  },
+  required: ['start', 'end'],
+  additionalProperties: false
+});
+
 function rawSupportProviderSchema() {
   return {
     type: 'object',
@@ -18,7 +28,7 @@ function rawSupportProviderSchema() {
       quote: { type: 'null' },
       evidence_id: { type: 'null' },
       selections: { type: 'array', minItems: 1, maxItems: 1, items: clone(selectionSchema) },
-      spans: { type: 'array', maxItems: 0, items: { type: 'object' } }
+      spans: { type: 'array', maxItems: 0, items: clone(strictSpanItemSchema) }
     },
     required: ['quote', 'evidence_id', 'selections', 'spans'],
     additionalProperties: false
@@ -28,7 +38,7 @@ function rawSupportProviderSchema() {
 function suppliedSupportProviderSchema(branch) {
   const copy = clone(branch);
   copy.properties.selections = { type: 'array', maxItems: 0, items: clone(selectionSchema) };
-  copy.properties.spans = { type: 'array', maxItems: 0, items: { type: 'object' } };
+  copy.properties.spans = { type: 'array', maxItems: 0, items: clone(strictSpanItemSchema) };
   if (!copy.required.includes('selections')) copy.required.push('selections');
   if (!copy.required.includes('spans')) copy.required.push('spans');
   return copy;
