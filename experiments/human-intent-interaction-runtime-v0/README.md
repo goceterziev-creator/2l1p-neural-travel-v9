@@ -28,7 +28,8 @@ persistence port for deterministic tests.
   per active gate.
 - Receiving approval-like language records evidence only; it grants no authority.
 - The Approval Resolver is an injected port only. No approval semantics or
-  keyword matching are implemented.
+  keyword matching are implemented by the Bootstrap itself. Capability A adds
+  a separate provider-neutral, context-bound resolver behind that port.
 - The Presentation layer is an injected port only. No human-facing copy or UI
   rendering is implemented.
 - Continuation authority is bound to one interaction, gate revision, scope and
@@ -39,7 +40,10 @@ persistence port for deterministic tests.
 This is not a chat system, conversation-history system, agent framework,
 workflow engine, scheduler, authentication system, persistence product, HII
 version, or production runtime integration. It does not implement Approval
-Resolution or Gate Presentation capabilities.
+Resolution inside the Bootstrap or Gate Presentation capabilities. Capability
+A is isolated in `approval-resolver.js`; it composes linguistic speech-act
+guards with exact pending-gate context rather than treating approval vocabulary
+as authority.
 
 ## Validation
 
@@ -47,6 +51,7 @@ No dependencies or provider calls are required:
 
 ```bash
 node experiments/human-intent-interaction-runtime-v0/interaction-runtime.test.js
+node experiments/human-intent-interaction-runtime-v0/approval-resolver.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
