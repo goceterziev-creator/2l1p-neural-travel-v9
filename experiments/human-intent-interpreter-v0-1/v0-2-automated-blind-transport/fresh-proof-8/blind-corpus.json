@@ -1,0 +1,86 @@
+{
+  "version": "hii-v0.2-fresh-unseen-blind-semantic-proof-8",
+  "cases": [
+    {
+      "id": "A81",
+      "language": "bg",
+      "text": "Остави стълбата и отвора както са. Парапетът ми идва тежък — провери вариант с по-тънки вертикали, но нищо не сменяй по модела, докато не видя вариантите. Ако не знаем допустимото разстояние между тях, отбележи го, не го измисляй.",
+      "evidence": []
+    },
+    {
+      "id": "A82",
+      "language": "en",
+      "text": "The kitchen island stays where it is. You can resolve the pendant spacing yourself using the electrical note, but moving the ceiling feed is not part of this. If the note still leaves two compliant layouts, show me both before choosing one.",
+      "evidence": [
+        {
+          "evidence_id": "electrical-note-p8",
+          "text": "Three pendants shall be centered over the island. Equal spacing between pendant centerlines is required. Existing ceiling feed position is fixed for this revision."
+        }
+      ]
+    },
+    {
+      "id": "S81",
+      "language": "bg",
+      "text": "Логът вече показва, че грешката идва след валидирането. Изолирай само този handler и го поправи, ако можеш без да сменяш API договора. За нов middleware може да ми дадеш идея, но не го добавяй сега.",
+      "evidence": [
+        {
+          "evidence_id": "trace-note-81",
+          "text": "Validation completed successfully. The first exception is raised inside submitOrderHandler after validated input is passed to it."
+        }
+      ]
+    },
+    {
+      "id": "S82",
+      "language": "en",
+      "text": "Keep the current cache TTL. Check why these two requests get different keys. If the tenant prefix is missing, fix that key construction only. We haven't established whether old cached entries should be purged, so leave them alone for now.",
+      "evidence": []
+    },
+    {
+      "id": "T81",
+      "language": "bg",
+      "text": "Рим си остава, не местим датите. Провери ми влака от летището и ако последният влак е преди кацането, предложи два други начина да стигнем до хотела. Не купувай нищо. За частен трансфер първо искам цена.",
+      "evidence": []
+    },
+    {
+      "id": "T82",
+      "language": "en",
+      "text": "Use the hotel we already selected. The supplier says breakfast can be added, so price that option for us. Don't add it to the booking yet. Also, I don't know whether the child is charged the adult breakfast rate; keep that open unless the supplier sheet settles it.",
+      "evidence": [
+        {
+          "evidence_id": "hotel-meal-sheet-82",
+          "text": "Breakfast supplement: EUR 28 per adult per night. Child breakfast pricing: on request. Supplements may be quoted before booking amendment."
+        }
+      ]
+    },
+    {
+      "id": "K81",
+      "language": "bg",
+      "text": "Събери бележките за Orion в едно резюме. Старият документ го ползвай като история, не като текущо правило. Ако има идея за автоматично архивиране, може да я покажеш отделно, но не я записвай като прието решение.",
+      "evidence": [
+        {
+          "evidence_id": "orion-current-81",
+          "text": "Current decision: manual archive review remains required before any record is archived."
+        },
+        {
+          "evidence_id": "orion-old-81",
+          "text": "Historical draft: automatic archive after 45 days was considered but never approved."
+        }
+      ]
+    },
+    {
+      "id": "K82",
+      "language": "en",
+      "text": "The two reports disagree about who owns the final sign-off. Record the disagreement as-is. You can reconcile duplicate terminology elsewhere in the summary, but don't assign the sign-off role until we have the signed charter.",
+      "evidence": [
+        {
+          "evidence_id": "report-alpha-82",
+          "text": "Alpha review notes list Operations as final sign-off owner."
+        },
+        {
+          "evidence_id": "report-beta-82",
+          "text": "Beta review notes list Product as final sign-off owner."
+        }
+      ]
+    }
+  ]
+}
