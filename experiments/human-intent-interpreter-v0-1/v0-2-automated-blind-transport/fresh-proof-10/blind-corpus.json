@@ -1,0 +1,86 @@
+{
+  "version": "hii-v0.2-fresh-unseen-blind-semantic-proof-10",
+  "cases": [
+    {
+      "id": "A101",
+      "language": "bg",
+      "text": "Запази ширината на стълбището и позицията на вратата. Провери дали можем да сменим парапета със стъклен, но не променяй плочата. Ако за закрепването е нужна допълнителна стоманена рамка, покажи я като вариант и не я добавяй без одобрение. Нямаме потвърдена дебелина на стъклото, така че не я измисляй.",
+      "evidence": []
+    },
+    {
+      "id": "A102",
+      "language": "en",
+      "text": "Keep the meeting-room opening exactly where it is. Use the acoustic note to assess whether the wall lining can change to perforated timber. You may choose the perforation pattern if the note leaves it open, but do not reduce the stated acoustic rating. If the note does not establish the proposed timber build-up, keep that unresolved rather than specifying one.",
+      "evidence": [
+        {
+          "evidence_id": "acoustic-note-102",
+          "content": "The meeting-room partition shall achieve Rw 48 dB minimum. Decorative perforation geometry is not prescribed. This note does not define a timber lining build-up."
+        }
+      ]
+    },
+    {
+      "id": "S101",
+      "language": "bg",
+      "text": "Не сменяй формата на audit log-а. Проследи защо последното събитие понякога липсва и ако причината е, че flush се извиква след close, поправи само реда на тези две операции. Ако batch writer би бил по-добър, запиши го като бъдеща идея, без да го внедряваш.",
+      "evidence": [
+        {
+          "evidence_id": "audit-trace-101",
+          "content": "The writer receives 87 events. close() is invoked before the final flush() call. The persisted file contains 86 events in the reproduced failing trace."
+        }
+      ]
+    },
+    {
+      "id": "S102",
+      "language": "en",
+      "text": "Keep the cache TTL at fifteen minutes. Trace why two workers occasionally rebuild the same key and, if the lock identity omits the tenant id, correct only that identity. We do not know whether the upstream service sends duplicate invalidations, so do not change invalidation policy on that assumption.",
+      "evidence": []
+    },
+    {
+      "id": "T101",
+      "language": "bg",
+      "text": "Полетите за Лисабон остават същите. Провери цена за частен трансфер до хотела и ми дай два варианта. Не резервирай. Ако нощният трансфер е с доплащане, покажи го отделно, но не приемай автоматично, че нашият час попада в нощната тарифа.",
+      "evidence": []
+    },
+    {
+      "id": "T102",
+      "language": "en",
+      "text": "Keep the Kyoto hotel we selected. Compare the two breakfast options using the hotel sheet. You can recommend one if the inclusions clearly fit the group, but do not add it to the booking. The sheet is silent on children's pricing, so keep that unresolved unless another supplied note establishes it.",
+      "evidence": [
+        {
+          "evidence_id": "kyoto-breakfast-102",
+          "content": "Plan A includes buffet breakfast in the main restaurant. Plan B includes buffet breakfast plus lounge access until 11:00. Children's pricing is not stated."
+        }
+      ]
+    },
+    {
+      "id": "K101",
+      "language": "bg",
+      "text": "Обобщи текущите правила за Orion. Бележката от януари я пази като исторически контекст, не като действаща политика. Може да отбележиш автоматичното архивиране като идея, но не го записвай като прието решение и не променяй сегашното правило за ръчно одобрение.",
+      "evidence": [
+        {
+          "evidence_id": "orion-current-101",
+          "content": "Current approved policy: archival requires manual approval by one project owner."
+        },
+        {
+          "evidence_id": "orion-january-101",
+          "content": "January workshop note: automatic archival after 30 days was discussed but no decision was recorded."
+        }
+      ]
+    },
+    {
+      "id": "K102",
+      "language": "en",
+      "text": "The release records disagree on whether the legacy importer is disabled or still available for rollback. Preserve that disagreement. You may clean up duplicate labels in the documentation, but do not mark the importer as removed until the signed release record establishes it. If that record is unavailable, state that clearly.",
+      "evidence": [
+        {
+          "evidence_id": "release-a-102",
+          "content": "Operations notes say the legacy importer was disabled after release 6."
+        },
+        {
+          "evidence_id": "release-b-102",
+          "content": "Rollback notes say the legacy importer remains available behind an operator-only flag."
+        }
+      ]
+    }
+  ]
+}
