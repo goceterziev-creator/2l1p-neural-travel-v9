@@ -7,6 +7,7 @@ const {
   canonicalRawTextSpan,
   extractCandidate
 } = require('./transport/contract');
+const { segmentRawText } = require('./transport/raw-text-addressing');
 const {
   PROVIDER_PROVENANCE_INSTRUCTIONS,
   createOpenAiResponsesAdapter
@@ -26,6 +27,17 @@ function response(candidate) { return { output_text: JSON.stringify(candidate) }
 function expectReject(source, quote, pattern) {
   const c = candidateWith('EXPLICIT', entry('n1', 'Statement stays unchanged.', [raw(quote)]));
   assert.throws(() => extractCandidate(response(c), source), pattern);
+}
+function addressSelection(sourceText, quote) {
+  const map = segmentRawText(sourceText);
+  const start = sourceText.indexOf(quote);
+  assert.notEqual(start, -1);
+  assert.equal(sourceText.indexOf(quote, start + 1), -1);
+  const end = start + quote.length;
+  const startUnit = map.units.find((unit) => unit.start === start);
+  const endUnit = map.units.find((unit) => unit.end === end);
+  assert.ok(startUnit && endUnit);
+  return { source_id: map.source_id, start_id: startUnit.id, end_id: endUnit.id };
 }
 
 async function main() {
@@ -60,7 +72,7 @@ async function main() {
   let capturedRequest = null;
   const structured = candidateWith('EXPLICIT', entry('p4', 'Single semantic claim with two supports.', [{
     source_type: 'RAW_TEXT', quote: null, evidence_id: null, supports: [],
-    selections: [{ text: 'Alpha requirement is fixed.' }, { text: 'Omega decision is reserved.' }],
+    selections: [addressSelection(source.text, 'Alpha requirement is fixed.'), addressSelection(source.text, 'Omega decision is reserved.')],
     spans: []
   }]));
   const adapter = createOpenAiResponsesAdapter({ provider: {
