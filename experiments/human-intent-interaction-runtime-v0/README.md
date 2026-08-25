@@ -238,6 +238,22 @@ Effect-capable classes fail closed and cannot enter this branch. Result
 acceptance creates no Human or operational authority, does not retry or invoke
 anything, and remains strictly distinct from execution completion and success.
 
+Governed Effect-Capable Result / Evidence Acceptance V0 is the separate
+post-outcome branch for `IDEMPOTENT_WITH_STABLE_KEY` and `NON_IDEMPOTENT`.
+It requires an authoritative `EXECUTION_ATTEMPT_STARTED` and the exact current
+`EFFECT_OUTCOME_RESOLVED(EFFECT_CONFIRMED)` record before it accepts any result
+observation. Provider return, caller fields, possible/unknown effect and
+confirmed non-effect cannot manufacture an accepted result.
+
+Every immutable `RESULT_EVIDENCE_ACCEPTED` observation binds the exact Start,
+physical invocation, logical effect, confirmed outcome, frozen input and result
+grammar. A separate atomic `RESULT_ACCEPTED` record binds one canonical
+evidence-set revision and digest evaluated by the frozen grammar. Later evidence
+may create a superseding acceptance but never rewrites history. The boundary
+preserves `RESULT_EVIDENCE != RESULT_ACCEPTED != EFFECT_CONFIRMED !=
+EXECUTION_COMPLETED`; it creates no retry, Completion, success or Human
+authority and performs no provider, executor, product or effect operation.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -257,6 +273,7 @@ node experiments/human-intent-interaction-runtime-v0/effect-invocation-gateway.t
 node experiments/human-intent-interaction-runtime-v0/effect-outcome-resolution.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-retry-eligibility.test.js
 node experiments/human-intent-interaction-runtime-v0/effect-free-result-acceptance.test.js
+node experiments/human-intent-interaction-runtime-v0/effect-capable-result-acceptance.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
