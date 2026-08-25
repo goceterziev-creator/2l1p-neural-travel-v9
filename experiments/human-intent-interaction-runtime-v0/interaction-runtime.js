@@ -22,6 +22,18 @@ const RESOLUTION_OUTCOMES = Object.freeze({
   NO_PENDING_GATE: 'NO_PENDING_GATE'
 });
 
+const DISPATCH_OUTCOMES = Object.freeze({
+  DISPATCH_ACCEPTED: 'DISPATCH_ACCEPTED',
+  ALREADY_DISPATCHED: 'ALREADY_DISPATCHED',
+  TARGET_NOT_REGISTERED: 'TARGET_NOT_REGISTERED',
+  TARGET_SCOPE_MISMATCH: 'TARGET_SCOPE_MISMATCH',
+  AUTHORITY_STALE: 'AUTHORITY_STALE',
+  DELIVERY_UNAVAILABLE: 'DELIVERY_UNAVAILABLE',
+  DELIVERY_REJECTED: 'DELIVERY_REJECTED',
+  DELIVERY_UNCERTAIN: 'DELIVERY_UNCERTAIN',
+  INVALID_AUTHORITY: 'INVALID_AUTHORITY'
+});
+
 function clone(value) {
   return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 }
@@ -372,6 +384,188 @@ function createInteractionRuntime({
     });
   }
 
+  function getContinuationDispatchSnapshot(interactionId, dispatchId) {
+    requireString(dispatchId, 'dispatchId');
+    const aggregate = loadRequired(interactionId);
+    const intents = evidenceByType(aggregate, 'CONTINUATION_DISPATCH_INTENT')
+      .filter((item) => item.dispatchId === dispatchId);
+    if (intents.length === 0) return null;
+    if (intents.length !== 1) throw new Error('INVALID_AUTHORITY');
+    const intent = intents[0];
+    const attempts = evidenceByType(aggregate, 'CONTINUATION_DISPATCH_ATTEMPT')
+      .filter((item) => item.dispatchId === dispatchId);
+    const outcomes = evidenceByType(aggregate, 'CONTINUATION_DISPATCH_OUTCOME')
+      .filter((item) => item.dispatchId === dispatchId);
+    if (new Set(attempts.map((item) => item.dispatchAttemptId)).size !== attempts.length
+      || outcomes.filter((item) => item.outcome === DISPATCH_OUTCOMES.DISPATCH_ACCEPTED).length > 1) {
+      throw new Error('INVALID_AUTHORITY');
+    }
+    return clone({
+      dispatchId,
+      envelope: intent.envelope,
+      intentRevision: intent.intentRevision,
+      attempts,
+      outcomes,
+      latestOutcome: outcomes.length === 0 ? null : outcomes[outcomes.length - 1]
+    });
+  }
+
+  function prepareContinuationDispatch({
+    interactionId,
+    continuationId,
+    dispatchId,
+    idempotencyKey,
+    eventId,
+    expectedRevision
+  }) {
+    const aggregate = loadRequired(interactionId);
+    [continuationId, dispatchId, idempotencyKey, eventId].forEach((value, index) => {
+      requireString(value, ['continuationId', 'dispatchId', 'idempotencyKey', 'eventId'][index]);
+    });
+    const authorities = evidenceByType(aggregate, 'CONTINUATION_AUTHORITY')
+      .filter((item) => item.continuationId === continuationId && item.interactionId === interactionId);
+    if (authorities.length !== 1) throw new Error('INVALID_AUTHORITY');
+    const authority = authorities[0];
+    const gate = aggregate.gates[authority.gateId];
+    if (aggregate.revision !== expectedRevision
+      || aggregate.interactionStatus !== INTERACTION_STATUSES.CONTINUATION_CONSUMED
+      || !gate
+      || gate.status !== GATE_STATUSES.CONSUMED
+      || gate.consumedByRef !== continuationId) {
+      throw new Error('AUTHORITY_STALE');
+    }
+    const existing = evidenceByType(aggregate, 'CONTINUATION_DISPATCH_INTENT')
+      .filter((item) => item.envelope.continuationId === continuationId);
+    if (existing.length > 0) {
+      if (existing.length !== 1) throw new Error('INVALID_AUTHORITY');
+      const intent = existing[0];
+      if (intent.dispatchId !== dispatchId
+        || intent.envelope.idempotencyKey !== idempotencyKey
+        || intent.envelope.interactionId !== interactionId
+        || intent.envelope.gateId !== authority.gateId
+        || intent.envelope.gateRevision !== authority.gateRevision
+        || !sameValue(intent.envelope.authorityScope, authority.authorityScope)
+        || intent.envelope.continuationTargetRef !== authority.continuationTargetRef) {
+        throw new Error('INVALID_AUTHORITY');
+      }
+      return aggregate;
+    }
+    const evaluations = evidenceByType(aggregate, 'GOVERNANCE_EVALUATION');
+    const latest = evaluations[evaluations.length - 1];
+    if (!latest || latest.result.status !== 'PASS') throw new Error('INVALID_AUTHORITY');
+    const envelope = {
+      dispatchId,
+      idempotencyKey,
+      continuationId,
+      interactionId,
+      gateId: authority.gateId,
+      gateRevision: authority.gateRevision,
+      authorityScope: clone(authority.authorityScope),
+      continuationTargetRef: authority.continuationTargetRef,
+      authorityEvidenceRef: continuationId,
+      governanceEvaluationRef: latest.evaluationId,
+      authorityCommittedRevision: expectedRevision
+    };
+    return store.commit({
+      interactionId,
+      expectedRevision,
+      nextState: aggregate,
+      appendedEvidence: [{
+        type: 'CONTINUATION_DISPATCH_INTENT',
+        eventId,
+        dispatchId,
+        intentRevision: expectedRevision + 1,
+        envelope
+      }]
+    });
+  }
+
+  function recordContinuationDispatchAttempt({
+    interactionId,
+    dispatchId,
+    dispatchAttemptId,
+    eventId,
+    expectedRevision
+  }) {
+    const aggregate = loadRequired(interactionId);
+    [dispatchId, dispatchAttemptId, eventId].forEach((value, index) => {
+      requireString(value, ['dispatchId', 'dispatchAttemptId', 'eventId'][index]);
+    });
+    const snapshot = getContinuationDispatchSnapshot(interactionId, dispatchId);
+    if (!snapshot) throw new Error('INVALID_AUTHORITY');
+    if (snapshot.latestOutcome && snapshot.latestOutcome.outcome === DISPATCH_OUTCOMES.DISPATCH_ACCEPTED) {
+      throw new Error('ALREADY_DISPATCHED');
+    }
+    if (snapshot.attempts.some((item) => item.dispatchAttemptId === dispatchAttemptId)) {
+      throw new Error('duplicate dispatch attempt');
+    }
+    return store.commit({
+      interactionId,
+      expectedRevision,
+      nextState: aggregate,
+      appendedEvidence: [{
+        type: 'CONTINUATION_DISPATCH_ATTEMPT',
+        eventId,
+        dispatchId,
+        dispatchAttemptId,
+        attemptedRevision: expectedRevision + 1
+      }]
+    });
+  }
+
+  function recordContinuationDispatchOutcome({
+    interactionId,
+    dispatchId,
+    dispatchAttemptId = null,
+    outcome,
+    acknowledgement = null,
+    registrationIdentity = null,
+    registrationRevision = null,
+    eventId,
+    expectedRevision
+  }) {
+    if (!Object.values(DISPATCH_OUTCOMES).includes(outcome)
+      || outcome === DISPATCH_OUTCOMES.ALREADY_DISPATCHED) {
+      throw new Error('unknown dispatch outcome');
+    }
+    const aggregate = loadRequired(interactionId);
+    requireString(dispatchId, 'dispatchId');
+    requireString(eventId, 'eventId');
+    const snapshot = getContinuationDispatchSnapshot(interactionId, dispatchId);
+    if (!snapshot) throw new Error('INVALID_AUTHORITY');
+    const priorAccepted = snapshot.outcomes.find((item) => item.outcome === DISPATCH_OUTCOMES.DISPATCH_ACCEPTED);
+    if (priorAccepted) throw new Error('ALREADY_DISPATCHED');
+    if (dispatchAttemptId !== null
+      && !snapshot.attempts.some((item) => item.dispatchAttemptId === dispatchAttemptId)) {
+      throw new Error('unknown dispatch attempt');
+    }
+    if (outcome === DISPATCH_OUTCOMES.DISPATCH_ACCEPTED) {
+      if (!acknowledgement
+        || acknowledgement.receiptStatus !== 'ACCEPTED'
+        || acknowledgement.dispatchId !== dispatchId
+        || acknowledgement.idempotencyKey !== snapshot.envelope.idempotencyKey
+        || acknowledgement.continuationTargetRef !== snapshot.envelope.continuationTargetRef) {
+        throw new Error('invalid receipt acknowledgement');
+      }
+    }
+    return store.commit({
+      interactionId,
+      expectedRevision,
+      nextState: aggregate,
+      appendedEvidence: [{
+        type: 'CONTINUATION_DISPATCH_OUTCOME',
+        eventId,
+        dispatchId,
+        dispatchAttemptId,
+        outcome,
+        acknowledgement: clone(acknowledgement),
+        registrationIdentity,
+        registrationRevision,
+        recordedRevision: expectedRevision + 1
+      }]
+    });
+  }
+
   return Object.freeze({
     registerInteraction,
     registerHumanGate,
@@ -380,6 +574,10 @@ function createInteractionRuntime({
     materializeGateResolution,
     evaluateGovernance,
     claimAuthorizedContinuation,
+    prepareContinuationDispatch,
+    recordContinuationDispatchAttempt,
+    recordContinuationDispatchOutcome,
+    getContinuationDispatchSnapshot,
     getInteractionSnapshot: loadRequired,
     projectCurrentGateEvents: (interactionId) => projectCurrentGateEvents(loadRequired(interactionId))
   });
@@ -389,5 +587,6 @@ module.exports = {
   GATE_STATUSES,
   INTERACTION_STATUSES,
   RESOLUTION_OUTCOMES,
+  DISPATCH_OUTCOMES,
   createInteractionRuntime
 };

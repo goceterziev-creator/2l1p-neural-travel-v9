@@ -35,6 +35,11 @@ persistence port for deterministic tests.
   provider-neutral consumer in `gate-presenter.js`.
 - Continuation authority is bound to one interaction, gate revision, scope and
   target, and is single-consumption.
+- Authorized Continuation Handoff / Dispatch V0 adds a separate provider-free
+  lifecycle after authority consumption: one immutable dispatch intent, exact
+  registered-target and scope matching, revisioned attempt/outcome evidence,
+  and at most one logically accepted receipt. Physical retry preserves the
+  dispatch envelope and idempotency identity while using a distinct attempt.
 
 ## Non-claims
 
@@ -49,6 +54,14 @@ context and emits `HUMAN GATE — APPROVAL REQUIRED`. It emits nothing for other
 governance states, fails closed when pending-gate context is missing, and never
 creates or consumes authority. No production UI/output integration is claimed.
 
+Dispatch receipt acceptance means only that the exact registered consumer
+accepted the immutable envelope under its idempotency identity. It does not
+mean execution was scheduled, started, completed, or successful. Unknown,
+disabled, incompatible, stale, replayed, rejected, unavailable, and uncertain
+handoffs fail closed without retargeting or recreating authority. The registry
+and consumer are injected; no executor, route, queue, database, or product
+semantics are implemented.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -57,6 +70,7 @@ No dependencies or provider calls are required:
 node experiments/human-intent-interaction-runtime-v0/interaction-runtime.test.js
 node experiments/human-intent-interaction-runtime-v0/approval-resolver.test.js
 node experiments/human-intent-interaction-runtime-v0/gate-presenter.test.js
+node experiments/human-intent-interaction-runtime-v0/continuation-dispatcher.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
