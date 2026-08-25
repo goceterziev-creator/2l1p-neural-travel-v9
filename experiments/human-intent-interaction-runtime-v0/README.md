@@ -114,6 +114,25 @@ evidence remain separate downstream capabilities. Preparation snapshots, retry
 eligibility, effect identity, and the atomic attempt ledger are injected ports;
 no database, queue, scheduler, worker, executor, or product action is selected.
 
+Governed Execution Attempt Claim / Ownership V0 is the next separate,
+provider-neutral boundary. It consumes only authoritative persisted
+`ATTEMPT_CREATED` evidence, requires one exact enabled adapter registration and
+a trusted owner identity, verifies exact action, target, scope, immutable input,
+effect and result-contract compatibility, and atomically records at most one
+active exclusive claim for an attempt.
+
+`ATTEMPT_CLAIMED` means only that one exact compatible owner accepted exclusive
+handling responsibility for the exact immutable attempt. A claim creates no
+schedule, worker delivery, execution-start evidence, executor call, product
+mutation, external effect, result, completion, or success. Reassignment keeps
+the same physical attempt, creates a new claim identity, and requires exact
+authoritative release/staleness plus proven no-start/no-effect evidence. Claim
+expiry, worker loss, missing completion, possible effect, and uncertain
+ownership do not authorize reassignment or another attempt. Registries, trusted
+owner identity, compatibility verification, reassignment evidence, and the
+atomic claim ledger are injected ports; no lease technology, queue, worker,
+executor, provider, or product action is selected.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -126,6 +145,7 @@ node experiments/human-intent-interaction-runtime-v0/continuation-dispatcher.tes
 node experiments/human-intent-interaction-runtime-v0/execution-acceptance.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-preparation.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-creation.test.js
+node experiments/human-intent-interaction-runtime-v0/execution-attempt-claim.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
