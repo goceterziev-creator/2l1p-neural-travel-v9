@@ -203,6 +203,25 @@ retry evaluator; it performs no provider reconciliation query, product effect,
 result validation or completion. `NO_EXTERNAL_EFFECT` remains on its separate
 effect-free result/evidence branch.
 
+Governed Attempt Retry Eligibility V0 is the separate provider-neutral decision
+boundary after authoritative effect-outcome resolution. It binds one immutable
+`attemptRetryEligibilityId` to the exact prior physical attempt, invocation,
+latest outcome-resolution revision, canonical evidence-set digest, frozen
+effect contract, stable logical effect and exact versioned retry policy.
+
+Only complete causal `NO_EFFECT_CONFIRMED` or
+`EFFECT_REJECTED_BEFORE_EFFECT` evidence can produce `PROVEN_NO_EFFECT`.
+`IDEMPOTENT_REPLAY_SAFE` additionally requires an exact registered replay
+policy and verified stable-key, duplicate-semantics and constraint evidence;
+the idempotent label alone grants nothing. Confirmed effect, non-idempotent
+possible effect, unknown outcome and evidence conflict remain ineligible.
+Eligibility is immutable evidence for one guarded Attempt Creation handoff: it
+does not create an attempt, perform a retry, restore Human authority, invoke an
+effect, accept a result or complete execution. The atomic Attempt Creation
+history guard prevents one eligibility decision from creating multiple
+successor attempts. `NO_EXTERNAL_EFFECT` remains downstream of its separate
+effect-free result/evidence lifecycle.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -220,6 +239,7 @@ node experiments/human-intent-interaction-runtime-v0/execution-attempt-start.tes
 node experiments/human-intent-interaction-runtime-v0/effect-invocation-intent.test.js
 node experiments/human-intent-interaction-runtime-v0/effect-invocation-gateway.test.js
 node experiments/human-intent-interaction-runtime-v0/effect-outcome-resolution.test.js
+node experiments/human-intent-interaction-runtime-v0/execution-attempt-retry-eligibility.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
