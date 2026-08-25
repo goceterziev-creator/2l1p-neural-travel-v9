@@ -149,6 +149,7 @@ function createInteractionRuntime({
       authorityScope: clone(authorityScope),
       requiredDecision,
       continuationTargetRef,
+      registeredRevision: expectedRevision + 1,
       registeredOrder: eventOrder,
       satisfiedByEventRef: null,
       consumedByRef: null
@@ -251,6 +252,9 @@ function createInteractionRuntime({
     }
     if (!sameValue(resolution.authorityScope, gate.authorityScope)) {
       throw new Error('resolution authority scope mismatch');
+    }
+    if (resolution.continuationTargetRef !== gate.continuationTargetRef) {
+      throw new Error('resolution continuation target mismatch');
     }
 
     const nextState = clone(aggregate);

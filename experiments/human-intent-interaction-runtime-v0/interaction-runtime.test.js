@@ -77,7 +77,8 @@ function satisfiedResolution(interactionId, inputId, suffix = 'A') {
     inputId,
     gateId: 'gate.implementation',
     gateRevision: 1,
-    authorityScope: { action: 'implementation', boundary: 'isolated-runtime' }
+    authorityScope: { action: 'implementation', boundary: 'isolated-runtime' },
+    continuationTargetRef: 'target.bootstrap-implementation'
   };
 }
 
