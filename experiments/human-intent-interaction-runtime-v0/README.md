@@ -222,6 +222,22 @@ history guard prevents one eligibility decision from creating multiple
 successor attempts. `NO_EXTERNAL_EFFECT` remains downstream of its separate
 effect-free result/evidence lifecycle.
 
+Governed Effect-Free Result / Evidence Acceptance V0 is the isolated
+`NO_EXTERNAL_EFFECT` post-Start branch. It consumes only authoritative
+`EXECUTION_ATTEMPT_STARTED`, resolves an exact trusted result-evidence source
+and the frozen result grammar revision, and appends immutable
+`RESULT_EVIDENCE_ACCEPTED` observations bound to the exact Start, attempt and
+verified input. Evidence remains observation rather than an authoritative
+result.
+
+A separate atomic `RESULT_ACCEPTED` record binds one immutable
+`resultAcceptanceId` to the exact canonical evidence-set revision and digest
+that satisfies the frozen grammar. Later evidence creates a new evidence-set
+revision and, where valid, a superseding acceptance without rewriting history.
+Effect-capable classes fail closed and cannot enter this branch. Result
+acceptance creates no Human or operational authority, does not retry or invoke
+anything, and remains strictly distinct from execution completion and success.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -240,6 +256,7 @@ node experiments/human-intent-interaction-runtime-v0/effect-invocation-intent.te
 node experiments/human-intent-interaction-runtime-v0/effect-invocation-gateway.test.js
 node experiments/human-intent-interaction-runtime-v0/effect-outcome-resolution.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-retry-eligibility.test.js
+node experiments/human-intent-interaction-runtime-v0/effect-free-result-acceptance.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
