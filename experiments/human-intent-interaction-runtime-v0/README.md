@@ -133,6 +133,25 @@ owner identity, compatibility verification, reassignment evidence, and the
 atomic claim ledger are injected ports; no lease technology, queue, worker,
 executor, provider, or product action is selected.
 
+Governed Execution Attempt Start V0 is the next isolated provider-neutral
+lifecycle boundary. It consumes only an authoritative current `ACTIVE`
+`ATTEMPT_CLAIMED` snapshot and atomically binds one immutable
+`executionStartId` to the exact physical attempt, Claim, adapter, trusted owner,
+verified input, action, effect, logical-effect and result contracts.
+
+`EXECUTION_ATTEMPT_STARTED` means only that the exact current claimant crossed
+from exclusive ownership into governed execution activity for the immutable
+attempt. It creates no scheduler or worker-delivery evidence, invokes no
+executor, creates no `EFFECT_INVOCATION_INTENT`, performs no product/external
+effect, and records no result, completion, or success. After Start, only pure
+effect-free preparation is permissible until a separate persisted effect intent
+exists. For `NO_EXTERNAL_EFFECT`, pure computation may proceed without effect
+intent, but result/completion evidence remains downstream. A committed Start
+also ends ordinary pre-Start Claim reassignment eligibility; owner loss cannot
+create another Claim or attempt. Claim snapshots and the atomic Start ledger are
+injected ports; no queue, worker, executor, provider, or product action is
+selected.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -146,6 +165,7 @@ node experiments/human-intent-interaction-runtime-v0/execution-acceptance.test.j
 node experiments/human-intent-interaction-runtime-v0/execution-preparation.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-creation.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-claim.test.js
+node experiments/human-intent-interaction-runtime-v0/execution-attempt-start.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
