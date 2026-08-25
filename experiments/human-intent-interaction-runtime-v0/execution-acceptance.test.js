@@ -99,7 +99,9 @@ function createStore({
   seed = [],
   commitMode = 'NORMAL',
   currentRegistrationIdentity = 'action-registration-1',
-  currentRegistrationRevision = '1'
+  currentRegistrationRevision = '1',
+  currentEffectIdempotencyCapability = 'DECLARED_BY_FUTURE_ADAPTER',
+  currentResultEvidenceGrammarRef = 'result-grammar-1'
 } = {}) {
   const records = seed.map(clone);
   let mode = commitMode;
@@ -117,7 +119,9 @@ function createStore({
   function commit(record, { registrationGuard } = {}) {
     if (!registrationGuard
       || registrationGuard.registrationIdentity !== currentRegistrationIdentity
-      || registrationGuard.registrationRevision !== currentRegistrationRevision) {
+      || registrationGuard.registrationRevision !== currentRegistrationRevision
+      || registrationGuard.effectIdempotencyCapability !== currentEffectIdempotencyCapability
+      || registrationGuard.resultEvidenceGrammarRef !== currentResultEvidenceGrammarRef) {
       const error = new Error('stale action registration');
       error.code = 'ACCEPTANCE_STALE';
       throw error;
@@ -193,6 +197,20 @@ function runSuite() {
     derivationIdentity: 'derive-action-1', derivationRevision: '1'
   });
   cases.push('exact-action-owner-scope-and-input-binding');
+
+  assert.equal(accepted.acceptance.effectIdempotencyCapability, 'DECLARED_BY_FUTURE_ADAPTER');
+  assert.equal(accepted.acceptance.resultEvidenceGrammarRef, 'result-grammar-1');
+  const fabricatedMetadata = createHarness().acceptance.accept(acceptanceRequest({
+    actionRequest: {
+      ...acceptanceRequest().actionRequest,
+      effectIdempotencyCapability: 'CALLER-FABRICATED-EFFECT',
+      resultEvidenceGrammarRef: 'caller-fabricated-result'
+    }
+  }));
+  assert.equal(fabricatedMetadata.acceptance.effectIdempotencyCapability,
+    'DECLARED_BY_FUTURE_ADAPTER');
+  assert.equal(fabricatedMetadata.acceptance.resultEvidenceGrammarRef, 'result-grammar-1');
+  cases.push('accepted-effect-and-result-contract-metadata-is-registration-derived');
 
   const duplicate = primary.acceptance.accept(acceptanceRequest());
   assert.equal(duplicate.outcome, 'ALREADY_ACCEPTED');
@@ -279,6 +297,16 @@ function runSuite() {
   assert.equal(concurrentStaleStore.exportState().length, 0);
   cases.push('registration-change-before-atomic-commit-fails-stale');
 
+  const metadataDriftStore = createStore({
+    currentEffectIdempotencyCapability: 'changed-effect-contract',
+    currentResultEvidenceGrammarRef: 'changed-result-grammar'
+  });
+  const metadataDrift = createHarness({ store: metadataDriftStore })
+    .acceptance.accept(acceptanceRequest());
+  assert.equal(metadataDrift.outcome, 'ACCEPTANCE_STALE');
+  assert.equal(metadataDriftStore.exportState().length, 0);
+  cases.push('effect-and-result-contract-drift-before-commit-fails-stale');
+
   const otherRevision = createHarness({
     store: primary.store,
     registrations: [actionRegistration({ actionRevision: '2' })]
@@ -335,11 +363,37 @@ function runSuite() {
   const recoveredStore = createStore({ seed: primary.store.exportState() });
   const recoveredResult = createHarness({
     store: recoveredStore,
-    registrations: [actionRegistration({ registrationRevision: '99' })]
+    registrations: [actionRegistration({
+      registrationRevision: '99',
+      effectIdempotencyCapability: 'later-effect-contract',
+      resultEvidenceGrammarRef: 'later-result-grammar'
+    })]
   }).acceptance.accept(acceptanceRequest());
   assert.equal(recoveredResult.outcome, 'ALREADY_ACCEPTED');
   assert.deepEqual(recoveredResult.acceptance, accepted.acceptance);
+  assert.equal(recoveredResult.acceptance.effectIdempotencyCapability,
+    'DECLARED_BY_FUTURE_ADAPTER');
+  assert.equal(recoveredResult.acceptance.resultEvidenceGrammarRef, 'result-grammar-1');
   cases.push('accepted-record-survives-registration-change');
+
+  const metadataConflictSeed = primary.store.exportState();
+  metadataConflictSeed.push({
+    ...clone(metadataConflictSeed[0]),
+    executionAcceptanceId: 'metadata-conflict',
+    effectIdempotencyCapability: 'substituted-effect-contract',
+    resultEvidenceGrammarRef: 'substituted-result-grammar'
+  });
+  const metadataConflict = createHarness({ store: createStore({ seed: metadataConflictSeed }) })
+    .acceptance.accept(acceptanceRequest());
+  assert.equal(metadataConflict.outcome, 'INVALID_EXECUTION_AUTHORITY');
+  cases.push('conflicting-contract-metadata-cannot-substitute-accepted-evidence');
+
+  const incompleteMetadataSeed = primary.store.exportState();
+  delete incompleteMetadataSeed[0].resultEvidenceGrammarRef;
+  const incompleteMetadata = createHarness({ store: createStore({ seed: incompleteMetadataSeed }) })
+    .acceptance.accept(acceptanceRequest());
+  assert.equal(incompleteMetadata.outcome, 'INVALID_EXECUTION_AUTHORITY');
+  cases.push('incomplete-accepted-contract-metadata-fails-closed');
 
   const corruptSeed = primary.store.exportState();
   corruptSeed.push({ ...clone(corruptSeed[0]), executionAcceptanceId: 'duplicate-corrupt' });
