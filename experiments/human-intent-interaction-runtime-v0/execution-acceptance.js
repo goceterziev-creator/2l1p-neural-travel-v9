@@ -87,7 +87,11 @@ function isCoherentAcceptance(record, tuple) {
     && record.actionRevision === tuple.actionRevision
     && Number.isInteger(record.acceptanceRevision)
     && typeof record.executionAcceptanceId === 'string'
-    && record.executionAcceptanceId.length > 0);
+    && record.executionAcceptanceId.length > 0
+    && typeof record.effectIdempotencyCapability === 'string'
+    && record.effectIdempotencyCapability.length > 0
+    && typeof record.resultEvidenceGrammarRef === 'string'
+    && record.resultEvidenceGrammarRef.length > 0);
 }
 
 function createGovernedExecutionAcceptance({ dispatchSnapshotPort, actionRegistryPort, acceptanceStore }) {
@@ -306,6 +310,8 @@ function createGovernedExecutionAcceptance({ dispatchSnapshotPort, actionRegistr
       actionRegistrationRevision: registration.registrationRevision,
       executionOwnerIdentity: registration.executionOwnerIdentity,
       actionInputBinding: clone(actionInputBinding),
+      effectIdempotencyCapability: registration.effectIdempotencyCapability,
+      resultEvidenceGrammarRef: registration.resultEvidenceGrammarRef,
       singleLogicalAcceptance: true
     });
 
@@ -313,7 +319,9 @@ function createGovernedExecutionAcceptance({ dispatchSnapshotPort, actionRegistr
       const committed = acceptanceStore.commit(clone(record), Object.freeze({
         registrationGuard: Object.freeze({
           registrationIdentity: registration.registrationIdentity,
-          registrationRevision: registration.registrationRevision
+          registrationRevision: registration.registrationRevision,
+          effectIdempotencyCapability: registration.effectIdempotencyCapability,
+          resultEvidenceGrammarRef: registration.resultEvidenceGrammarRef
         })
       }));
       if (!isCoherentAcceptance(committed, tuple)
