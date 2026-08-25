@@ -169,6 +169,22 @@ the exact stable `logicalEffectId`, while non-idempotent effects retain it only
 for correlation; neither class gains generic replay or exactly-once semantics.
 The Start snapshot and atomic intent ledger are injected provider-neutral ports.
 
+Governed Effect Invocation Gateway V0 is the next bounded effect-capable
+boundary. It consumes only authoritative `EFFECT_INVOCATION_INTENT`,
+revalidates the exact current Claim, adapter, trusted owner and frozen
+contracts, derives one canonical immutable invocation envelope, and persists
+`EFFECT_INVOCATION_STARTED` before crossing one injected adapter-port call.
+
+The distinct `effectInvocationId` identifies that physical invocation while
+`logicalEffectId` remains the stable logical-effect identity. The gateway
+performs no hidden retry. A bounded adapter return means only that control
+returned; timeout, disconnect, uncertain persistence or possible effect stays
+`INVOCATION_UNCERTAIN` and blocks automatic replay. Neither state acknowledges
+an effect, accepts a result, completes execution, or claims exactly-once
+behavior. V0 is validated only with a deterministic provider-free fake adapter;
+no concrete provider, executor, route, product action or external effect is
+selected.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -184,6 +200,7 @@ node experiments/human-intent-interaction-runtime-v0/execution-attempt-creation.
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-claim.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-start.test.js
 node experiments/human-intent-interaction-runtime-v0/effect-invocation-intent.test.js
+node experiments/human-intent-interaction-runtime-v0/effect-invocation-gateway.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
