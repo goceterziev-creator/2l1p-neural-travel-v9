@@ -185,6 +185,24 @@ behavior. V0 is validated only with a deterministic provider-free fake adapter;
 no concrete provider, executor, route, product action or external effect is
 selected.
 
+Governed Effect Outcome Evidence / Resolution V0 is the provider-neutral
+post-Gateway evidence boundary. It accepts only authenticated observations
+bound to one authoritative physical invocation through exact injected source,
+grammar, verification and outcome-policy contracts. Every observation is an
+immutable `EFFECT_OUTCOME_EVIDENCE_ACCEPTED` record and remains distinct from
+the append-only `EFFECT_OUTCOME_RESOLVED` conclusion over an exact canonical
+evidence-set revision and digest.
+
+Acknowledgement, transport return and generic provider success are not effect
+truth. Confirmed non-effect and rejection-before-effect require complete causal
+proof that every effect-capable operation was excluded. Possible, unknown or
+conflicting effects create no retry authority. Later evidence creates a new
+evidence-set revision and superseding resolution without rewriting history.
+The component emits only immutable outcome handoff evidence for a separate
+retry evaluator; it performs no provider reconciliation query, product effect,
+result validation or completion. `NO_EXTERNAL_EFFECT` remains on its separate
+effect-free result/evidence branch.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -201,6 +219,7 @@ node experiments/human-intent-interaction-runtime-v0/execution-attempt-claim.tes
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-start.test.js
 node experiments/human-intent-interaction-runtime-v0/effect-invocation-intent.test.js
 node experiments/human-intent-interaction-runtime-v0/effect-invocation-gateway.test.js
+node experiments/human-intent-interaction-runtime-v0/effect-outcome-resolution.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
