@@ -77,6 +77,22 @@ uncertain persistence must recover the same acceptance identity or fail closed.
 Concrete actions, executors, schedulers, databases, queues, result lifecycles,
 and product composition remain outside this experiment.
 
+Governed Execution Preparation V0 is a separate downstream provider-neutral
+boundary. It consumes only authoritative persisted `EXECUTION_ACCEPTED`
+evidence, resolves the frozen `actionInputBinding` through an injected
+read-only canonicalization/digest contract, freezes the exact accepted action,
+effect and result-grammar revisions, and atomically records at most one
+distinct logical `executionId` for an acceptance. `EXECUTION_PREPARED` means
+only that the verified immutable execution is eligible for future governed
+attempt creation.
+
+Preparation creates no schedule, attempt identity, worker claim, executor
+call, product mutation, external effect, or result evidence. Scheduling remains
+optional infrastructure: synchronous and asynchronous adapters must both cross
+a later governed attempt boundary. Input resolution, action/effect/result
+registries and the execution ledger are injected ports; no database, queue,
+executor, product action, or effect mechanism is selected here.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -87,6 +103,7 @@ node experiments/human-intent-interaction-runtime-v0/approval-resolver.test.js
 node experiments/human-intent-interaction-runtime-v0/gate-presenter.test.js
 node experiments/human-intent-interaction-runtime-v0/continuation-dispatcher.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-acceptance.test.js
+node experiments/human-intent-interaction-runtime-v0/execution-preparation.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
