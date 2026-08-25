@@ -93,6 +93,27 @@ a later governed attempt boundary. Input resolution, action/effect/result
 registries and the execution ledger are injected ports; no database, queue,
 executor, product action, or effect mechanism is selected here.
 
+Governed Execution Attempt Creation V0 is the next separate provider-neutral,
+effect-free boundary. It consumes only authoritative persisted
+`EXECUTION_PREPARED` evidence and atomically binds one distinct immutable
+`executionAttemptId` to that logical execution. `ATTEMPT_CREATED` means only
+that an unclaimed physical-attempt identity exists with exact frozen lineage,
+verified input, action, effect, and result contracts.
+
+At most one unresolved attempt may exist for an execution. A later physical
+attempt requires exact authoritative `PROVEN_NO_EFFECT` or
+`IDEMPOTENT_REPLAY_SAFE` evidence for the prior attempt; missing completion,
+claim expiry, worker loss, possible effect, or unknown outcome grants no retry.
+A pure versioned identity port freezes one logical effect identity across safe
+retry attempts, but creates no effect and provides no exactly-once claim.
+
+Attempt creation performs no adapter binding, scheduling, claim, worker
+assignment, execution start, executor call, product mutation, external effect,
+result validation, or completion recording. Claim and pre-effect lifecycle
+evidence remain separate downstream capabilities. Preparation snapshots, retry
+eligibility, effect identity, and the atomic attempt ledger are injected ports;
+no database, queue, scheduler, worker, executor, or product action is selected.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -104,6 +125,7 @@ node experiments/human-intent-interaction-runtime-v0/gate-presenter.test.js
 node experiments/human-intent-interaction-runtime-v0/continuation-dispatcher.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-acceptance.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-preparation.test.js
+node experiments/human-intent-interaction-runtime-v0/execution-attempt-creation.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
