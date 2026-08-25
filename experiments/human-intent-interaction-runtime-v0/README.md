@@ -152,6 +152,23 @@ create another Claim or attempt. Claim snapshots and the atomic Start ledger are
 injected ports; no queue, worker, executor, provider, or product action is
 selected.
 
+Governed Effect Invocation Intent V0 is the effect-capable post-Start branch.
+It consumes only an authoritative current `EXECUTION_ATTEMPT_STARTED` snapshot
+whose frozen effect class is `IDEMPOTENT_WITH_STABLE_KEY` or
+`NON_IDEMPOTENT`. It revalidates the exact Claim, adapter registration, trusted
+owner, immutable input, logical effect and result contracts, then atomically
+binds at most one immutable `effectInvocationIntentId` to the Start.
+
+`EFFECT_INVOCATION_INTENT` means only that the exact governed Start declared
+one persisted intent to approach an effect-capable boundary for the frozen
+logical effect. It does not invoke an adapter, executor, provider, route or
+product action; it does not prove delivery, invocation, effect, result,
+completion or success; and it never permits effect crossing by itself.
+`NO_EXTERNAL_EFFECT` fails closed as a branch mismatch. Idempotent effects keep
+the exact stable `logicalEffectId`, while non-idempotent effects retain it only
+for correlation; neither class gains generic replay or exactly-once semantics.
+The Start snapshot and atomic intent ledger are injected provider-neutral ports.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -166,6 +183,7 @@ node experiments/human-intent-interaction-runtime-v0/execution-preparation.test.
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-creation.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-claim.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-start.test.js
+node experiments/human-intent-interaction-runtime-v0/effect-invocation-intent.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
