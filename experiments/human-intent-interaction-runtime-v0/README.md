@@ -263,6 +263,17 @@ preserves `RESULT_EVIDENCE != RESULT_ACCEPTED != EFFECT_CONFIRMED !=
 EXECUTION_COMPLETED`; it creates no retry, Completion, success or Human
 authority and performs no provider, executor, product or effect operation.
 
+Governed Execution Completion V0 consumes either exact current effect-free or
+effect-capable `RESULT_ACCEPTED` provenance and the authoritative Start, latest
+attempt history and logical-execution terminal state. Its single atomic commit
+persists immutable `EXECUTION_COMPLETION` evidence while transitioning the same
+terminal state from exact `NOT_COMPLETED` revision N to `COMPLETED` revision
+N+1. The guards also require that result acceptance remains current and that no
+later or competing physical attempt exists, closing races with result
+supersession and Attempt Creation. Completion records execution finality only:
+`RESULT_ACCEPTED != EXECUTION_COMPLETED != success`; it creates no Human or
+retry authority and performs no provider, executor, product or effect action.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -283,6 +294,7 @@ node experiments/human-intent-interaction-runtime-v0/effect-outcome-resolution.t
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-retry-eligibility.test.js
 node experiments/human-intent-interaction-runtime-v0/effect-free-result-acceptance.test.js
 node experiments/human-intent-interaction-runtime-v0/effect-capable-result-acceptance.test.js
+node experiments/human-intent-interaction-runtime-v0/execution-completion.test.js
 node experiments/human-intent-layer-v0/intent-layer.test.js
 ```
 
