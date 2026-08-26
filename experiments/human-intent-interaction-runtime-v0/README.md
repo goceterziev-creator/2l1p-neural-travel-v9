@@ -107,6 +107,15 @@ claim expiry, worker loss, possible effect, or unknown outcome grants no retry.
 A pure versioned identity port freezes one logical effect identity across safe
 retry attempts, but creates no effect and provides no exactly-once claim.
 
+Attempt Creation also consumes an injected authoritative logical-execution
+terminal-state snapshot before committing any new physical identity. Only the
+exact `NOT_COMPLETED` state is eligible. Missing, invalid, conflicting or
+unavailable terminal evidence fails closed; `COMPLETED` returns
+`EXECUTION_ALREADY_COMPLETED`. The atomic attempt guard binds the exact terminal
+evidence reference and revision with `executionNotCompleted: true`, so a
+concurrent Completion wins over attempt creation. Exact recovery of an already
+committed attempt remains deterministic and creates no new identity.
+
 Attempt creation performs no adapter binding, scheduling, claim, worker
 assignment, execution start, executor call, product mutation, external effect,
 result validation, or completion recording. Claim and pre-effect lifecycle

@@ -5,6 +5,7 @@ const ATTEMPT_CREATION_OUTCOMES = Object.freeze({
   ALREADY_CREATED: 'ALREADY_CREATED',
   EXECUTION_NOT_PREPARED: 'EXECUTION_NOT_PREPARED',
   EXECUTION_NOT_ELIGIBLE: 'EXECUTION_NOT_ELIGIBLE',
+  EXECUTION_ALREADY_COMPLETED: 'EXECUTION_ALREADY_COMPLETED',
   ACTIVE_ATTEMPT_EXISTS: 'ACTIVE_ATTEMPT_EXISTS',
   RETRY_NOT_AUTHORIZED: 'RETRY_NOT_AUTHORIZED',
   PREPARATION_STALE: 'PREPARATION_STALE',
@@ -176,13 +177,27 @@ function coherentRetryEvidence(snapshot, prepared, previous, expectedRef) {
   return Object.freeze({ evidenceRef: snapshot.evidenceRef, record: clone(record) });
 }
 
+function coherentTerminalStateSnapshot(snapshot, executionId) {
+  if (!snapshot || !nonEmptyString(snapshot.evidenceRef) || !snapshot.record) return null;
+  const record = snapshot.record;
+  if (record.type !== 'EXECUTION_TERMINAL_STATE'
+    || record.executionId !== executionId
+    || !['NOT_COMPLETED', 'COMPLETED'].includes(record.status)
+    || !Number.isInteger(record.terminalStateRevision)
+    || record.terminalStateRevision < 1
+    || record.conflictingEvidence === true) return null;
+  return Object.freeze({ evidenceRef: snapshot.evidenceRef, record: clone(record) });
+}
+
 function createGovernedExecutionAttemptCreation({
   preparationSnapshotPort,
+  executionTerminalStatePort,
   retryEligibilitySnapshotPort,
   logicalEffectIdentityPort,
   attemptLedger
 }) {
   for (const [name, port] of Object.entries({ preparationSnapshotPort,
+    executionTerminalStatePort,
     retryEligibilitySnapshotPort, logicalEffectIdentityPort })) {
     if (typeof port !== 'function') throw new TypeError(`${name} must be a function`);
   }
@@ -245,6 +260,21 @@ function createGovernedExecutionAttemptCreation({
         return rejected('attempt identity is already bound to another or conflicting execution');
       }
       return result(ATTEMPT_CREATION_OUTCOMES.ALREADY_CREATED, null, existing);
+    }
+
+    let rawTerminalState;
+    try { rawTerminalState = executionTerminalStatePort(executionId); } catch (_) {
+      return result(ATTEMPT_CREATION_OUTCOMES.ATTEMPT_CREATION_UNCERTAIN,
+        'authoritative execution terminal state is unavailable');
+    }
+    const terminalSnapshot = coherentTerminalStateSnapshot(rawTerminalState, executionId);
+    if (!terminalSnapshot) {
+      return result(ATTEMPT_CREATION_OUTCOMES.ATTEMPT_CREATION_UNCERTAIN,
+        'authoritative execution terminal state is absent, invalid or conflicting');
+    }
+    if (terminalSnapshot.record.status === 'COMPLETED') {
+      return result(ATTEMPT_CREATION_OUTCOMES.EXECUTION_ALREADY_COMPLETED,
+        'logical execution is already authoritatively completed');
     }
 
     const previous = history[history.length - 1] || null;
@@ -340,6 +370,10 @@ function createGovernedExecutionAttemptCreation({
     });
 
     const guards = Object.freeze({
+      executionTerminalGuard: Object.freeze({ evidenceRef: terminalSnapshot.evidenceRef,
+        terminalStateRevision: terminalSnapshot.record.terminalStateRevision,
+        terminalStatus: terminalSnapshot.record.status,
+        executionNotCompleted: true }),
       preparationGuard: Object.freeze({ evidenceRef: snapshot.evidenceRef,
         preparationRevision: prepared.preparationRevision,
         attemptEligibility: prepared.attemptEligibility }),
@@ -383,6 +417,10 @@ function createGovernedExecutionAttemptCreation({
       if (error && error.code === 'RETRY_NOT_AUTHORIZED') {
         return result(ATTEMPT_CREATION_OUTCOMES.RETRY_NOT_AUTHORIZED,
           'retry eligibility changed before atomic commit');
+      }
+      if (error && error.code === 'EXECUTION_ALREADY_COMPLETED') {
+        return result(ATTEMPT_CREATION_OUTCOMES.EXECUTION_ALREADY_COMPLETED,
+          'logical execution completed before atomic attempt commit');
       }
       return result(ATTEMPT_CREATION_OUTCOMES.ATTEMPT_CREATION_UNCERTAIN,
         'atomic attempt persistence is uncertain');

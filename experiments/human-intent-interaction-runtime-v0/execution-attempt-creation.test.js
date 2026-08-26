@@ -60,6 +60,12 @@ function preparationSnapshot(record = preparation(), evidenceRef = 'preparation-
   return { evidenceRef, record: clone(record) };
 }
 
+function terminalState(overrides = {}) {
+  return { evidenceRef: 'terminal-state-evidence-1', record: {
+    type: 'EXECUTION_TERMINAL_STATE', status: 'NOT_COMPLETED',
+    executionId: 'execution-1', terminalStateRevision: 1, ...clone(overrides) } };
+}
+
 function retryEvidence(previous, overrides = {}) {
   return {
     evidenceRef: `retry-evidence-${previous.attemptOrdinal}`,
@@ -97,6 +103,10 @@ function createLedger({ seed = [], commitMode = 'NORMAL', commitErrorCode = null
     commitAttempt(record, guards) {
       commits += 1;
       if (!guards || guards.preparationGuard.preparationRevision !== 1
+        || guards.executionTerminalGuard.evidenceRef !== 'terminal-state-evidence-1'
+        || guards.executionTerminalGuard.terminalStateRevision !== 1
+        || guards.executionTerminalGuard.terminalStatus !== 'NOT_COMPLETED'
+        || guards.executionTerminalGuard.executionNotCompleted !== true
         || guards.preparationGuard.attemptEligibility !== 'ELIGIBLE_FOR_GOVERNED_ATTEMPT_CREATION'
         || guards.identityGuard.executionId !== record.executionId
         || guards.identityGuard.executionAttemptId !== record.executionAttemptId
@@ -129,8 +139,10 @@ function harness(overrides = {}) {
   const prepared = Object.hasOwn(overrides, 'prepared') ? overrides.prepared : preparation();
   const evidenceRef = overrides.preparationEvidenceRef || 'preparation-evidence-1';
   const retries = overrides.retries || new Map();
+  const terminal = Object.hasOwn(overrides, 'terminalState')
+    ? overrides.terminalState : terminalState();
   const ledger = overrides.ledger || createLedger();
-  const calls = { preparation: 0, retry: 0, identity: 0, scheduler: 0, adapter: 0,
+  const calls = { preparation: 0, terminal: 0, retry: 0, identity: 0, scheduler: 0, adapter: 0,
     claim: 0, start: 0, executor: 0, product: 0, effect: 0 };
   const creator = createGovernedExecutionAttemptCreation({
     preparationSnapshotPort: (executionId) => {
@@ -138,6 +150,12 @@ function harness(overrides = {}) {
       if (overrides.preparationError) throw new Error('preparation unavailable');
       if (!prepared || prepared.executionId !== executionId) return null;
       return preparationSnapshot(prepared, evidenceRef);
+    },
+    executionTerminalStatePort: (executionId) => {
+      calls.terminal += 1;
+      if (overrides.terminalStateError) throw new Error('terminal state unavailable');
+      if (!terminal || !terminal.record || terminal.record.executionId !== executionId) return null;
+      return clone(terminal);
     },
     retryEligibilitySnapshotPort: (ref) => {
       calls.retry += 1;
@@ -201,6 +219,38 @@ function runSuite() {
       .creator.create(firstRequest).outcome, 'EXECUTION_NOT_ELIGIBLE');
   });
 
+  check('completed-logical-execution-blocks-first-attempt', () => {
+    assert.equal(harness({ terminalState: terminalState({ status: 'COMPLETED' }) })
+      .creator.create(firstRequest).outcome, 'EXECUTION_ALREADY_COMPLETED');
+  });
+
+  check('caller-not-completed-assertion-is-not-authority', () => {
+    const response = harness({ terminalState: terminalState({ status: 'COMPLETED' }) })
+      .creator.create({ ...firstRequest, executionNotCompleted: true,
+        terminalStatus: 'NOT_COMPLETED' });
+    assert.equal(response.outcome, 'EXECUTION_ALREADY_COMPLETED');
+  });
+
+  check('missing-terminal-state-fails-closed', () => {
+    assert.equal(harness({ terminalState: null }).creator.create(firstRequest).outcome,
+      'ATTEMPT_CREATION_UNCERTAIN');
+  });
+
+  check('invalid-terminal-state-fails-closed', () => {
+    assert.equal(harness({ terminalState: terminalState({ terminalStateRevision: 0 }) })
+      .creator.create(firstRequest).outcome, 'ATTEMPT_CREATION_UNCERTAIN');
+  });
+
+  check('conflicting-terminal-state-fails-closed', () => {
+    assert.equal(harness({ terminalState: terminalState({ conflictingEvidence: true }) })
+      .creator.create(firstRequest).outcome, 'ATTEMPT_CREATION_UNCERTAIN');
+  });
+
+  check('unavailable-terminal-state-fails-closed', () => {
+    assert.equal(harness({ terminalStateError: true }).creator.create(firstRequest).outcome,
+      'ATTEMPT_CREATION_UNCERTAIN');
+  });
+
   const primary = harness();
   const created = primary.creator.create(firstRequest);
   check('first-attempt-is-created-from-exact-preparation', () => {
@@ -221,6 +271,15 @@ function runSuite() {
     assert.equal(duplicate.outcome, 'ALREADY_CREATED');
     assert.deepEqual(duplicate.attempt, created.attempt);
     assert.equal(primary.ledger.commits, 1);
+  });
+
+  check('same-id-recovery-remains-deterministic-after-completion', () => {
+    const h = harness({ ledger: createLedger({ seed: [created.attempt] }),
+      terminalState: terminalState({ status: 'COMPLETED' }) });
+    const recovered = h.creator.create(firstRequest);
+    assert.equal(recovered.outcome, 'ALREADY_CREATED');
+    assert.deepEqual(recovered.attempt, created.attempt);
+    assert.equal(h.calls.terminal, 0);
   });
 
   check('same-execution-different-id-is-blocked-while-unresolved', () => {
@@ -399,6 +458,35 @@ function runSuite() {
       retryEligibilityEvidenceRef: evidence.evidenceRef }).outcome, 'RETRY_NOT_AUTHORIZED');
   });
 
+  check('completion-race-blocks-first-attempt-commit', () => {
+    const ledger = createLedger({ commitErrorCode: 'EXECUTION_ALREADY_COMPLETED' });
+    assert.equal(harness({ ledger }).creator.create(firstRequest).outcome,
+      'EXECUTION_ALREADY_COMPLETED');
+    assert.equal(ledger.records.length, 0);
+  });
+
+  check('stale-retry-evidence-cannot-cross-completion', () => {
+    const evidence = retryEvidence(created.attempt);
+    const ledger = createLedger({ seed: [created.attempt] });
+    const h = harness({ ledger, retries: new Map([[evidence.evidenceRef, evidence]]),
+      terminalState: terminalState({ status: 'COMPLETED' }) });
+    assert.equal(h.creator.create({ ...firstRequest, executionAttemptId: 'attempt-2',
+      retryEligibilityEvidenceRef: evidence.evidenceRef }).outcome,
+    'EXECUTION_ALREADY_COMPLETED');
+    assert.equal(ledger.records.length, 1);
+  });
+
+  check('completion-race-blocks-retry-attempt-commit', () => {
+    const evidence = retryEvidence(created.attempt);
+    const ledger = createLedger({ seed: [created.attempt],
+      commitErrorCode: 'EXECUTION_ALREADY_COMPLETED' });
+    const h = harness({ ledger, retries: new Map([[evidence.evidenceRef, evidence]]) });
+    assert.equal(h.creator.create({ ...firstRequest, executionAttemptId: 'attempt-2',
+      retryEligibilityEvidenceRef: evidence.evidenceRef }).outcome,
+    'EXECUTION_ALREADY_COMPLETED');
+    assert.equal(ledger.records.length, 1);
+  });
+
   check('inconsistent-commit-result-is-uncertain', () => {
     const ledger = createLedger({ corruptReturn: true });
     assert.equal(harness({ ledger }).creator.create(firstRequest).outcome,
@@ -432,7 +520,7 @@ function runSuite() {
     assert.deepEqual(Object.values(ATTEMPT_CREATION_OUTCOMES).sort(), [
       'ACTIVE_ATTEMPT_EXISTS', 'ALREADY_CREATED', 'ATTEMPT_CREATED',
       'ATTEMPT_CREATION_REJECTED', 'ATTEMPT_CREATION_UNCERTAIN',
-      'EXECUTION_NOT_ELIGIBLE', 'EXECUTION_NOT_PREPARED',
+      'EXECUTION_ALREADY_COMPLETED', 'EXECUTION_NOT_ELIGIBLE', 'EXECUTION_NOT_PREPARED',
       'INVALID_EXECUTION_PREPARATION', 'PREPARATION_STALE', 'RETRY_NOT_AUTHORIZED'
     ]);
   });
