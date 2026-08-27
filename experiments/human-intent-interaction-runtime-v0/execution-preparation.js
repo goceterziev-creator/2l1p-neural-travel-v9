@@ -8,6 +8,8 @@ const PREPARATION_OUTCOMES = Object.freeze({
   INPUT_UNAVAILABLE: 'INPUT_UNAVAILABLE',
   INPUT_DIGEST_MISMATCH: 'INPUT_DIGEST_MISMATCH',
   ACTION_REGISTRATION_STALE: 'ACTION_REGISTRATION_STALE',
+  SUCCESS_CRITERIA_BINDING_NOT_FOUND: 'SUCCESS_CRITERIA_BINDING_NOT_FOUND',
+  SUCCESS_CRITERIA_BINDING_STALE: 'SUCCESS_CRITERIA_BINDING_STALE',
   INVALID_EXECUTION_ACCEPTANCE: 'INVALID_EXECUTION_ACCEPTANCE',
   PREPARATION_UNCERTAIN: 'PREPARATION_UNCERTAIN'
 });
@@ -79,6 +81,8 @@ function coherentPreparation(record, acceptanceId, executionId) {
     'digestAlgorithmIdentity', 'digestAlgorithmRevision', 'verifiedInputEvidenceRef',
     'effectContractRef', 'effectContractRevision', 'effectIdempotencyClass',
     'resultEvidenceGrammarRef', 'resultEvidenceGrammarRevision'
+    , 'successCriteriaBindingId', 'successCriteriaBindingDigest',
+    'successEvaluationContractRef', 'successEvaluationContractRevision'
   ];
   return Boolean(record
     && record.type === 'EXECUTION_PREPARATION'
@@ -89,6 +93,27 @@ function coherentPreparation(record, acceptanceId, executionId) {
     && record.attemptEligibility === 'ELIGIBLE_FOR_GOVERNED_ATTEMPT_CREATION'
     && Number.isInteger(record.preparationRevision)
     && requiredStrings.every((name) => nonEmptyString(record[name])));
+}
+
+function authoritativeSuccessCriteriaBinding(record, acceptance) {
+  return Boolean(record
+    && record.type === 'EXECUTION_SUCCESS_CRITERIA_BINDING'
+    && record.status === 'SUCCESS_CRITERIA_BOUND'
+    && record.executionAcceptanceId === acceptance.executionAcceptanceId
+    && record.acceptanceRevision === acceptance.acceptanceRevision
+    && record.interactionId === acceptance.interactionId
+    && record.governanceEvaluationRef === acceptance.governanceEvaluationRef
+    && record.actionIdentity === acceptance.actionIdentity
+    && record.actionRevision === acceptance.actionRevision
+    && record.resultEvidenceGrammarRef === acceptance.resultEvidenceGrammarRef
+    && Number.isInteger(record.bindingRevision)
+    && nonEmptyString(record.successCriteriaBindingId)
+    && nonEmptyString(record.bindingDigest)
+    && nonEmptyString(record.successEvaluationContractRef)
+    && nonEmptyString(record.successEvaluationContractRevision)
+    && Array.isArray(record.outcomeCriteria) && record.outcomeCriteria.length > 0
+    && Array.isArray(record.acceptanceCriteria) && record.acceptanceCriteria.length > 0
+    && record.successEvaluated === false);
 }
 
 function requireSingle(items, missingReason, ambiguousReason) {
@@ -103,10 +128,12 @@ function createGovernedExecutionPreparation({
   inputResolutionContractPort,
   effectContractRegistryPort,
   resultGrammarRegistryPort,
+  successCriteriaBindingPort,
   executionLedger
 }) {
   for (const [name, port] of Object.entries({ acceptanceSnapshotPort, actionRegistryPort,
-    inputResolutionContractPort, effectContractRegistryPort, resultGrammarRegistryPort })) {
+    inputResolutionContractPort, effectContractRegistryPort, resultGrammarRegistryPort,
+    successCriteriaBindingPort })) {
     if (typeof port !== 'function') throw new TypeError(`${name} must be a function`);
   }
   if (!executionLedger || !['findByAcceptance', 'findByExecutionId', 'commitPreparation']
@@ -164,6 +191,21 @@ function createGovernedExecutionPreparation({
     if (executionId === acceptance.dispatchId) {
       return invalid('execution identity must be distinct from dispatch identity');
     }
+
+    let successBindingRecord;
+    try { successBindingRecord = successCriteriaBindingPort(executionAcceptanceId); } catch (_) {
+      return outcome(PREPARATION_OUTCOMES.PREPARATION_UNCERTAIN,
+        'authoritative success-criteria binding is unavailable');
+    }
+    if (!successBindingRecord) {
+      return outcome(PREPARATION_OUTCOMES.SUCCESS_CRITERIA_BINDING_NOT_FOUND,
+        'success criteria must be bound before preparation');
+    }
+    if (!authoritativeSuccessCriteriaBinding(successBindingRecord, acceptance)) {
+      return outcome(PREPARATION_OUTCOMES.SUCCESS_CRITERIA_BINDING_STALE,
+        'success-criteria binding is stale or inconsistent');
+    }
+    const successBinding = successBindingRecord;
 
     const registrationResult = requireSingle(actionRegistryPort(Object.freeze({
       actionIdentity: acceptance.actionIdentity,
@@ -304,6 +346,13 @@ function createGovernedExecutionPreparation({
       effectIdempotencyClass: effectContract.idempotencyClass,
       resultEvidenceGrammarRef: grammar.ref,
       resultEvidenceGrammarRevision: grammar.revision,
+      successCriteriaBindingId: successBinding.successCriteriaBindingId,
+      successCriteriaBindingRevision: successBinding.bindingRevision,
+      successCriteriaBindingDigest: successBinding.bindingDigest,
+      outcomeCriteria: clone(successBinding.outcomeCriteria),
+      acceptanceCriteria: clone(successBinding.acceptanceCriteria),
+      successEvaluationContractRef: successBinding.successEvaluationContractRef,
+      successEvaluationContractRevision: successBinding.successEvaluationContractRevision,
       singleLogicalExecution: true,
       attemptEligibility: 'ELIGIBLE_FOR_GOVERNED_ATTEMPT_CREATION'
     });
@@ -327,6 +376,12 @@ function createGovernedExecutionPreparation({
         effectContractGuard: Object.freeze({ ref: effectContract.ref,
           revision: effectContract.revision }),
         resultGrammarGuard: Object.freeze({ ref: grammar.ref, revision: grammar.revision })
+        , successCriteriaBindingGuard: Object.freeze({
+          successCriteriaBindingId: successBinding.successCriteriaBindingId,
+          bindingRevision: successBinding.bindingRevision,
+          bindingDigest: successBinding.bindingDigest,
+          successCriteriaBound: true
+        })
       }));
       if (!coherentPreparation(committed, executionAcceptanceId, executionId)
         || !sameValue(committed, record)) {

@@ -274,6 +274,19 @@ supersession and Attempt Creation. Completion records execution finality only:
 `RESULT_ACCEPTED != EXECUTION_COMPLETED != success`; it creates no Human or
 retry authority and performs no provider, executor, product or effect action.
 
+Governed Execution Success Criteria Binding V0 is the immutable companion
+boundary between `EXECUTION_ACCEPTED` and `EXECUTION_PREPARED`. It binds the
+exact non-empty `OUTCOME` and `ACCEPTANCE` clauses from the authoritative
+evaluated intent contract to the accepted action, result-evidence grammar and
+one versioned provider-neutral success-evaluation contract. Caller-supplied
+criteria are never authority, and the binding does not evaluate or declare
+success. Preparation requires the exact current binding and includes its
+identity, revision and digest in the atomic commit guards. A concurrent
+Preparation prevents late binding, while binding drift prevents Preparation.
+The boundary creates no Human, retry, provider, effect, Completion or success
+authority; `RESULT_ACCEPTED != EFFECT_CONFIRMED != EXECUTION_COMPLETED !=
+success` remains unchanged.
+
 ## Validation
 
 No dependencies or provider calls are required:
@@ -284,6 +297,7 @@ node experiments/human-intent-interaction-runtime-v0/approval-resolver.test.js
 node experiments/human-intent-interaction-runtime-v0/gate-presenter.test.js
 node experiments/human-intent-interaction-runtime-v0/continuation-dispatcher.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-acceptance.test.js
+node experiments/human-intent-interaction-runtime-v0/execution-success-criteria-binding.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-preparation.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-creation.test.js
 node experiments/human-intent-interaction-runtime-v0/execution-attempt-claim.test.js

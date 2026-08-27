@@ -98,6 +98,19 @@ function resultGrammar(overrides = {}) {
   return { ref: 'result-grammar-1', revision: '1', ...clone(overrides) };
 }
 
+function successCriteriaBinding(overrides = {}) {
+  return { type: 'EXECUTION_SUCCESS_CRITERIA_BINDING', status: 'SUCCESS_CRITERIA_BOUND',
+    successCriteriaBindingId: 'criteria-binding-1', bindingRevision: 1,
+    bindingDigest: 'sha256:intent-1', executionAcceptanceId: 'acceptance-1',
+    acceptanceRevision: 1, interactionId: 'interaction-1',
+    governanceEvaluationRef: 'evaluation-1', actionIdentity: 'offer.update',
+    actionRevision: '1', resultEvidenceGrammarRef: 'result-grammar-1',
+    outcomeCriteria: [{ id: 'outcome-1' }], acceptanceCriteria: [{ id: 'rule-1' }],
+    successEvaluationContractRef: 'success-contract-1',
+    successEvaluationContractRevision: '1', successEvaluated: false,
+    ...clone(overrides) };
+}
+
 function createLedger({ seed = [], commitMode = 'NORMAL', staleGuard = false } = {}) {
   const records = seed.map(clone);
   let commits = 0;
@@ -125,6 +138,15 @@ function createLedger({ seed = [], commitMode = 'NORMAL', staleGuard = false } =
         error.code = 'ACTION_REGISTRATION_STALE';
         throw error;
       }
+      if (!guards.successCriteriaBindingGuard
+        || guards.successCriteriaBindingGuard.successCriteriaBindingId !== 'criteria-binding-1'
+        || guards.successCriteriaBindingGuard.bindingRevision !== 1
+        || guards.successCriteriaBindingGuard.bindingDigest !== 'sha256:intent-1'
+        || guards.successCriteriaBindingGuard.successCriteriaBound !== true) {
+        const error = new Error('success criteria changed');
+        error.code = 'ACTION_REGISTRATION_STALE';
+        throw error;
+      }
       if (commitMode === 'THROW_BEFORE') throw new Error('persistence unavailable');
       if (records.some((item) => item.executionAcceptanceId === record.executionAcceptanceId
         || item.executionId === record.executionId)) throw new Error('unique conflict');
@@ -145,9 +167,12 @@ function harness(overrides = {}) {
     ? overrides.effectContracts : [effectContract()];
   const grammars = Object.hasOwn(overrides, 'grammars')
     ? overrides.grammars : [resultGrammar()];
+  const successBinding = Object.hasOwn(overrides, 'successBinding')
+    ? overrides.successBinding : successCriteriaBinding();
   const ledger = overrides.ledger || createLedger();
   const calls = { acceptance: 0, action: 0, inputContract: 0, inputResolve: 0,
-    effectContract: 0, grammar: 0, scheduler: 0, attempt: 0, executor: 0, effect: 0 };
+    effectContract: 0, grammar: 0, successBinding: 0, scheduler: 0, attempt: 0,
+    executor: 0, effect: 0 };
   const wrappedInputs = inputContracts.map((contract) => {
     const wrapped = { ...contract };
     if (typeof contract.resolve === 'function') wrapped.resolve = (...args) => {
@@ -179,6 +204,12 @@ function harness(overrides = {}) {
     resultGrammarRegistryPort: (ref) => {
       calls.grammar += 1;
       return grammars.filter((item) => item.ref === ref).map(clone);
+    },
+    successCriteriaBindingPort: (id) => {
+      calls.successBinding += 1;
+      if (overrides.successBindingError) throw new Error('binding unavailable');
+      return successBinding && successBinding.executionAcceptanceId === id
+        ? clone(successBinding) : null;
     },
     executionLedger: ledger
   });
@@ -262,6 +293,25 @@ function runSuite() {
       actionRegistration({ resultEvidenceGrammarRef: 'other-result' })
     ]) assert.equal(harness({ registrations: [registration] }).preparation.prepare(request).outcome,
       'ACTION_REGISTRATION_STALE');
+  });
+
+  check('success-criteria-binding-is-required-before-preparation', () => {
+    assert.equal(harness({ successBinding: null }).preparation.prepare(request).outcome,
+      'SUCCESS_CRITERIA_BINDING_NOT_FOUND');
+  });
+
+  check('success-criteria-binding-must-match-exact-acceptance-lineage', () => {
+    for (const binding of [successCriteriaBinding({ acceptanceRevision: 2 }),
+      successCriteriaBinding({ governanceEvaluationRef: 'other' }),
+      successCriteriaBinding({ resultEvidenceGrammarRef: 'other' })]) {
+      assert.equal(harness({ successBinding: binding }).preparation.prepare(request).outcome,
+        'SUCCESS_CRITERIA_BINDING_STALE');
+    }
+  });
+
+  check('success-criteria-binding-unavailability-is-uncertain', () => {
+    assert.equal(harness({ successBindingError: true }).preparation.prepare(request).outcome,
+      'PREPARATION_UNCERTAIN');
   });
 
   check('input-resolution-is-read-only-and-binding-is-preserved', () => {
@@ -364,6 +414,10 @@ function runSuite() {
     assert.equal(record.digestAlgorithmRevision, '1');
     assert.equal(record.effectContractRevision, '1');
     assert.equal(record.resultEvidenceGrammarRevision, '1');
+    assert.equal(record.successCriteriaBindingId, 'criteria-binding-1');
+    assert.equal(record.successCriteriaBindingDigest, 'sha256:intent-1');
+    assert.equal(record.successEvaluationContractRevision, '1');
+    assert.deepEqual(record.outcomeCriteria, [{ id: 'outcome-1' }]);
     assert.deepEqual(record.authorityScope, authorityScope);
   });
 
