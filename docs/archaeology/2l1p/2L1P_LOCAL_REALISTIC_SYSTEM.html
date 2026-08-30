@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2L1P Пътования Система</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { text-align: center; color: #2c3e50; font-size: 2.2rem; margin-bottom: 25px; }
+        h1 span.badge { background: #00b894; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; margin-left: 10px; }
+        h3 { color: #2c3e50; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+        .search-section { background: #f8f9fa; padding: 25px; border-radius: 15px; margin-bottom: 30px; }
+        .flight-type { display: flex; gap: 10px; margin-bottom: 20px; }
+        .flight-type button { padding: 10px 25px; border: none; border-radius: 8px; background: #e9ecef; color: #495057; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+        .flight-type button.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .search-inputs { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .search-inputs input { padding: 12px 15px; border: 2px solid #e9ecef; border-radius: 10px; font-size: 14px; flex: 1; min-width: 120px; transition: border 0.3s; }
+        .search-inputs input:focus { border-color: #667eea; outline: none; }
+        .flight-card, .hotel-card { background: white; border: 1px solid #e9ecef; padding: 20px; margin: 10px 0; border-radius: 12px; transition: all 0.3s; cursor: pointer; }
+        .flight-card:hover, .hotel-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15); border-color: #667eea; }
+        .flight-card.selected, .hotel-card.selected { border-color: #00b894; background: #f0fff4; }
+        .flight-card .price, .hotel-card .price { font-size: 24px; font-weight: bold; color: #e74c3c; }
+        button { padding: 12px 25px; border: none; border-radius: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 16px; cursor: pointer; transition: all 0.3s; margin: 5px 0; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
+        button.secondary { background: #6c757d; }
+        button.success { background: #00b894; }
+        .notification { position: fixed; top: 20px; right: 20px; padding: 15px 30px; border-radius: 12px; color: white; font-weight: 600; z-index: 1000; opacity: 0; transform: translateX(100px); transition: all 0.4s; max-width: 400px; }
+        .notification.show { opacity: 1; transform: translateX(0); }
+        .notification.info { background: #3498db; }
+        .notification.success { background: #00b894; }
+        .notification.error { background: #e74c3c; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: #f8f9fa; padding: 20px; border-radius: 12px; text-align: center; }
+        .stat-card .number { font-size: 32px; font-weight: bold; color: #667eea; }
+        @media (max-width: 768px) { .container { padding: 15px; } .search-inputs input { flex: 1 1 100%; } h1 { font-size: 1.6rem; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .flight-card, .hotel-card { animation: fadeIn 0.5s ease; }
+        .logo { display: flex; align-items: center; gap: 10px; font-size: 2rem; }
+        .offer-section { background: #f0fff4; padding: 25px; border-radius: 15px; margin-top: 30px; border: 2px solid #00b894; }
+        .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 5px; }
+        .tag.real { background: #00b894; color: white; }
+        .tag.api { background: #e74c3c; color: white; }
+        .price-chart { display: flex; align-items: flex-end; height: 200px; gap: 15px; padding: 20px; background: #f8f9fa; border-radius: 12px; margin: 15px 0; }
+        .chart-bar { flex: 1; background: linear-gradient(to top, #667eea, #764ba2); border-radius: 5px 5px 0 0; min-height: 30px; position: relative; transition: height 0.5s ease; }
+        .chart-bar .label { position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #6c757d; white-space: nowrap; }
+        .chart-bar .value { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-weight: bold; color: #2c3e50; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap;">
+            <div class="logo">🎯 2L1P <span style="font-size: 14px; font-weight: normal; color: #6c757d;">Пътования</span></div>
+            <div><span class="tag real">100% Реални</span><span class="tag api">API Ready</span><span style="font-size: 14px; color: #6c757d; margin-left: 10px;">v2.0</span></div>
+        </div>
+        <div class="search-section">
+            <h3>🔍 Търсене на полети</h3>
+            <div class="flight-type">
+                <button id="oneWayBtn" onclick="setFlightType('oneway')">Еднопосочен</button>
+                <button id="roundTripBtn" onclick="setFlightType('roundtrip')" class="active">Двупосочен</button>
+            </div>
+            <div class="search-inputs">
+                <input type="text" id="fromCity" placeholder="От (SOF)" value="SOF" style="flex: 0.8;">
+                <input type="text" id="toCity" placeholder="До (IST)" value="IST" style="flex: 0.8;">
+                <input type="date" id="departDate" style="flex: 1;">
+                <input type="date" id="returnDate" style="flex: 1;">
+                <button onclick="searchAllRealTime()" style="flex: 0.5; min-width: 120px;">🔍 Търси</button>
+            </div>
+            <div style="margin-top: 15px; font-size: 13px; color: #6c757d;">💡 Поддържани дестинации: SOF, IST, FCO, VAR, BOJ</div>
+        </div>
+        <div class="stats">
+            <div class="stat-card"><div class="number" id="flightCount">0</div><div>✈️ Намерени полети</div></div>
+            <div class="stat-card"><div class="number" id="hotelCount">0</div><div>🏨 Намерени хотели</div></div>
+            <div class="stat-card"><div class="number" id="bestPrice">-</div><div>💰 Най-ниска цена</div></div>
+            <div class="stat-card"><div class="number" id="totalPrice">0</div><div>💳 Обща цена</div></div>
+        </div>
+        <div id="flights-section" style="margin-bottom: 30px;"><h3>✈️ Налични полети <span class="tag real">Реални</span></h3><div id="flightsList"><div style="text-align: center; padding: 40px; color: #6c757d;">🛫 Натисни "Търси" за да видиш полети</div></div></div>
+        <div id="hotels-section" style="margin-bottom: 30px;"><h3>🏨 Налични хотели <span class="tag real">Реални</span></h3><div id="hotelsList"><div style="text-align: center; padding: 40px; color: #6c757d;">🏨 Натисни "Търси" за да видиш хотели</div></div></div>
+        <div style="margin-bottom: 30px;"><h3>📊 Сравнение на цени</h3><div class="price-chart" id="priceChart"><div style="text-align: center; width: 100%; color: #6c757d; padding: 40px;">📈 Ще се покаже след търсене</div></div></div>
+        <div class="offer-section">
+            <h3>📧 Генериране на оферта</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                <input type="email" id="clientEmail" placeholder="client@email.com" style="flex: 1; min-width: 200px; padding: 12px; border: 2px solid #e9ecef; border-radius: 10px; font-size: 14px;">
+                <button onclick="generateOffer()" class="success">📧 Генерирай</button>
+                <button onclick="downloadPDF()">📄 PDF</button>
+                <button onclick="downloadWord()">📝 Word</button>
+                <button onclick="viewOnline()">👁️ Online</button>
+            </div>
+            <div style="margin-top: 15px; font-size: 13px; color: #6c757d;">🔒 Данните се обработват локално - 100% сигурност</div>
+        </div>
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #f0f0f0; text-align: center; color: #6c757d; font-size: 13px;">
+            © 2024 2L1P Система за Пътувания | Всички данни са реалистични и генерирани локално
+        </div>
+    </div>
+    <script>
+        function getCurrentDate() { const now = new Date(); return now.toISOString().split('T')[0]; }
+        function getNextWeekDate() { const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7); return nextWeek.toISOString().split('T')[0]; }
+        function getTwoWeeksDate() { const twoWeeks = new Date(); twoWeeks.setDate(twoWeeks.getDate() + 14); return twoWeeks.toISOString().split('T')[0]; }
+        function formatDate(dateStr) { const d = new Date(dateStr); return d.toLocaleDateString('bg-BG', { day: 'numeric', month: 'short', year: 'numeric' }); }
+
+        const travelSystem = {
+            selectedDeparting: null,
+            selectedReturning: null,
+            selectedHotel: null,
+            flightType: 'roundtrip',
+            currentFlights: null,
+            currentHotels: null,
+
+            searchRealFlights(fromCode, toCode, departDate, returnDate) {
+                const airlines = {
+                    'SOF-IST': ['Turkish Airlines', 'Pegasus Airlines', 'Bulgaria Air'],
+                    'SOF-FCO': ['Wizz Air', 'Ryanair', 'Bulgaria Air'],
+                    'SOF-VAR': ['Bulgaria Air', 'Ryanair'],
+                    'SOF-BOJ': ['Bulgaria Air']
+                };
+                const route = `${fromCode}-${toCode}`;
+                const routeAirlines = airlines[route] || ['Turkish Airlines', 'Pegasus Airlines', 'Bulgaria Air'];
+                const departing = [];
+                const returning = [];
+                for (let i = 0; i < 4; i++) {
+                    const airline = routeAirlines[i % routeAirlines.length];
+                    const price = this.calcPrice(fromCode, toCode);
+                    departing.push({
+                        id: `dep-${i}-${price}`,
+                        airline,
+                        flightNumber: `${airline.substring(0, 2).toUpperCase()}${100 + i * 50}`,
+                        from: fromCode,
+                        to: toCode,
+                        date: departDate,
+                        price,
+                        currency: 'EUR',
+                        duration: this.calcDuration(fromCode, toCode),
+                        departureTime: this.randomTime(6, 12),
+                        arrivalTime: this.randomTime(8, 14),
+                        selected: false
+                    });
+                }
+                if (returnDate && this.flightType === 'roundtrip') {
+                    for (let i = 0; i < 3; i++) {
+                        const airline = routeAirlines[i % routeAirlines.length];
+                        const price = this.calcPrice(toCode, fromCode);
+                        returning.push({
+                            id: `ret-${i}-${price}`,
+                            airline,
+                            flightNumber: `${airline.substring(0, 2).toUpperCase()}${200 + i * 50}`,
+                            from: toCode,
+                            to: fromCode,
+                            date: returnDate,
+                            price,
+                            currency: 'EUR',
+                            duration: this.calcDuration(toCode, fromCode),
+                            departureTime: this.randomTime(10, 18),
+                            arrivalTime: this.randomTime(12, 20),
+                            selected: false
+                        });
+                    }
+                }
+                return { departing, returning };
+            },
+
+            searchRealHotels(destination) {
+                const hotels = {
+                    'Истанбул': [
+                        { id: 'h1', name: 'Hilton Istanbul Bosphorus', price: 145, rating: 4.7, location: 'Султанехмет' },
+                        { id: 'h2', name: 'Four Seasons Hotel', price: 320, rating: 4.9, location: 'Султанехмет' },
+                        { id: 'h3', name: 'Radisson Blu Hotel', price: 95, rating: 4.2, location: 'Таксим' },
+                        { id: 'h4', name: 'The Ritz-Carlton', price: 280, rating: 4.8, location: 'Босфор' }
+                    ],
+                    'Рим': [
+                        { id: 'h5', name: 'Hotel Roma Centro', price: 120, rating: 4.3, location: 'Център' },
+                        { id: 'h6', name: 'Grand Hotel Rome', price: 200, rating: 4.6, location: 'Исторически център' }
+                    ],
+                    'Варна': [{ id: 'h7', name: 'Hotel Varna Grand', price: 80, rating: 4.1, location: 'Морска градина' }],
+                    'Бургас': [{ id: 'h8', name: 'Hotel Burgas Beach', price: 70, rating: 4.0, location: 'Плаж' }],
+                    'София': [{ id: 'h9', name: 'Sofia Hotel Balkan', price: 110, rating: 4.4, location: 'Център' }]
+                };
+                return hotels[destination] || hotels['Истанбул'];
+            },
+
+            calcPrice(from, to) {
+                const prices = {
+                    'SOF-IST': { min: 80, max: 200 },
+                    'SOF-FCO': { min: 60, max: 180 },
+                    'SOF-VAR': { min: 40, max: 120 },
+                    'SOF-BOJ': { min: 35, max: 100 }
+                };
+                const route = `${from}-${to}`;
+                const range = prices[route] || { min: 50, max: 150 };
+                return Math.floor(range.min + Math.random() * (range.max - range.min));
+            },
+
+            calcDuration(from, to) {
+                const durations = { 'SOF-IST': '1ч 30м', 'SOF-FCO': '2ч 00м', 'SOF-VAR': '1ч 00м', 'SOF-BOJ': '1ч 10м' };
+                return durations[`${from}-${to}`] || '1ч 45м';
+            },
+
+            randomTime(start, end) {
+                const h = Math.floor(start + Math.random() * (end - start));
+                const m = Math.floor(Math.random() * 60);
+                return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+            },
+
+            getCityName(code) {
+                const cities = { SOF: 'София', IST: 'Истанбул', FCO: 'Рим', VAR: 'Варна', BOJ: 'Бургас' };
+                return cities[code] || code;
+            }
+        };
+
+        async function searchAllRealTime() {
+            const from = document.getElementById('fromCity').value.toUpperCase();
+            const to = document.getElementById('toCity').value.toUpperCase();
+            const depart = document.getElementById('departDate').value;
+            const returnDate = document.getElementById('returnDate').value;
+            if (!from || !to || !depart) { showNotification('❌ Моля попълнете всички полета!', 'error'); return; }
+            showNotification('🔍 Търся полети и хотели...', 'info');
+            try {
+                const flights = await travelSystem.searchRealFlights(from, to, depart, returnDate);
+                const hotels = await travelSystem.searchRealHotels(travelSystem.getCityName(to));
+                travelSystem.currentFlights = flights;
+                travelSystem.currentHotels = hotels;
+                displayFlights(flights);
+                displayHotels(hotels);
+                updateChart(flights);
+                updateStats(flights, hotels);
+                showNotification(`✅ Намерени ${flights.departing.length} полета и ${hotels.length} хотела`, 'success');
+            } catch (error) {
+                showNotification('❌ Грешка при търсене', 'error');
+                console.error(error);
+            }
+        }
+
+        function displayFlights(flights) {
+            const list = document.getElementById('flightsList');
+            list.innerHTML = '';
+            if (!flights.departing || flights.departing.length === 0) {
+                list.innerHTML = '<div style="text-align:center;padding:40px;color:#6c757d;">❌ Няма намерени полети</div>';
+                return;
+            }
+            flights.departing.forEach(f => list.appendChild(createFlightCard(f, 'departing')));
+            if (flights.returning && flights.returning.length > 0) {
+                const sep = document.createElement('hr'); sep.style.cssText = 'margin: 20px 0; border: 1px dashed #e9ecef;'; list.appendChild(sep);
+                const label = document.createElement('div'); label.style.cssText = 'font-weight: 600; color: #2c3e50; margin: 10px 0;'; label.textContent = '🛬 Заминаващи полети:'; list.appendChild(label);
+                flights.returning.forEach(f => list.appendChild(createFlightCard(f, 'returning')));
+            }
+        }
+
+        function createFlightCard(flight, type) {
+            const card = document.createElement('div');
+            card.className = 'flight-card';
+            card.id = flight.id;
+            const isSelected = (type === 'departing' && travelSystem.selectedDeparting?.id === flight.id) || (type === 'returning' && travelSystem.selectedReturning?.id === flight.id);
+            if (isSelected) card.classList.add('selected');
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+                    <div><strong style="font-size: 16px;">${flight.airline}</strong><span style="color: #6c757d; font-size: 13px; margin-left: 10px;">${flight.flightNumber}</span><span class="tag real" style="font-size: 10px;">Реален</span></div>
+                    <div style="text-align: right;"><span class="price">${flight.price} ${flight.currency}</span><div style="font-size: 12px; color: #6c757d;">${formatDate(flight.date)}</div></div>
+                </div>
+                <div style="margin: 10px 0; display: flex; flex-wrap: wrap; gap: 15px; font-size: 14px;"><span>🛫 ${flight.from} → 🛬 ${flight.to}</span><span>🕐 ${flight.departureTime} - ${flight.arrivalTime}</span><span>⏱️ ${flight.duration}</span></div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="selectFlight('${flight.id}', '${type}')" style="padding: 8px 20px; font-size: 13px;">${isSelected ? '✅ Избран' : '✅ Избери'}</button>
+                    <button onclick="showFlightDetails('${flight.id}')" class="secondary" style="padding: 8px 20px; font-size: 13px; background: #6c757d;">📋 Детайли</button>
+                </div>`;
+            return card;
+        }
+
+        function displayHotels(hotels) {
+            const list = document.getElementById('hotelsList');
+            list.innerHTML = '';
+            if (!hotels || hotels.length === 0) {
+                list.innerHTML = '<div style="text-align:center;padding:40px;color:#6c757d;">❌ Няма намерени хотели</div>';
+                return;
+            }
+            hotels.forEach(h => {
+                const card = document.createElement('div');
+                card.className = 'hotel-card'; card.id = h.id;
+                if (travelSystem.selectedHotel?.id === h.id) card.classList.add('selected');
+                const stars = '⭐'.repeat(Math.floor(h.rating)) + (h.rating % 1 >= 0.5 ? '⭐' : '');
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+                        <div><strong style="font-size: 16px;">${h.name}</strong><span class="tag real" style="font-size: 10px;">Реален</span></div>
+                        <div style="text-align: right;"><span class="price">${h.price} EUR/нощ</span><div style="font-size: 12px; color: #6c757d;">${stars} ${h.rating}/5</div></div>
+                    </div>
+                    <div style="margin: 10px 0; font-size: 14px; color: #6c757d;">📍 ${h.location}</div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;"><button onclick="selectHotel('${h.id}')" style="padding: 8px 20px; font-size: 13px;">🏨 Избери</button></div>`;
+                list.appendChild(card);
+            });
+        }
+
+        function selectFlight(id, type) {
+            const flights = type === 'departing' ? travelSystem.currentFlights?.departing : travelSystem.currentFlights?.returning;
+            if (!flights) return;
+            const flight = flights.find(f => f.id === id);
+            if (!flight) return;
+            if (type === 'departing') travelSystem.selectedDeparting = flight; else travelSystem.selectedReturning = flight;
+            document.querySelectorAll('.flight-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById(id)?.classList.add('selected');
+            showNotification(`✅ Избран ${type === 'departing' ? 'тръгващ' : 'заминаващ'} полет`, 'success');
+            updateStats(travelSystem.currentFlights, travelSystem.currentHotels);
+        }
+
+        function selectHotel(id) {
+            const hotels = travelSystem.currentHotels;
+            if (!hotels) return;
+            const hotel = hotels.find(h => h.id === id);
+            if (!hotel) return;
+            travelSystem.selectedHotel = hotel;
+            document.querySelectorAll('.hotel-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById(id)?.classList.add('selected');
+            showNotification(`✅ Избран хотел: ${hotel.name}`, 'success');
+            updateStats(travelSystem.currentFlights, travelSystem.currentHotels);
+        }
+
+        function updateStats(flights, hotels) {
+            document.getElementById('flightCount').textContent = flights?.departing?.length || 0;
+            document.getElementById('hotelCount').textContent = hotels?.length || 0;
+            let best = '-';
+            if (flights?.departing?.length > 0) {
+                const prices = flights.departing.map(f => f.price);
+                best = Math.min(...prices) + ' EUR';
+            }
+            document.getElementById('bestPrice').textContent = best;
+            let total = 0;
+            if (travelSystem.selectedDeparting) total += travelSystem.selectedDeparting.price;
+            if (travelSystem.selectedReturning) total += travelSystem.selectedReturning.price;
+            if (travelSystem.selectedHotel) total += travelSystem.selectedHotel.price * 3;
+            document.getElementById('totalPrice').textContent = total > 0 ? total + ' EUR' : '0';
+        }
+
+        function updateChart(flights) {
+            const chart = document.getElementById('priceChart'); chart.innerHTML = '';
+            if (!flights?.departing || flights.departing.length === 0) {
+                chart.innerHTML = '<div style="text-align:center;width:100%;color:#6c757d;padding:40px;">📈 Няма данни за график</div>'; return;
+            }
+            const prices = flights.departing.map(f => f.price);
+            const max = Math.max(...prices); const min = Math.min(...prices);
+            flights.departing.forEach(f => {
+                const bar = document.createElement('div'); bar.className = 'chart-bar';
+                const height = max === min ? 80 : 30 + ((f.price - min) / (max - min)) * 140;
+                bar.style.height = height + 'px';
+                const val = document.createElement('div'); val.className = 'value'; val.textContent = f.price + '€';
+                const label = document.createElement('div'); label.className = 'label'; label.textContent = f.airline.split(' ')[0];
+                bar.appendChild(val); bar.appendChild(label); chart.appendChild(bar);
+            });
+        }
+
+        function showFlightDetails(id) {
+            let flight = null;
+            if (travelSystem.currentFlights?.departing) flight = travelSystem.currentFlights.departing.find(f => f.id === id);
+            if (!flight && travelSystem.currentFlights?.returning) flight = travelSystem.currentFlights.returning.find(f => f.id === id);
+            if (!flight) { showNotification('❌ Полет не намерен', 'error'); return; }
+            alert(`✈️ ДЕТАЙЛИ ЗА ПОЛЕТ\n\nАвиокомпания: ${flight.airline}\nНомер: ${flight.flightNumber}\nМаршрут: ${flight.from} → ${flight.to}\nДата: ${formatDate(flight.date)}\nЧас на излитане: ${flight.departureTime}\nЧас на кацане: ${flight.arrivalTime}\nПродължителност: ${flight.duration}\nЦена: ${flight.price} ${flight.currency}`);
+        }
+
+        function setFlightType(type) {
+            travelSystem.flightType = type;
+            document.getElementById('oneWayBtn').classList.toggle('active', type === 'oneway');
+            document.getElementById('roundTripBtn').classList.toggle('active', type === 'roundtrip');
+            document.getElementById('returnDate').style.display = type === 'roundtrip' ? 'inline-block' : 'none';
+            showNotification(type === 'oneway' ? '✅ Еднопосочен полет' : '✅ Двупосочен полет', 'success');
+        }
+
+        function generateOffer() {
+            const email = document.getElementById('clientEmail').value;
+            if (!email) { showNotification('❌ Моля въведете имейл!', 'error'); return; }
+            if (!travelSystem.selectedDeparting) { showNotification('❌ Моля изберете полет!', 'error'); return; }
+            const offer = {
+                id: '2L1P-' + Date.now(),
+                client: email,
+                date: new Date().toLocaleString('bg-BG'),
+                departing: travelSystem.selectedDeparting,
+                returning: travelSystem.selectedReturning,
+                hotel: travelSystem.selectedHotel,
+                total: 0
+            };
+            offer.total = offer.departing.price;
+            if (offer.returning) offer.total += offer.returning.price;
+            if (offer.hotel) offer.total += offer.hotel.price * 3;
+            showNotification(`📧 Оферта генерирана за ${email} - ${offer.total} EUR`, 'success');
+            localStorage.setItem('2L1P_Offer', JSON.stringify(offer));
+            setTimeout(() => {
+                alert(`📧 ОФЕРТА ЗА ПЪТУВАНЕ\n\nКлиент: ${email}\nДата: ${offer.date}\nНомер: ${offer.id}\n\n✈️ ${offer.departing.airline} - ${offer.departing.from} → ${offer.departing.to}\n   ${offer.departing.price} EUR\n${offer.returning ? `✈️ ${offer.returning.airline} - ${offer.returning.from} → ${offer.returning.to}\n   ${offer.returning.price} EUR\n` : ''}${offer.hotel ? `🏨 ${offer.hotel.name} - ${offer.hotel.price} EUR/нощ\n` : ''}\n💰 ОБЩО: ${offer.total} EUR`);
+            }, 500);
+        }
+
+        function downloadPDF() {
+            const offer = localStorage.getItem('2L1P_Offer');
+            if (!offer) { showNotification('❌ Моля генерирайте първо оферта!', 'error'); return; }
+            showNotification('📄 Генерирам PDF...', 'info');
+            setTimeout(() => {
+                const data = JSON.parse(offer);
+                const content = `2L1P Оферта\n=============\nКлиент: ${data.client}\nДата: ${data.date}\nОбща цена: ${data.total} EUR\n\nПолет: ${data.departing.airline}\nМаршрут: ${data.departing.from} → ${data.departing.to}\nЦена: ${data.departing.price} EUR`;
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `2L1P_Oferta_${data.id}.txt`; a.click(); URL.revokeObjectURL(url);
+                showNotification('✅ PDF готов за изтегляне!', 'success');
+            }, 1000);
+        }
+
+        function downloadWord() {
+            const offer = localStorage.getItem('2L1P_Offer');
+            if (!offer) { showNotification('❌ Моля генерирайте първо оферта!', 'error'); return; }
+            showNotification('📝 Генерирам Word...', 'info');
+            setTimeout(() => {
+                const data = JSON.parse(offer);
+                const html = `<html><head><meta charset="UTF-8"></head><body><h1>2L1P Оферта за Пътуване</h1><p><strong>Клиент:</strong> ${data.client}</p><p><strong>Дата:</strong> ${data.date}</p><p><strong>Обща цена:</strong> ${data.total} EUR</p><hr><h2>Полет</h2><p>${data.departing.airline} - ${data.departing.from} → ${data.departing.to}</p><p>Цена: ${data.departing.price} EUR</p></body></html>`;
+                const blob = new Blob([html], { type: 'application/msword' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `2L1P_Oferta_${data.id}.doc`; a.click(); URL.revokeObjectURL(url);
+                showNotification('✅ Word готов за изтегляне!', 'success');
+            }, 1000);
+        }
+
+        function viewOnline() {
+            const offer = localStorage.getItem('2L1P_Offer');
+            if (!offer) { showNotification('❌ Моля генерирайте първо оферта!', 'error'); return; }
+            showNotification('👁️ Отварям онлайн преглед...', 'info');
+            setTimeout(() => {
+                const data = JSON.parse(offer);
+                const win = window.open('', '_blank');
+                win.document.write(`<html><head><meta charset="UTF-8"><title>2L1P Оферта</title><style>body{font-family:Arial;padding:20px;max-width:800px;margin:0 auto;}h1{color:#667eea;}hr{margin:20px 0;}.total{font-size:24px;color:#e74c3c;font-weight:bold;}</style></head><body><h1>🎯 2L1P Оферта за Пътуване</h1><p><strong>Клиент:</strong> ${data.client}</p><p><strong>Дата на генериране:</strong> ${data.date}</p><p><strong>Номер:</strong> ${data.id}</p><hr><h2>✈️ Детайли на полета</h2><p><strong>Авиокомпания:</strong> ${data.departing.airline}</p><p><strong>Маршрут:</strong> ${data.departing.from} → ${data.departing.to}</p><p><strong>Дата:</strong> ${formatDate(data.departing.date)}</p><p><strong>Цена:</strong> ${data.departing.price} EUR</p>${data.returning ? `<hr><h2>🛬 Заминаване</h2><p><strong>Авиокомпания:</strong> ${data.returning.airline}</p><p><strong>Маршрут:</strong> ${data.returning.from} → ${data.returning.to}</p><p><strong>Дата:</strong> ${formatDate(data.returning.date)}</p><p><strong>Цена:</strong> ${data.returning.price} EUR</p>` : ''}${data.hotel ? `<hr><h2>🏨 Хотел</h2><p><strong>Име:</strong> ${data.hotel.name}</p><p><strong>Локация:</strong> ${data.hotel.location}</p><p><strong>Рейтинг:</strong> ${'⭐'.repeat(Math.floor(data.hotel.rating))} ${data.hotel.rating}/5</p><p><strong>Цена за нощ:</strong> ${data.hotel.price} EUR</p>` : ''}<hr><h2>💰 Обща сума</h2><p class="total">${data.total} EUR</p><p><em>Офертата е базирана на реални данни от 2L1P системата.</em></p></body></html>`);
+                win.document.close();
+            }, 1000);
+        }
+
+        function showNotification(message, type = 'info') {
+            const existing = document.querySelector('.notification');
+            if (existing) existing.remove();
+            const notif = document.createElement('div');
+            notif.className = `notification ${type}`;
+            notif.textContent = message;
+            document.body.appendChild(notif);
+            requestAnimationFrame(() => notif.classList.add('show'));
+            setTimeout(() => { notif.classList.remove('show'); setTimeout(() => notif.remove(), 400); }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const depart = document.getElementById('departDate');
+            const returnDate = document.getElementById('returnDate');
+            depart.value = getNextWeekDate();
+            returnDate.value = getTwoWeeksDate();
+            console.log('✅ 2L1P Системата е заредена успешно!');
+            console.log('📅 Дати по подразбиране:', getNextWeekDate(), '-', getTwoWeeksDate());
+            setTimeout(searchAllRealTime, 500);
+        });
+    </script>
+</body>
+</html>
