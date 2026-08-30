@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📜 2L1P TIMELINE – ПЪЛНАТА ИСТОРИЯ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0c0b0a;
+            background-image: radial-gradient(circle at 20% 30%, #1e1b18 0%, #0c0b0a 90%);
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .timeline-card {
+            max-width: 1300px;
+            width: 100%;
+            background: rgba(22, 20, 18, 0.92);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-radius: 48px;
+            padding: 40px 45px 55px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(212, 175, 55, 0.25);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        .timeline-header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid rgba(212,175,55,.35); padding-bottom:20px; margin-bottom:40px; flex-wrap:wrap; gap:15px; }
+        .timeline-header h1 { font-size:2.8rem; font-weight:300; letter-spacing:2px; color:#f2e8d5; text-shadow:0 0 12px rgba(212,175,55,.2); }
+        .timeline-header h1 span { color:#d4af37; font-weight:400; }
+        .badge-2l1p { background:rgba(212,175,55,.12); border:1px solid rgba(212,175,55,.30); border-radius:100px; padding:8px 28px; font-size:1rem; color:#d4af37; letter-spacing:1.5px; text-transform:uppercase; font-weight:400; }
+        .timeline-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:30px; }
+        .milestone { background:rgba(30,27,24,.7); border-radius:28px; padding:28px 28px 32px; border:1px solid rgba(212,175,55,.12); transition:all .25s ease; box-shadow:0 8px 0 rgba(0,0,0,.3); }
+        .milestone-icon { font-size:2.4rem; margin-bottom:12px; display:block; }
+        .milestone h3 { color:#f2e8d5; font-size:1.6rem; font-weight:400; margin-bottom:8px; }
+        .milestone h3 small { font-size:1rem; color:#d4af37; font-weight:300; margin-left:10px; opacity:.8; }
+        .milestone p { color:#b5aa9a; line-height:1.6; font-size:.98rem; margin-bottom:16px; }
+        .milestone ul { list-style:none; padding:0; margin:0 0 8px 0; }
+        .milestone ul li { color:#cfc3b2; font-size:.92rem; padding:6px 0 6px 26px; }
+        .tag-group { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+        .tag { background:rgba(212,175,55,.08); border:1px solid rgba(212,175,55,.20); border-radius:40px; padding:4px 18px; font-size:.8rem; color:#d4af37; letter-spacing:.4px; text-transform:uppercase; }
+        .tag.gold { background:rgba(212,175,55,.18); border-color:#d4af37; color:#f5e6c4; }
+        .timeline-footer { margin-top:50px; padding-top:25px; border-top:1px solid rgba(212,175,55,.15); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; }
+        .signature { color:#b5aa9a; }
+        .button-download { background:transparent; border:1px solid rgba(212,175,55,.4); border-radius:60px; padding:12px 34px; color:#d4af37; cursor:pointer; }
+        @media(max-width:700px){.timeline-card{padding:28px 20px 32px}.timeline-header h1{font-size:2.1rem}.timeline-grid{grid-template-columns:1fr}.milestone{padding:22px}}
+    </style>
+</head>
+<body>
+<div class="timeline-card" id="timelineRoot">
+<div class="timeline-header">
+<h1>⏳ 2L1P · <span>ТАЙМЛАЙН</span></h1>
+<div class="badge-2l1p">📁 архив · версия 1.0</div>
+</div>
+<div class="timeline-grid">
+
+<div class="milestone">
+<span class="milestone-icon">🚀</span>
+<h3>СТАРТ <small>2025</small></h3>
+<p>Основаване на 2L1P — AI пътешественическа платформа. Визията — да създадем <strong>интелигентен консиерж</strong> за всеки пътешественик.</p>
+<ul>
+<li>Идея за <strong>„Петя“</strong> – AI консиерж</li>
+<li>Графит + златен стил (премиум идентичност)</li>
+<li>Фокус: <strong>Източна Европа</strong></li>
+</ul>
+<div class="tag-group"><span class="tag">#vision</span><span class="tag gold">#2L1P</span></div>
+</div>
+
+<div class="milestone">
+<span class="milestone-icon">🇷🇴</span>
+<h3>РУМЪНИЯ <small>етап 1</small></h3>
+<p>Първа държава с пълно покритие — <strong>Букурещ, Брашов, Клуж-Напока, Сибиу, Констанца</strong>.</p>
+<ul>
+<li><strong>8 хотели</strong> – Букурещ (лукс, бизнес, бюджет)</li>
+<li><strong>6 хотели</strong> – Брашов + Трансилвания</li>
+<li>4 хотели – Клуж-Напока</li>
+<li>3 хотели – Сибиу</li>
+<li>2 хотела – Констанца</li>
+</ul>
+<div class="tag-group"><span class="tag">#hotels</span><span class="tag">#romania</span><span class="tag gold">✅ завършен</span></div>
+</div>
+
+<div class="milestone">
+<span class="milestone-icon">🇹🇷</span>
+<h3>ТУРЦИЯ <small>етап 2</small></h3>
+<p>Втора държава — <strong>Истанбул, Анталия, Кападокия, Анкара</strong>.</p>
+<ul>
+<li>Истанбул – 4 хотели</li>
+<li>Анталия – 3 хотела</li>
+<li>Кападокия – 2 уникални пещерни хотела</li>
+<li>Анкара – 2 бизнес хотела</li>
+</ul>
+<div class="tag-group"><span class="tag">#hotels</span><span class="tag">#turkey</span><span class="tag gold">⏳ в процес</span></div>
+</div>
+
+<div class="milestone">
+<span class="milestone-icon">🤖</span>
+<h3>ПЕТЯ · AI <small>консиерж</small></h3>
+<p>Персонален асистент, който <strong>не просто търси</strong>, а <strong>разбира</strong> и <strong>създава спомени</strong>.</p>
+<ul>
+<li><strong>3D аватар</strong> – топъл, елегантен, холографски</li>
+<li>Разговорен AI – разбира емоции и контекст</li>
+<li>Интеграция с хотели, полети и партньори</li>
+<li>Фразата: <em>„Вашият следващ спомен започва с едно Здравей“</em></li>
+</ul>
+<div class="tag-group"><span class="tag">#ai</span><span class="tag gold">#petya</span><span class="tag">#concierge</span></div>
+</div>
+
+<div class="milestone">
+<span class="milestone-icon">🌆</span>
+<h3>D2LIP CITY <small>метавселена</small></h3>
+<p>Виртуален град, където аватарите <strong>изживяват преди да пътуват</strong>. Квартали, фонтан, тайни локации.</p>
+<ul>
+<li><strong>Фонтан D2LIP</strong> – символ на двете струи</li>
+<li><strong>Тайна карта</strong> – само за регистрирани потребители</li>
+<li><strong>D2LIP Quest</strong> – игра с точки, награди и квестове</li>
+<li>Партньорства с ресторанти, магазини и атракции</li>
+</ul>
+<div class="tag-group"><span class="tag">#metaverse</span><span class="tag gold">#gamification</span><span class="tag">#community</span></div>
+</div>
+
+<div class="milestone">
+<span class="milestone-icon">🎯</span>
+<h3>МАРКЕТИНГ & LOYALTY</h3>
+<p><strong>Лоялност на стероиди</strong>. Всяко действие носи точки, всяка точка носи награда.</p>
+<ul>
+<li>Точки за посещения, споделяния, резервации</li>
+<li>Нива: бронз, сребро, злато</li>
+<li>Отстъпки + ексклузивни преживявания</li>
+<li>Партньорска мрежа в реалния свят</li>
+</ul>
+<div class="tag-group"><span class="tag">#marketing</span><span class="tag gold">#loyalty</span><span class="tag">#partnership</span></div>
+</div>
+
+<div class="milestone">
+<span class="milestone-icon">🔌</span>
+<h3>API · ИНТЕГРАЦИЯ</h3>
+<p>Свързваме се със света чрез мощни API инструменти за реални данни.</p>
+<ul>
+<li><strong>Firecrawl</strong> – мониторинг на цени и наличности</li>
+<li><strong>Tavily</strong> – AI-оптимизирано търсене</li>
+<li><strong>Serper.dev</strong> – бърз Google Search</li>
+<li><strong>Exa</strong> – семантично разбиране</li>
+</ul>
+<div class="tag-group"><span class="tag">#api</span><span class="tag gold">#data</span><span class="tag">#automation</span></div>
+</div>
+
+<div class="milestone">
+<span class="milestone-icon">🌟</span>
+<h3>БЪДЕЩЕ <small>следващи стъпки</small></h3>
+<p>Разширяваме портфолиото, изграждаме общност и превръщаме пътуването в приключение.</p>
+<ul>
+<li>Разширяване в цяла Източна Европа</li>
+<li>Пълна интеграция на Петя</li>
+<li>Старт на D2LIP метавселената</li>
+<li>Мултиезичност</li>
+</ul>
+<div class="tag-group"><span class="tag gold">#nextLevel</span><span class="tag">#scaling</span></div>
+</div>
+
+</div>
+<div class="timeline-footer">
+<div class="signature"><strong>2L1P</strong> · Двойна сила, една душа · <span id="currentDate"></span></div>
+<button class="button-download" onclick="downloadTimeline()">⬇ Изтегли таймлайн</button>
+</div>
+</div>
+<script>
+(function(){
+ const dateEl=document.getElementById('currentDate');
+ if(dateEl){dateEl.textContent=new Date().toLocaleDateString('bg-BG');}
+ window.downloadTimeline=function(){
+  const root=document.getElementById('timelineRoot'); if(!root)return;
+  const clone=root.cloneNode(true); const btn=clone.querySelector('.button-download'); if(btn)btn.remove();
+  const full='<!DOCTYPE html><html lang="bg"><head><meta charset="UTF-8"><title>2L1P Таймлайн – архив</title></head><body>'+clone.outerHTML+'</body></html>';
+  const blob=new Blob([full],{type:'text/html'}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='2L1P_TIMELINE.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+ };
+})();
+</script>
+</body>
+</html>
