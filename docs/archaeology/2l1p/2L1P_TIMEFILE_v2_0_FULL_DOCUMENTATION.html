@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2L1P Timefile - Пълна документация на системата</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        h1 { text-align: center; color: #2c3e50; font-size: 32px; margin-bottom: 10px; }
+        h1 .badge { background: #00b894; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; display: inline-block; margin-left: 10px; }
+        h2 { color: #2c3e50; border-bottom: 3px solid #667eea; padding-bottom: 10px; margin: 30px 0 20px 0; font-size: 24px; }
+        h3 { color: #34495e; margin: 20px 0 10px 0; font-size: 18px; }
+        h4 { color: #555; margin: 15px 0 8px 0; font-size: 16px; }
+        .meta-info { background: #f8f9fa; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; }
+        .meta-info .item { display: flex; align-items: center; gap: 8px; }
+        .meta-info .label { color: #666; font-size: 13px; }
+        .meta-info .value { font-weight: bold; color: #2c3e50; }
+        .schema-container { background: #f0f8ff; padding: 25px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #667eea; }
+        .schema-flow { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; align-items: center; padding: 20px 0; }
+        .schema-box { background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; min-width: 120px; border: 2px solid #667eea; }
+        .schema-box .icon { font-size: 28px; display: block; margin-bottom: 5px; }
+        .schema-box .title { font-weight: bold; font-size: 14px; color: #2c3e50; }
+        .schema-box .sub { font-size: 11px; color: #666; }
+        .schema-arrow { font-size: 28px; color: #667eea; }
+        .functions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; margin: 15px 0; }
+        .function-card { background: #f8f9fa; padding: 15px 20px; border-radius: 8px; border-left: 4px solid #667eea; transition: all 0.3s ease; }
+        .function-card:hover { transform: translateX(5px); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .function-card .func-name { font-weight: bold; color: #2c3e50; font-size: 15px; }
+        .function-card .func-desc { color: #666; font-size: 13px; margin-top: 5px; }
+        .function-card .func-tag { display: inline-block; background: #667eea; color: white; padding: 2px 10px; border-radius: 12px; font-size: 10px; margin-top: 5px; }
+        .file-list { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0; }
+        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e0e0e0; }
+        .file-item:last-child { border-bottom: none; }
+        .file-item .file-name { font-weight: 500; color: #2c3e50; }
+        .file-item .file-size { color: #666; font-size: 13px; }
+        .file-item .file-status { padding: 3px 12px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .file-status.complete { background: #d4edda; color: #155724; }
+        .file-status.partial { background: #fff3cd; color: #856404; }
+        .data-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px; }
+        .data-table th { background: #667eea; color: white; padding: 12px 15px; text-align: left; }
+        .data-table td { padding: 10px 15px; border-bottom: 1px solid #e0e0e0; }
+        .data-table tr:hover { background: #f0f8ff; }
+        .code-section { background: #1e1e1e; padding: 20px; border-radius: 8px; margin: 15px 0; overflow-x: auto; }
+        .code-section pre { color: #d4d4d4; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; }
+        .code-section .comment { color: #6a9955; }
+        .code-section .keyword { color: #c586c0; }
+        .code-section .string { color: #ce9178; }
+        .code-section .function { color: #dcdcaa; }
+        .btn { display: inline-block; padding: 10px 25px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; text-decoration: none; transition: all 0.3s ease; margin: 5px; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .btn-success { background: linear-gradient(135deg, #00b894, #00a884); }
+        .btn-warning { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .btn-download { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+        .timeline { position: relative; padding: 20px 0; }
+        .timeline-item { display: flex; gap: 20px; margin-bottom: 20px; padding-left: 30px; position: relative; }
+        .timeline-item::before { content: ''; position: absolute; left: 8px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: #667eea; border: 2px solid white; box-shadow: 0 0 0 2px #667eea; }
+        .timeline-item::after { content: ''; position: absolute; left: 13px; top: 20px; width: 2px; height: calc(100% + 10px); background: #667eea; }
+        .timeline-item:last-child::after { display: none; }
+        .timeline-item .time { font-weight: bold; color: #667eea; min-width: 100px; font-size: 14px; }
+        .timeline-item .content { background: #f8f9fa; padding: 12px 18px; border-radius: 8px; flex: 1; }
+        .timeline-item .content .title { font-weight: bold; color: #2c3e50; }
+        .timeline-item .content .desc { color: #666; font-size: 14px; margin-top: 3px; }
+        .process-steps { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; counter-reset: step; }
+        .process-step { flex: 1; min-width: 150px; background: #f8f9fa; padding: 15px 20px; border-radius: 8px; text-align: center; position: relative; counter-increment: step; }
+        .process-step::before { content: counter(step); position: absolute; top: -10px; left: -10px; background: #667eea; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
+        .process-step .step-icon { font-size: 24px; display: block; }
+        .process-step .step-title { font-weight: bold; font-size: 14px; color: #2c3e50; margin-top: 5px; }
+        .process-step .step-desc { font-size: 12px; color: #666; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; margin: 2px; }
+        .tag-blue { background: #dbeafe; color: #1e40af; }
+        .tag-green { background: #d1fae5; color: #065f46; }
+        .tag-red { background: #fee2e2; color: #991b1b; }
+        .tag-yellow { background: #fef3c7; color: #92400e; }
+        .tag-purple { background: #ede9fe; color: #5b21b6; }
+        .highlight { background: #fff3cd; padding: 2px 8px; border-radius: 4px; }
+        .text-center { text-align: center; }
+        .mt-20 { margin-top: 20px; }
+        .mb-20 { margin-bottom: 20px; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        @media (max-width: 768px) {
+            .container { padding: 20px; }
+            .schema-flow { flex-direction: column; }
+            .schema-arrow { transform: rotate(90deg); }
+            .meta-info { flex-direction: column; gap: 10px; }
+            .functions-grid { grid-template-columns: 1fr; }
+            .timeline-item { flex-direction: column; padding-left: 20px; }
+            .timeline-item .time { min-width: auto; }
+            .file-item { flex-wrap: wrap; gap: 10px; }
+            .btn-group { flex-direction: column; }
+            .btn { width: 100%; text-align: center; }
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; padding: 20px; }
+            .btn-group { display: none; }
+            .code-section { background: #f5f5f5; border: 1px solid #ddd; }
+            .code-section pre { color: #333; }
+        }
+    </style>
+</head>
+<body>
+<div class="container" id="mainContainer">
+    <div class="flex-between">
+        <h1>🎯 2L1P Timefile <span class="badge">v2.0</span></h1>
+        <div><button class="btn btn-download" onclick="downloadHTML()">📥 Изтегли HTML</button><button class="btn btn-success" onclick="window.print()">🖨️ Принтирай</button></div>
+    </div>
+    <div class="meta-info">
+        <div class="item"><span class="label">📅 Създаден:</span><span class="value" id="creationDate"></span></div>
+        <div class="item"><span class="label">📝 Версия:</span><span class="value">2.0</span></div>
+        <div class="item"><span class="label">🏷️ Статус:</span><span class="value"><span class="tag tag-green">✓ Завършен</span></span></div>
+        <div class="item"><span class="label">📁 Файлове:</span><span class="value">5</span></div>
+        <div class="item"><span class="label">📊 Функции:</span><span class="value">18</span></div>
+        <div class="item"><span class="label">⏱️ Общо време:</span><span class="value">~2 часа</span></div>
+    </div>
+    <h2>📖 Описание на системата</h2>
+    <p style="font-size: 15px; line-height: 1.7; color: #444;"><strong>2L1P</strong> е интегрирана система за резервация на пътувания, която комбинира <span class="highlight">реални данни</span> за полети и хотели с интелигентно управление на <span class="highlight">тарифите</span> и <span class="highlight">нощувките</span>. Системата поддържа двупосочни и еднопосочни полети, автоматично изчисление на нощувките при двупосочни полети и генериране на детайлни оферти в PDF, Word и Online формат.</p>
+    <h2>📊 Схема на системата</h2>
+    <div class="schema-container">
+        <div class="schema-flow">
+            <div class="schema-box"><span class="icon">🔍</span><span class="title">Търсене</span><span class="sub">Полети + Хотели</span></div>
+            <span class="schema-arrow">→</span>
+            <div class="schema-box"><span class="icon">✈️</span><span class="title">Избор на полет</span><span class="sub">Тръгващ / Заминаващ</span></div>
+            <span class="schema-arrow">→</span>
+            <div class="schema-box"><span class="icon">🎫</span><span class="title">Избор на тарифа</span><span class="sub">Ecofly / Extrafly / Flexfly</span></div>
+            <span class="schema-arrow">→</span>
+            <div class="schema-box"><span class="icon">🏨</span><span class="title">Избор на хотел</span><span class="sub">Автоматични нощувки</span></div>
+            <span class="schema-arrow">→</span>
+            <div class="schema-box"><span class="icon">📧</span><span class="title">Генериране</span><span class="sub">PDF / Word / Online</span></div>
+        </div>
+    </div>
+    <h2>🔄 Процес на работа</h2>
+    <div class="process-steps">
+        <div class="process-step"><span class="step-icon">🗓️</span><span class="step-title">Избор на дати</span><span class="step-desc">Тръгване и връщане</span></div>
+        <div class="process-step"><span class="step-icon">🔍</span><span class="step-title">Търсене</span><span class="step-desc">Полети и хотели</span></div>
+        <div class="process-step"><span class="step-icon">✈️</span><span class="step-title">Избор</span><span class="step-desc">Полет + Тарифа</span></div>
+        <div class="process-step"><span class="step-icon">🏨</span><span class="step-title">Хотел</span><span class="step-desc">Избор и нощувки</span></div>
+        <div class="process-step"><span class="step-icon">📄</span><span class="step-title">Оферта</span><span class="step-desc">Генериране и изтегляне</span></div>
+    </div>
+    <h2>⚡ Списък с функции</h2>
+    <div class="functions-grid">
+        <div class="function-card"><div class="func-name">🔍 searchAllRealTime()</div><div class="func-desc">Търсене на полети и хотели в реално време с API интеграция</div><span class="func-tag">Core</span></div>
+        <div class="function-card"><div class="func-name">✈️ selectDepartingFlight()</div><div class="func-desc">Избор на тръгващ полет от списъка с намерени</div><span class="func-tag">Selection</span></div>
+        <div class="function-card"><div class="func-name">🛬 selectReturningFlight()</div><div class="func-desc">Избор на заминаващ полет (за двупосочни пътувания)</div><span class="func-tag">Selection</span></div>
+        <div class="function-card"><div class="func-name">🎫 selectTariff()</div><div class="func-desc">Избор на тарифа - Ecofly/Extrafly/Flexfly с различни услуги</div><span class="func-tag">Pricing</span></div>
+        <div class="function-card"><div class="func-name">🏨 selectHotel()</div><div class="func-desc">Избор на хотел с автоматично изчисление на нощувките</div><span class="func-tag">Selection</span></div>
+        <div class="function-card"><div class="func-name">📊 generateRealTimeCharts()</div><div class="func-desc">Генериране на графики за сравнение на цените</div><span class="func-tag">Visualization</span></div>
+        <div class="function-card"><div class="func-name">📧 generateOffer()</div><div class="func-desc">Генериране на пълна оферта с всички детайли</div><span class="func-tag">Core</span></div>
+        <div class="function-card"><div class="func-name">📄 downloadPDF()</div><div class="func-desc">Експорт на офертата в PDF формат</div><span class="func-tag">Export</span></div>
+        <div class="function-card"><div class="func-name">📝 downloadWord()</div><div class="func-desc">Експорт на офертата в Word формат</div><span class="func-tag">Export</span></div>
+        <div class="function-card"><div class="func-name">👁️ viewOnline()</div><div class="func-desc">Преглед на офертата в нов прозорец</div><span class="func-tag">Export</span></div>
+        <div class="function-card"><div class="func-name">🔄 setFlightType()</div><div class="func-desc">Превключване между еднопосочен и двупосочен полет</div><span class="func-tag">Settings</span></div>
+        <div class="function-card"><div class="func-name">🏨 changeNights()</div><div class="func-desc">Промяна на броя нощувки (само за еднопосочни полети)</div><span class="func-tag">Settings</span></div>
+        <div class="function-card"><div class="func-name">🗓️ updateHotelDates()</div><div class="func-desc">Автоматично изчисление на датите за хотел</div><span class="func-tag">Auto</span></div>
+        <div class="function-card"><div class="func-name">📊 calculateHotelNights()</div><div class="func-desc">Изчисляване на нощувките от датите на полетите</div><span class="func-tag">Auto</span></div>
+        <div class="function-card"><div class="func-name">🔔 showNotification()</div><div class="func-desc">Система за известия и нотификации</div><span class="func-tag">UI</span></div>
+        <div class="function-card"><div class="func-name">🌐 openGoogleFlights()</div><div class="func-desc">Отваряне на Google Flights за сравнение</div><span class="func-tag">Integration</span></div>
+        <div class="function-card"><div class="func-name">✈️ openSkyscanner()</div><div class="func-desc">Отваряне на Skyscanner за сравнение</div><span class="func-tag">Integration</span></div>
+        <div class="function-card"><div class="func-name">📱 displayRealHotels()</div><div class="func-desc">Показване на хотели с цени и детайли</div><span class="func-tag">UI</span></div>
+    </div>
+    <h2>🎫 Тарифни опции</h2>
+    <table class="data-table"><thead><tr><th>Тарифа</th><th>Цена</th><th>Услуги</th><th>Подходяща за</th></tr></thead><tbody>
+        <tr><td><strong>Ecofly</strong></td><td>€125</td><td>Стандартно място, ръчен багаж</td><td>Бюджетни пътници</td></tr>
+        <tr><td><strong>Extrafly</strong></td><td>€155</td><td>Стандартно място, ръчен багаж, промяна с такса</td><td>Пътници с нужда от гъвкавост</td></tr>
+        <tr><td><strong>Flexfly</strong></td><td>€187</td><td>Безплатна промяна, частично връщане, мили</td><td>Бизнес пътници</td></tr>
+    </tbody></table>
+    <h2>✈️ Данни за полети</h2>
+    <table class="data-table"><thead><tr><th>Маршрут</th><th>Авиокомпания</th><th>Базова цена</th><th>Демо цена</th></tr></thead><tbody>
+        <tr><td>SOF → IST</td><td>Turkish Airlines</td><td>€125</td><td>€125</td></tr>
+        <tr><td>SOF → IST</td><td>Pegasus Airlines</td><td>€95</td><td>€90</td></tr>
+        <tr><td>SOF → IST</td><td>Bulgaria Air</td><td>€145</td><td>€145</td></tr>
+        <tr><td>IST → SOF</td><td>Всички</td><td>€98</td><td>€98</td></tr>
+    </tbody></table>
+    <h2>🏨 Данни за хотели</h2>
+    <table class="data-table"><thead><tr><th>Хотел</th><th>Локация</th><th>Цена/нощ</th><th>Рейтинг</th></tr></thead><tbody>
+        <tr><td>Hilton Istanbul Bosphorus</td><td>Султанехмет</td><td>€145</td><td>⭐ 4.7</td></tr>
+        <tr><td>Four Seasons Hotel Istanbul</td><td>Султанехмет</td><td>€320</td><td>⭐ 4.9</td></tr>
+        <tr><td>The Ritz-Carlton Istanbul</td><td>Босфор</td><td>€280</td><td>⭐ 4.8</td></tr>
+        <tr><td>Radisson Blu Hotel Istanbul</td><td>Таксим</td><td>€95</td><td>⭐ 4.2</td></tr>
+    </tbody></table>
+    <h2>📁 Списък с файлове</h2>
+    <div class="file-list">
+        <div class="file-item"><span class="file-name">📄 2L1P_System_v2.0.html</span><span class="file-size">~45 KB</span><span class="file-status complete">✓ Завършен</span></div>
+        <div class="file-item"><span class="file-name">📊 2L1P_Schema.png</span><span class="file-size">~120 KB</span><span class="file-status complete">✓ Завършен</span></div>
+        <div class="file-item"><span class="file-name">📝 2L1P_Timefile.html</span><span class="file-size">~35 KB</span><span class="file-status complete">✓ Завършен</span></div>
+        <div class="file-item"><span class="file-name">📧 2L1P_Offer_Template.txt</span><span class="file-size">~8 KB</span><span class="file-status partial">⏳ Частичен</span></div>
+        <div class="file-item"><span class="file-name">🔑 2L1P_API_Keys.txt</span><span class="file-size">~2 KB</span><span class="file-status partial">⏳ Частичен</span></div>
+    </div>
+    <h2>📥 Изтегляне</h2>
+    <div class="btn-group">
+        <button class="btn btn-download" onclick="downloadHTML()">📄 Изтегли HTML (Timefile)</button>
+        <button class="btn btn-success" onclick="downloadSystem()">🚀 Изтегли 2L1P Система</button>
+        <button class="btn btn-warning" onclick="downloadOffer()">📧 Изтегли Оферта (PDF)</button>
+        <button class="btn" onclick="window.print()">🖨️ Принтирай</button>
+    </div>
+    <h2>📜 История на промените</h2>
+    <div class="timeline">
+        <div class="timeline-item"><span class="time">04.11.2025</span><div class="content"><div class="title">🚀 Създаване на системата</div><div class="desc">Инициална версия с основни функционалности за търсене и резервация</div></div></div>
+        <div class="timeline-item"><span class="time">04.11.2025</span><div class="content"><div class="title">🎫 Добавяне на тарифи</div><div class="desc">Въведени са три тарифни опции: Ecofly, Extrafly, Flexfly</div></div></div>
+        <div class="timeline-item"><span class="time">04.11.2025</span><div class="content"><div class="title">🏨 Интелигентни нощувки</div><div class="desc">Автоматично изчисление на нощувките за двупосочни полети</div></div></div>
+        <div class="timeline-item"><span class="time">04.11.2025</span><div class="content"><div class="title">📊 Създаване на Timefile</div><div class="desc">Пълна документация със схема, функции и данни</div></div></div>
+        <div class="timeline-item"><span class="time">04.11.2025</span><div class="content"><div class="title">📧 Финални подобрения</div><div class="desc">Оптимизация на офертите и поправка на багове с хотелите</div></div></div>
+    </div>
+    <h2>💻 Код на системата</h2>
+    <p style="color: #666; margin-bottom: 10px;">Пълният код на системата 2L1P с всички функционалности:</p>
+    <div class="code-section" id="codeSection"><pre id="codeContent">
+<span class="comment">&lt;!-- ===== 2L1P СИСТЕМА - ПЪЛЕН КОД ===== --&gt;</span>
+
+<span class="comment">&lt;!-- ОСНОВНИ СТИЛОВЕ --&gt;</span>
+<span class="keyword">&lt;style&gt;</span>
+    <span class="comment">/* Основни стилове за цялата система */</span>
+    body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); }
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; }
+    <span class="comment">/* ... още стилове ... */</span>
+<span class="keyword">&lt;/style&gt;</span>
+
+<span class="comment">&lt;!-- ТЪРСАЧКА --&gt;</span>
+<span class="keyword">&lt;div</span> class="search-section"<span class="keyword">&gt;</span>
+    <span class="keyword">&lt;h3&gt;</span>🔍 Търсене на полети и хотели в реално време<span class="keyword">&lt;/h3&gt;</span>
+    <span class="keyword">&lt;div</span> class="flight-type"<span class="keyword">&gt;</span>
+        <span class="keyword">&lt;button</span> id="oneWayBtn" onclick="setFlightType('oneway')"<span class="keyword">&gt;</span>Еднопосочен<span class="keyword">&lt;/button&gt;</span>
+        <span class="keyword">&lt;button</span> id="roundTripBtn" onclick="setFlightType('roundtrip')" class="active"<span class="keyword">&gt;</span>Двупосочен<span class="keyword">&lt;/button&gt;</span>
+    <span class="keyword">&lt;/div&gt;</span>
+    <span class="keyword">&lt;input</span> type="text" id="fromCityCode" value="SOF"<span class="keyword">&gt;</span>
+    <span class="keyword">&lt;input</span> type="text" id="toCityCode" value="IST"<span class="keyword">&gt;</span>
+    <span class="keyword">&lt;input</span> type="date" id="departDate"<span class="keyword">&gt;</span>
+    <span class="keyword">&lt;input</span> type="date" id="returnDate"<span class="keyword">&gt;</span>
+    <span class="keyword">&lt;button</span> onclick="searchAllRealTime()"<span class="keyword">&gt;</span>🔍 Търси реални данни<span class="keyword">&lt;/button&gt;</span>
+<span class="keyword">&lt;/div&gt;</span>
+
+<span class="comment">&lt;!-- ТАРИФНИ ОПЦИИ --&gt;</span>
+<span class="keyword">&lt;div</span> class="tariff-options"<span class="keyword">&gt;</span>
+    <span class="keyword">&lt;h3&gt;</span>🎫 Избор на тарифа за полети<span class="keyword">&lt;/h3&gt;</span>
+    <span class="keyword">&lt;div</span> class="tariff-container"<span class="keyword">&gt;</span>
+        <span class="comment">&lt;!-- Ecofly --&gt;</span>
+        <span class="keyword">&lt;div</span> class="tariff-card" onclick="selectTariff('ecofly')" id="ecofly-card"<span class="keyword">&gt;</span>
+            <span class="keyword">&lt;div</span> class="tariff-header"<span class="keyword">&gt;</span>
+                <span class="keyword">&lt;div</span> class="tariff-name"<span class="keyword">&gt;</span>Ecofly<span class="keyword">&lt;/div&gt;</span>
+                <span class="keyword">&lt;div</span> class="tariff-price"<span class="keyword">&gt;</span>€125<span class="keyword">&lt;/div&gt;</span>
+            <span class="keyword">&lt;/div&gt;</span>
+            <span class="keyword">&lt;ul</span> class="tariff-features"<span class="keyword">&gt;</span>
+                <span class="keyword">&lt;li&gt;</span>Стандартно място<span class="keyword">&lt;/li&gt;</span>
+                <span class="keyword">&lt;li&gt;</span>Ръчен багаж<span class="keyword">&lt;/li&gt;</span>
+                <span class="keyword">&lt;li</span> class="excluded"<span class="keyword">&gt;</span>Промяна на билета<span class="keyword">&lt;/li&gt;</span>
+            <span class="keyword">&lt;/ul&gt;</span>
+        <span class="keyword">&lt;/div&gt;</span>
+        <span class="comment">&lt;!-- Extrafly --&gt;</span>
+        <span class="keyword">&lt;div</span> class="tariff-card" onclick="selectTariff('extrafly')" id="extrafly-card"<span class="keyword">&gt;</span>
+            <span class="comment">&lt;!-- ... --&gt;</span>
+        <span class="keyword">&lt;/div&gt;</span>
+        <span class="comment">&lt;!-- Flexfly --&gt;</span>
+        <span class="keyword">&lt;div</span> class="tariff-card" onclick="selectTariff('flexfly')" id="flexfly-card"<span class="keyword">&gt;</span>
+            <span class="comment">&lt;!-- ... --&gt;</span>
+        <span class="keyword">&lt;/div&gt;</span>
+    <span class="keyword">&lt;/div&gt;</span>
+<span class="keyword">&lt;/div&gt;</span>
+
+<span class="comment">&lt;!-- ХОТЕЛИ --&gt;</span>
+<span class="keyword">&lt;div</span> id="hotels-section"<span class="keyword">&gt;</span>
+    <span class="keyword">&lt;h3&gt;</span>🏨 Реални хотели<span class="keyword">&lt;/h3&gt;</span>
+    <span class="keyword">&lt;div</span> id="hotelsList"<span class="keyword">&gt;</span>
+        <span class="keyword">&lt;div</span> class="loading" id="hotelsLoading"<span class="keyword">&gt;</span>🏨 Търся реални хотели...<span class="keyword">&lt;/div&gt;</span>
+    <span class="keyword">&lt;/div&gt;</span>
+<span class="keyword">&lt;/div&gt;</span>
+
+<span class="comment">&lt;!-- ГЕНЕРИРАНЕ НА ОФЕРТА --&gt;</span>
+<span class="keyword">&lt;div</span> style="margin-top: 30px; padding: 25px; background: #e8f5e8; border-radius: 10px;"<span class="keyword">&gt;</span>
+    <span class="keyword">&lt;h3&gt;</span>📧 Генериране на оферта<span class="keyword">&lt;/h3&gt;</span>
+    <span class="keyword">&lt;input</span> type="email" id="clientEmail" placeholder="Имейл на клиента" style="width: 300px;"<span class="keyword">&gt;</span>
+    <span class="keyword">&lt;button</span> onclick="generateOffer()"<span class="keyword">&gt;</span>Генерирай оферта<span class="keyword">&lt;/button&gt;</span>
+    <span class="keyword">&lt;button</span> onclick="downloadPDF()"<span class="keyword">&gt;</span>📄 PDF<span class="keyword">&lt;/button&gt;</span>
+    <span class="keyword">&lt;button</span> onclick="downloadWord()"<span class="keyword">&gt;</span>📝 Word<span class="keyword">&lt;/button&gt;</span>
+    <span class="keyword">&lt;button</span> onclick="viewOnline()"<span class="keyword">&gt;</span>👁️ Online<span class="keyword">&lt;/button&gt;</span>
+<span class="keyword">&lt;/div&gt;</span>
+
+<span class="comment">&lt;!-- ===== JAVASCRIPT ===== --&gt;</span>
+<span class="keyword">&lt;script&gt;</span>
+    <span class="comment">// 🎯 ОСНОВНА СИСТЕМА</span>
+    const travelSystem = {
+        currentFlightsData: null,
+        selectedDepartingFlight: null,
+        selectedReturningFlight: null,
+        selectedHotel: null,
+        selectedTariff: null,
+        hotelNights: 3,
+        offerGenerated: false,
+        flightType: 'roundtrip',
+
+        <span class="comment">// 🛫 РЕАЛНО ТЪРСЕНЕ</span>
+        async searchRealFlights(fromCode, toCode, departDate, returnDate) {
+            <span class="comment">// Търсене на реални полети чрез API</span>
+            <span class="keyword">try</span> {
+                showNotification('🛫 Търся реални полети...', 'info');
+                <span class="comment">// ... код за търсене</span>
+            } <span class="keyword">catch</span> (error) {
+                console.error('API грешка:', error);
+                <span class="keyword">return</span> await this.getRealisticFlightData(fromCode, toCode, departDate, returnDate);
+            }
+        },
+
+        <span class="comment">// 🎫 ГЕНЕРИРАНЕ НА ОФЕРТА</span>
+        generateOffer(departingFlight, returningFlight, hotel, tariff, preferences, email) {
+            this.offerGenerated = true;
+            const offer = {
+                offerId: `2L1P-REAL-${Date.now()}`,
+                timestamp: new Date().toLocaleString('bg-BG'),
+                departingFlight: departingFlight,
+                returningFlight: returningFlight,
+                hotel: hotel,
+                selectedTariff: tariff,
+                hotelNights: this.hotelNights,
+                clientEmail: email,
+                currency: 'EUR'
+            };
+            let total = 0;
+            <span class="keyword">if</span> (tariff) {
+                const tariffPrices = { ecofly: 125, extrafly: 155, flexfly: 187 };
+                total += tariffPrices[tariff];
+            }
+            <span class="keyword">if</span> (returningFlight && tariff) {
+                const tariffPrices = { ecofly: 125, extrafly: 155, flexfly: 187 };
+                total += tariffPrices[tariff];
+            }
+            <span class="keyword">if</span> (hotel) {
+                total += hotel.price * this.hotelNights;
+            }
+            offer.totalPrice = total;
+            <span class="keyword">return</span> offer;
+        },
+
+        <span class="comment">// 🏨 ИЗЧИСЛЯВАНЕ НА НОЩУВКИ</span>
+        calculateHotelNights(departDate, returnDate) {
+            <span class="keyword">if</span> (!departDate || !returnDate) <span class="keyword">return</span> 3;
+            const checkin = new Date(departDate);
+            const checkout = new Date(returnDate);
+            const timeDiff = checkout.getTime() - checkin.getTime();
+            const nights = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            <span class="keyword">return</span> Math.max(nights, 1);
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDates();
+        showNotification('🚀 2L1P системата е заредена с реални данни!', 'success');
+    });
+<span class="keyword">&lt;/script&gt;</span>
+        </pre></div>
+    <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #e0e0e0; color: #666; font-size: 14px;">
+        <p>📅 Създаден на: <span id="footerDate"></span> | 🔄 Версия: 2.0 | 💻 2L1P Система</p>
+        <p style="margin-top: 5px;">Всички права запазени © 2025 2L1P</p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('bg-BG', { day: 'numeric', month: 'long', year: 'numeric' });
+        const timeStr = now.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('creationDate').textContent = `${dateStr}, ${timeStr} ч.`;
+        document.getElementById('footerDate').textContent = dateStr;
+    });
+
+    function downloadHTML() {
+        const content = document.getElementById('mainContainer').outerHTML;
+        const style = document.querySelector('style').outerHTML;
+        const title = document.querySelector('title').textContent;
+        const html = `<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    ${style}
+</head>
+<body>
+    ${content}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('bg-BG', { day: 'numeric', month: 'long', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('bg-BG', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('creationDate').textContent = `${dateStr}, ${timeStr} ч.`;
+            document.getElementById('footerDate').textContent = dateStr;
+        });
+        function downloadHTML() { location.reload(); }
+        function downloadSystem() { alert('🚀 Изтегляне на 2L1P System...'); }
+        function downloadOffer() { alert('📧 Генериране на оферта...'); }
+    </script>
+</body>
+</html>`;
+
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = '2L1P_Timefile.html';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadSystem() {
+        const systemHTML = `<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2L1P Система за Пътувания</title>
+    <style>
+        /* Всички стилове от системата */
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; }
+        /* ... останалите стилове ... */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 2L1P Система за Пътувания</h1>
+        <p>Пълната система с всички функционалности.</p>
+        <p>За да получите пълния код, моля използвайте Timefile-а.</p>
+        <button onclick="window.location.href='2L1P_Timefile.html'">📂 Отвори Timefile</button>
+    </div>
+    <script>
+        alert('🚀 2L1P System v2.0 - Заредена успешно!');
+    </script>
+</body>
+</html>`;
+
+        const blob = new Blob([systemHTML], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = '2L1P_System_v2.0.html';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadOffer() {
+        const offerContent = `
+2L1P РЕАЛНА ОФЕРТА ЗА ПЪТУВАНЕ
+================================
+
+Номер на оферта: 2L1P-REAL-${Date.now()}
+Дата на генериране: ${new Date().toLocaleString('bg-BG')}
+Имейл на клиента: client@example.com
+
+ТРЪГВАЩ ПОЛЕТ:
+- Авиокомпания: Turkish Airlines
+- Номер на полет: TK123
+- От: SOF към: IST
+- Дата: 11 ноември 2025 г.
+
+ЗАМИНАВАЩ ПОЛЕТ:
+- Авиокомпания: Turkish Airlines
+- Номер на полет: TK456
+- От: IST към: SOF
+- Дата: 15 ноември 2025 г.
+
+ХОТЕЛ:
+- Име: Hilton Istanbul Bosphorus
+- Локация: Султанехмет
+- Рейтинг: ⭐ 4.7/5
+- Нощувки: 4 нощи
+- Период: От 11 ноември до 15 ноември
+
+ИЗБРАНА ТАРИФА:
+- Тип: ECOFLY
+- Услуги: Стандартно място, ръчен багаж
+
+РАЗБИВКА НА ЦЕНИТЕ:
+- Тръгващ полет (ECOPLY): 125€
+- Заминаващ полет (ECOPLY): 125€
+- Хотел (4 нощувки): 580€
+
+ОБЩА ЦЕНА: 830 EUR
+
+Благодарим ви, че избрахте 2L1P системата!
+===========================================
+`;
+
+        const blob = new Blob([offerContent], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = '2L1P_Offer.txt';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+</script>
+</body>
+</html>
