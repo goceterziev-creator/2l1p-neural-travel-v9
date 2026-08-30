@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2L1P - ПЪЛНА ИСТОРИЯ НА ПРОЕКТА</title>
+    <style>
+        /* ========================================
+           🎨 2L1P TIMELINE STYLES
+           ======================================== */
+        
+        /* ─── ОСНОВНИ НАСТРОЙКИ ─── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #2d2b55;
+            padding: 30px 20px;
+            min-height: 100vh;
+        }
+
+        .timeline-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        /* ─── ЗАГЛАВИЕ ─── */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #e91e63;
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            color: #e91e63;
+            letter-spacing: 2px;
+        }
+
+        .header h1 span {
+            color: #9c27b0;
+        }
+
+        .header .subtitle {
+            font-size: 1.3em;
+            color: #9c27b0;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .header .date {
+            margin-top: 15px;
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        /* ─── ТАЙМЛАЙН ЛИНИЯ ─── */
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(to bottom, #e91e63, #9c27b0);
+            border-radius: 4px;
+        }
+
+        /* ─── ВСЯКА СТЪПКА ─── */
+        .timeline-item {
+            position: relative;
+            margin-bottom: 40px;
+            padding-left: 30px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -30px;
+            top: 5px;
+            width: 18px;
+            height: 18px;
+            background: #e91e63;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 0 0 3px #e91e63;
+        }
+
+        .timeline-item:nth-child(2)::before { background: #9c27b0; box-shadow: 0 0 0 3px #9c27b0; }
+        .timeline-item:nth-child(3)::before { background: #ff4081; box-shadow: 0 0 0 3px #ff4081; }
+        .timeline-item:nth-child(4)::before { background: #4caf50; box-shadow: 0 0 0 3px #4caf50; }
+        .timeline-item:nth-child(5)::before { background: #ff9800; box-shadow: 0 0 0 3px #ff9800; }
+        .timeline-item:nth-child(6)::before { background: #2196f3; box-shadow: 0 0 0 3px #2196f3; }
+        .timeline-item:nth-child(7)::before { background: #e91e63; box-shadow: 0 0 0 3px #e91e63; }
+
+        .timeline-item .step-number {
+            display: inline-block;
+            background: #2d2b55;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .timeline-item h3 {
+            font-size: 1.4em;
+            color: #2d2b55;
+            margin-bottom: 6px;
+        }
+
+        .timeline-item .time {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 3px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .timeline-item p {
+            color: #444;
+            line-height: 1.7;
+            margin-bottom: 8px;
+        }
+
+        .timeline-item ul {
+            margin-left: 20px;
+            color: #444;
+            line-height: 1.8;
+        }
+
+        .timeline-item ul li::marker {
+            color: #e91e63;
+        }
+
+        /* ─── СПИСЪК С ФУНКЦИИ ─── */
+        .functions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+            margin: 20px 0 10px 0;
+        }
+
+        .function-card {
+            background: #f8f9fa;
+            padding: 15px 18px;
+            border-radius: 12px;
+            border-left: 5px solid #e91e63;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: transform 0.2s;
+        }
+
+        .function-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .function-card .icon {
+            font-size: 1.5em;
+        }
+
+        .function-card h4 {
+            font-size: 1em;
+            margin: 5px 0 3px 0;
+            color: #2d2b55;
+        }
+
+        .function-card p {
+            font-size: 0.85em;
+            color: #666;
+            margin: 0;
+        }
+
+        /* ─── СХЕМА / ДИАГРАМА ─── */
+        .schema-section {
+            margin: 35px 0 25px 0;
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 25px 20px;
+            border: 2px dashed #9c27b0;
+        }
+
+        .schema-section h2 {
+            text-align: center;
+            color: #2d2b55;
+            margin-bottom: 20px;
+        }
+
+        .schema-flow {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 12px 8px;
+        }
+
+        .schema-box {
+            background: white;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.95em;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border: 2px solid #e91e63;
+            color: #2d2b55;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .schema-box.purple { border-color: #9c27b0; }
+        .schema-box.green { border-color: #4caf50; }
+        .schema-box.orange { border-color: #ff9800; }
+        .schema-box.blue { border-color: #2196f3; }
+
+        .schema-arrow {
+            font-size: 1.6em;
+            color: #9c27b0;
+            font-weight: bold;
+        }
+
+        /* ─── ДОПЪЛНИТЕЛНИ СЕКЦИИ ─── */
+        .info-box {
+            background: #f0f4ff;
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin: 20px 0;
+            border-left: 6px solid #2196f3;
+        }
+
+        .info-box h4 {
+            color: #2d2b55;
+            margin-bottom: 6px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #444;
+            line-height: 1.8;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #e91e63;
+            color: white;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .badge.purple { background: #9c27b0; }
+        .badge.green { background: #4caf50; }
+        .badge.orange { background: #ff9800; }
+
+        /* ─── ФУТЪР ─── */
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .footer .heart {
+            color: #e91e63;
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 700px) {
+            .timeline-container {
+                padding: 20px 15px;
+            }
+            .header h1 {
+                font-size: 2em;
+            }
+            .timeline {
+                padding-left: 25px;
+            }
+            .timeline-item {
+                padding-left: 20px;
+            }
+            .timeline-item::before {
+                left: -22px;
+                width: 14px;
+                height: 14px;
+            }
+            .schema-flow {
+                flex-direction: column;
+                gap: 8px;
+            }
+            .schema-arrow {
+                transform: rotate(90deg);
+            }
+            .functions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="timeline-container">
+
+    <!-- ═══ ЗАГЛАВИЕ ═══ -->
+    <header class="header">
+        <h1>🌍 2L1P <span>TRAVEL</span></h1>
+        <p class="subtitle">💖 ЛЮБОВТА НИ Е СИЛАТА! 💖</p>
+        <p class="date">📅 Архив: 08.12.2024 | Версия: 2.0</p>
+    </header>
+
+    <!-- ═══ ТАЙМЛАЙН ═══ -->
+    <div class="timeline">
+
+        <!-- ─── СТЪПКА 1 ─── -->
+        <div class="timeline-item">
+            <span class="step-number">СТЪПКА 1</span>
+            <h3>🚀 Старт на проекта</h3>
+            <span class="time">📅 08.12.2024, 09:30</span>
+            <p>Създаване на <strong>2L1P Ultimate Travel Platform</strong> — мечтата за цялостна туристическа система с интелигентно търсене.</p>
+            <ul>
+                <li>Идея: обединяване на пътувания, карти, хотели и анализи</li>
+                <li>Първоначална структура: HTML + CSS + JavaScript</li>
+            </ul>
+        </div>
+
+        <!-- ─── СТЪПКА 2 ─── -->
+        <div class="timeline-item">
+            <span class="step-number">СТЪПКА 2</span>
+            <h3>📦 Добавяне на база данни</h3>
+            <span class="time">📅 08.12.2024, 10:15</span>
+            <p>Включени <strong>300+ града</strong> с летища, координати и държави.</p>
+            <ul>
+                <li>Реални данни за София, Пловдив, Варна, Бургас</li>
+                <li>Международни дестинации: Лондон, Париж, Рим, Барселона, Истанбул, Дубай</li>
+            </ul>
+        </div>
+
+        <!-- ─── СТЪПКА 3 ─── -->
+        <div class="timeline-item">
+            <span class="step-number">СТЪПКА 3</span>
+            <h3>🗺️ Интерактивна карта</h3>
+            <span class="time">📅 08.12.2024, 11:00</span>
+            <p>Създаване на <strong>Google Maps</strong> интеграция с маркери за всички градове.</p>
+            <ul>
+                <li>Клик върху маркер за детайли</li>
+                <li>Бутони за хотели и забележителности</li>
+            </ul>
+        </div>
+
+        <!-- ─── СТЪПКА 4 ─── -->
+        <div class="timeline-item">
+            <span class="step-number">СТЪПКА 4</span>
+            <h3>✈️ Система за полети</h3>
+            <span class="time">📅 08.12.2024, 11:45</span>
+            <p>Добавени <strong>реални данни за полети</strong> от всички български летища.</p>
+            <ul>
+                <li>Авиокомпании: България Ер, Wizz Air, Райън Ер, Turkish Airlines</li>
+                <li>Дестинации: Лондон, Париж, Барселона, Истанбул, Дубай, Берлин</li>
+                <li>Цени, продължителност и дати</li>
+            </ul>
+        </div>
+
+        <!-- ─── СТЪПКА 5 ─── -->
+        <div class="timeline-item">
+            <span class="step-number">СТЪПКА 5</span>
+            <h3>📊 Аналитика и графики</h3>
+            <span class="time">📅 08.12.2024, 12:30</span>
+            <p>Създаване на <strong>интерактивен аналитичен панел</strong> с картови статистики.</p>
+            <ul>
+                <li>Популярност на дестинации</li>
+                <li>Средни цени на полети</li>
+                <li>Брой потребители, търсили всяка дестинация</li>
+                <li>Тенденции и препоръки</li>
+            </ul>
+        </div>
+
+        <!-- ─── СТЪПКА 6 ─── -->
+        <div class="timeline-item">
+            <span class="step-number">СТЪПКА 6</span>
+            <h3>📄 PDF и резервации</h3>
+            <span class="time">📅 08.12.2024, 13:15</span>
+            <p>Добавена <strong>система за генериране на PDF оферти</strong> и резервации.</p>
+            <ul>
+                <li>Генериране на текстов файл с оферта</li>
+                <li>Бутони за резервация на полети и хотели</li>
+                <li>Потвърждение чрез pop-up съобщения</li>
+            </ul>
+        </div>
+
+        <!-- ─── СТЪПКА 7 ─── -->
+        <div class="timeline-item">
+            <span class="step-number">СТЪПКА 7</span>
+            <h3>📱 Mobile-first дизайн</h3>
+            <span class="time">📅 08.12.2024, 14:00</span>
+            <p>Финална <strong>оптимизация за мобилни устройства</strong> и подобрения на потребителския интерфейс.</p>
+            <ul>
+                <li>Адаптивна мрежа с flex и grid</li>
+                <li>Оптимизация за всички екрани</li>
+                <li>Гладни анимации и преходи</li>
+            </ul>
+        </div>
+
+    </div><!-- ═══ край timeline ═══ -->
+
+    <!-- ═══ СПИСЪК С ФУНКЦИИ ═══ -->
+    <h2 style="margin: 40px 0 20px 0; text-align: center; color: #2d2b55;">
+        🎯 ПЪЛЕН СПИСЪК С ФУНКЦИИ
+    </h2>
+
+    <div class="functions-grid">
+        <div class="function-card">
+            <div class="icon">🔍</div>
+            <h4>Интелигентно търсене</h4>
+            <p>Търси градове, държави и летищни кодове с автодопълване</p>
+        </div>
+        <div class="function-card">
+            <div class="icon">🗺️</div>
+            <h4>Интерактивна карта</h4>
+            <p>Google Maps с маркери за всички дестинации</p>
+        </div>
+        <div class="function-card">
+            <div class="icon">✈️</div>
+            <h4>Система за полети</h4>
+            <p>Реални данни за авиокомпании, цени и часове</p>
+        </div>
+        <div class="function-card">
+            <div class="icon">🏨</div>
+            <h4>Хотели и резервации</h4>
+            <p>Препоръчани хотели с цени и рейтинг</p>
+        </div>
+        <div class="function-card">
+            <div class="icon">🏛️</div>
+            <h4>Забележителности</h4>
+            <p>Списък с атракции за всеки град</p>
+        </div>
+        <div class="function-card">
+            <div class="icon">📊</div>
+            <h4>Аналитичен панел</h4>
+            <p>Графики, статистики и тенденции</p>
+        </div>
+        <div class="function-card">
+            <div class="icon">📄</div>
+            <h4>PDF генератор</h4>
+            <p>Автоматично генериране на оферти</p>
+        </div>
+        <div class="function-card">
+            <div class="icon">📱</div>
+            <h4>Mobile-first дизайн</h4>
+            <p>Перфектен изглед на всички устройства</p>
+        </div>
+        <div class="function-card">
+            <div class="icon">🎫</div>
+            <h4>Бутони за резервация</h4>
+            <p>Еднократно кликване за запазване на място</p>
+        </div>
+    </div>
+
+    <!-- ═══ СХЕМА НА СИСТЕМАТА ═══ -->
+    <div class="schema-section">
+        <h2>📊 СХЕМА НА СИСТЕМАТА</h2>
+        <div class="schema-flow">
+            <div class="schema-box">🌍 2L1P TRAVEL</div>
+            <span class="schema-arrow">➜</span>
+            <div class="schema-box purple">🔍 Търсачка</div>
+            <span class="schema-arrow">➜</span>
+            <div class="schema-box green">🗺️ Карта</div>
+            <span class="schema-arrow">➜</span>
+            <div class="schema-box orange">✈️ Полети</div>
+            <span class="schema-arrow">➜</span>
+            <div class="schema-box blue">📊 Анализи</div>
+            <span class="schema-arrow">➜</span>
+            <div class="schema-box">📄 PDF оферта</div>
+        </div>
+        <div style="text-align: center; margin-top: 20px; color: #666; font-size: 0.95em;">
+            ⚡ Всички компоненти работят заедно в реално време ⚡
+        </div>
+    </div>
+
+    <!-- ═══ ТЕХНИЧЕСКА ИНФОРМАЦИЯ ═══ -->
+    <div class="info-box">
+        <h4>⚙️ ТЕХНИЧЕСКА СПЕЦИФИКАЦИЯ</h4>
+        <ul>
+            <li><span class="badge">HTML</span> Структура с 4 основни секции</li>
+            <li><span class="badge purple">CSS</span> Адаптивен дизайн + анимации</li>
+            <li><span class="badge green">JS</span> 15+ функции, база данни с обекти</li>
+            <li><span class="badge orange">API</span> Симулация на Google Maps</li>
+            <li><span class="badge">📦</span> 10+ града, 3 летища с полети</li>
+            <li><span class="badge purple">📱</span> 100% responsive</li>
+        </ul>
+    </div>
+
+    <!-- ═══ ИСТОРИЯ НА ПРОМЕНИТЕ ═══ -->
+    <div class="info-box" style="border-left-color: #ff9800;">
+        <h4>📝 ИСТОРИЯ НА ПРОМЕНИТЕ</h4>
+        <ul>
+            <li><strong>v1.0</strong> — 08.12.2024, 09:30 — Основна структура и дизайн</li>
+            <li><strong>v1.1</strong> — 08.12.2024, 10:15 — База данни с 10+ града</li>
+            <li><strong>v1.2</strong> — 08.12.2024, 11:00 — Интерактивна карта</li>
+            <li><strong>v1.3</strong> — 08.12.2024, 11:45 — Полети и резервации</li>
+            <li><strong>v1.4</strong> — 08.12.2024, 12:30 — Аналитичен панел</li>
+            <li><strong>v1.5</strong> — 08.12.2024, 13:15 — PDF генератор</li>
+            <li><strong>v2.0</strong> — 08.12.2024, 14:00 — Mobile-first + финални корекции</li>
+        </ul>
+    </div>
+
+    <!-- ═══ ФУТЪР ═══ -->
+    <div class="footer">
+        <p>
+            🌍 <strong>2L1P ULTIMATE TRAVEL PLATFORM</strong> &nbsp;|&nbsp;
+            💖 Създадено с любов &nbsp;|&nbsp;
+            🚀 Версия 2.0
+        </p>
+        <p style="margin-top: 6px; font-size: 0.85em; color: #aaa;">
+            ⚡ Всички права запазени &nbsp;|&nbsp; 📅 08.12.2024
+        </p>
+        <p style="margin-top: 10px; font-size: 1.2em;">
+            <span class="heart">❤️</span> 2L1P - ЛЮБОВТА НИ Е СИЛАТА! <span class="heart">❤️</span>
+        </p>
+    </div>
+
+</div><!-- ═══ край container ═══ -->
+
+</body>
+</html>
