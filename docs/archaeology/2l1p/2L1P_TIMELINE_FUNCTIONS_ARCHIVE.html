@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>2L1P Timeline & Functions</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, system-ui, sans-serif; background: #f4f7fc; color: #1e293b; padding: 2rem 1rem; display: flex; justify-content: center; }
+        .container { max-width: 1200px; width: 100%; background: white; border-radius: 32px; box-shadow: 0 20px 60px rgba(0, 20, 40, 0.12); padding: 2.5rem 2rem; }
+        h1 { font-size: 2.4rem; font-weight: 700; display: flex; align-items: center; gap: 12px; color: #0b2b4a; margin-bottom: 0.3rem; }
+        h1 i { color: #f97316; }
+        .subhead { font-size: 1.1rem; color: #475569; margin-bottom: 2.5rem; border-left: 5px solid #f97316; padding-left: 1.2rem; }
+        .section-title { font-size: 1.8rem; font-weight: 600; margin: 2.5rem 0 1.5rem 0; display: flex; align-items: center; gap: 12px; color: #0f3b5e; }
+        .section-title i { color: #f97316; font-size: 1.8rem; }
+        hr { border: none; height: 2px; background: linear-gradient(90deg, #f97316, #e2e8f0); margin: 1.5rem 0; }
+        .timeline { position: relative; padding-left: 3rem; }
+        .timeline::before { content: ''; position: absolute; left: 16px; top: 0; bottom: 0; width: 4px; background: linear-gradient(180deg, #f97316, #3b82f6); border-radius: 4px; }
+        .timeline-item { position: relative; margin-bottom: 2.8rem; padding-left: 1.2rem; }
+        .timeline-item::before { content: ''; position: absolute; left: -28px; top: 6px; width: 20px; height: 20px; background: white; border: 4px solid #f97316; border-radius: 50%; box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15); }
+        .timeline-item .date { font-size: 0.8rem; font-weight: 700; color: #f97316; text-transform: uppercase; letter-spacing: 0.5px; }
+        .timeline-item h3 { font-size: 1.3rem; margin: 4px 0 6px 0; color: #0b2b4a; }
+        .timeline-item p { color: #334155; line-height: 1.6; }
+        .timeline-item .badge { display: inline-block; background: #eef2ff; color: #1e4b7a; font-size: 0.8rem; font-weight: 600; padding: 0.2rem 0.9rem; border-radius: 20px; margin-top: 0.4rem; }
+        .schema-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.8rem; margin: 1.5rem 0 0.5rem 0; }
+        .schema-card { background: #f8fafc; border-radius: 20px; padding: 1.8rem 1.2rem; text-align: center; border: 1px solid #e9edf2; transition: 0.2s; }
+        .schema-card:hover { transform: translateY(-6px); border-color: #f97316; box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08); }
+        .schema-card i { font-size: 2.6rem; color: #f97316; margin-bottom: 0.6rem; }
+        .schema-card h4 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.2rem; }
+        .schema-card p { font-size: 0.9rem; color: #475569; }
+        .functions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin: 1.2rem 0; }
+        .func-item { background: #f1f5f9; border-radius: 14px; padding: 1rem 1.2rem; display: flex; align-items: center; gap: 14px; transition: 0.15s; border-left: 5px solid #3b82f6; }
+        .func-item i { font-size: 1.4rem; width: 32px; color: #f97316; }
+        .func-item span { font-weight: 500; color: #0f2c47; }
+        .func-item small { display: block; font-weight: 400; color: #475569; font-size: 0.8rem; }
+        .download-area { margin-top: 3rem; display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; }
+        .btn-download { background: #0b2b4a; color: white; border: none; padding: 1rem 2.8rem; border-radius: 60px; font-size: 1.1rem; font-weight: 600; display: inline-flex; align-items: center; gap: 14px; cursor: pointer; transition: 0.2s; box-shadow: 0 6px 18px rgba(11, 43, 74, 0.2); }
+        .btn-download i { font-size: 1.3rem; }
+        .btn-download:hover { background: #f97316; transform: scale(1.02); box-shadow: 0 10px 30px rgba(249, 115, 22, 0.3); }
+        .btn-download-outline { background: transparent; color: #0b2b4a; border: 2px solid #0b2b4a; box-shadow: none; }
+        .btn-download-outline:hover { background: #0b2b4a; color: white; }
+        @media (max-width: 640px) {
+            .container { padding: 1.5rem 1rem; }
+            h1 { font-size: 1.8rem; flex-wrap: wrap; }
+            .timeline { padding-left: 2rem; }
+            .timeline-item::before { left: -24px; width: 16px; height: 16px; }
+            .schema-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-globe-americas"></i>2L1P · Пълен архив</h1>
+        <div class="subhead"><i class="fas fa-clock" style="margin-right: 8px; color: #f97316;"></i>Времева линия · Функционална схема · Списък с възможности</div>
+        <hr />
+        <div class="section-title"><i class="fas fa-timeline"></i> Времева линия на проекта</div>
+        <div class="timeline">
+            <div class="timeline-item"><div class="date">Стъпка 1</div><h3>🔍 Проучване &amp; концепция</h3><p>Определяне на нуждите – интелигентно търсене в 300+ града, интеграция с карти, генератор на PDF/Word оферти.</p><span class="badge"><i class="fas fa-check-circle"></i> Завършена</span></div>
+            <div class="timeline-item"><div class="date">Стъпка 2</div><h3>🎨 Дизайн &amp; прототип</h3><p>Създаден е модерен mobile-first интерфейс с всички бутони, секции за хотели, полети и анализи.</p><span class="badge"><i class="fas fa-check-circle"></i> Завършена</span></div>
+            <div class="timeline-item"><div class="date">Стъпка 3</div><h3>⚙️ Функционално ядро</h3><p>Реализирани са търсачка, филтри, интерактивни графики и симулация на реални данни за полети и хотели.</p><span class="badge"><i class="fas fa-check-circle"></i> Завършена</span></div>
+            <div class="timeline-item"><div class="date">Стъпка 4</div><h3>📄 Оферти &amp; експорт</h3><p>Добавена функционалност за генериране на персонализирани оферти в PDF и Word формат.</p><span class="badge"><i class="fas fa-check-circle"></i> Завършена</span></div>
+            <div class="timeline-item"><div class="date">Стъпка 5</div><h3>📊 Анализи &amp; графики</h3><p>Визуализация на тенденциите – най-търсени дестинации, ценови диапазони, сезонност.</p><span class="badge"><i class="fas fa-check-circle"></i> Завършена</span></div>
+            <div class="timeline-item"><div class="date">Стъпка 6</div><h3>🚀 Финализиране &amp; преминаване</h3><p>Цялата кодова база, история и планове за развитие са подготвени за следващ етап.</p><span class="badge"><i class="fas fa-arrow-right"></i> Готов за нов чат</span></div>
+        </div>
+        <hr />
+        <div class="section-title"><i class="fas fa-sitemap"></i> Функционална схема</div>
+        <div class="schema-grid">
+            <div class="schema-card"><i class="fas fa-search-location"></i><h4>Интелигентно търсене</h4><p>300+ града, авто-довършване, филтри по цена, дата и рейтинг.</p></div>
+            <div class="schema-card"><i class="fas fa-map-marked-alt"></i><h4>Google Maps</h4><p>Интерактивна карта с маркери, разстояния и визуализация на маршрути.</p></div>
+            <div class="schema-card"><i class="fas fa-file-pdf"></i><h4>PDF / Word оферти</h4><p>Експорт на персонализирани оферти с детайли за полет, хотел и цена.</p></div>
+            <div class="schema-card"><i class="fas fa-plane-departure"></i><h4>Реални данни</h4><p>Симулация на актуални полетни разписания и цени от външни източници.</p></div>
+            <div class="schema-card"><i class="fas fa-chart-pie"></i><h4>Графики &amp; анализи</h4><p>Визуализация на търсене, сезонност и ценови трендове.</p></div>
+            <div class="schema-card"><i class="fas fa-mobile-alt"></i><h4>Mobile-first</h4><p>Адаптивен дизайн, който работи безупречно на всички устройства.</p></div>
+        </div>
+        <hr />
+        <div class="section-title"><i class="fas fa-list-check"></i> Пълен списък с функции</div>
+        <div class="functions-grid">
+            <div class="func-item"><i class="fas fa-city"></i><div><span>300+ града</span><small>интелигентно търсене</small></div></div>
+            <div class="func-item"><i class="fas fa-map"></i><div><span>Google Maps интеграция</span><small>интерактивна карта</small></div></div>
+            <div class="func-item"><i class="fas fa-file-pdf"></i><div><span>PDF / Word оферти</span><small>персонализиран експорт</small></div></div>
+            <div class="func-item"><i class="fas fa-plane"></i><div><span>Реални данни за полети</span><small>актуални разписания</small></div></div>
+            <div class="func-item"><i class="fas fa-hotel"></i><div><span>Реални данни за хотели</span><small>цени и наличност</small></div></div>
+            <div class="func-item"><i class="fas fa-chart-line"></i><div><span>Графики и анализи</span><small>визуализация на тенденции</small></div></div>
+            <div class="func-item"><i class="fas fa-mobile-screen"></i><div><span>Mobile-first дизайн</span><small>адаптивен за всички екрани</small></div></div>
+            <div class="func-item"><i class="fas fa-bolt"></i><div><span>Всички бутони работят</span><small>пълна интерактивност</small></div></div>
+            <div class="func-item"><i class="fas fa-code-branch"></i><div><span>Пълна кодова база</span><small>история и планове</small></div></div>
+            <div class="func-item"><i class="fas fa-rocket"></i><div><span>Готов за нов етап</span><small>преминаване в нов чат</small></div></div>
+        </div>
+        <hr />
+        <div class="download-area">
+            <button class="btn-download" id="downloadHTML"><i class="fas fa-download"></i> Изтегли .html</button>
+            <button class="btn-download btn-download-outline" id="downloadTXT"><i class="fas fa-file-alt"></i> Изтегли .txt (архив)</button>
+        </div>
+        <p style="text-align:center; margin-top:1.2rem; color:#64748b; font-size:0.9rem;"><i class="fas fa-info-circle"></i> Файлът съдържа цялата важна информация от чата – таймлайн, схема и списък с функции.</p>
+    </div>
+
+    <script>
+        (function() {
+            document.getElementById('downloadHTML').addEventListener('click', function() {
+                const doctype = '<!DOCTYPE html>\n';
+                const html = document.documentElement.outerHTML;
+                const fullHtml = doctype + html;
+                const blob = new Blob([fullHtml], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '2L1P_timeline_functions.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            document.getElementById('downloadTXT').addEventListener('click', function() {
+                const title = '2L1P ULTIMATE TRAVEL PLATFORM — ПЪЛЕН АРХИВ\n';
+                const separator = '='.repeat(60) + '\n\n';
+                const timelineItems = document.querySelectorAll('.timeline-item');
+                let timelineText = '📅 ВРЕМЕВА ЛИНИЯ:\n';
+                timelineItems.forEach((item, index) => {
+                    const date = item.querySelector('.date')?.textContent?.trim() || `Стъпка ${index+1}`;
+                    const heading = item.querySelector('h3')?.textContent?.trim() || '';
+                    const desc = item.querySelector('p')?.textContent?.trim() || '';
+                    const badge = item.querySelector('.badge')?.textContent?.trim() || '';
+                    timelineText += `\n${date}\n${heading}\n${desc}\n${badge}\n${'-'.repeat(30)}\n`;
+                });
+                const schemaCards = document.querySelectorAll('.schema-card');
+                let schemaText = '\n🔧 ФУНКЦИОНАЛНА СХЕМА:\n';
+                schemaCards.forEach(card => {
+                    const title = card.querySelector('h4')?.textContent?.trim() || '';
+                    const desc = card.querySelector('p')?.textContent?.trim() || '';
+                    schemaText += `\n• ${title}\n  ${desc}\n`;
+                });
+                const funcItems = document.querySelectorAll('.func-item');
+                let funcText = '\n✅ ПЪЛЕН СПИСЪК ФУНКЦИИ:\n';
+                funcItems.forEach(item => {
+                    const span = item.querySelector('span')?.textContent?.trim() || '';
+                    const small = item.querySelector('small')?.textContent?.trim() || '';
+                    funcText += `\n  • ${span} — ${small}`;
+                });
+                const footer = '\n\n---\n📌 Генериран на: ' + new Date().toLocaleString() + '\n📁 Съдържа цялата важна информация от чата.';
+                const fullText = title + separator + timelineText + '\n' + schemaText + '\n' + funcText + footer;
+                const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '2L1P_archive.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        })();
+    </script>
+
+</body>
+</html>
