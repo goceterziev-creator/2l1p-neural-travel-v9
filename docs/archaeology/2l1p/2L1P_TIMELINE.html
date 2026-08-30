@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2L1P TIMELINE ARCHIVE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            padding: 30px;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+        }
+        .header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 48px;
+            background: linear-gradient(135deg, #f093fb, #f5576c, #4facfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        .header .subtitle {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 2px;
+        }
+        .header .version {
+            display: inline-block;
+            background: rgba(79, 172, 254, 0.2);
+            padding: 8px 24px;
+            border-radius: 30px;
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s;
+        }
+        .section:hover {
+            border-color: rgba(79, 172, 254, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        .section h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section h2 .badge {
+            font-size: 14px;
+            background: rgba(79, 172, 254, 0.2);
+            padding: 4px 16px;
+            border-radius: 20px;
+            color: #4facfe;
+        }
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 14px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #f093fb, #f5576c, #4facfe);
+            border-radius: 3px;
+        }
+        .timeline-item {
+            position: relative;
+            padding: 20px 25px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border-left: 4px solid #4facfe;
+            transition: all 0.3s;
+        }
+        .timeline-item:hover {
+            transform: translateX(5px);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .timeline-item .date {
+            font-size: 13px;
+            color: #4facfe;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .timeline-item .title {
+            font-size: 20px;
+            color: #fff;
+            margin: 8px 0 5px 0;
+        }
+        .timeline-item .desc {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+        .timeline-item .emoji-big {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 32px;
+            opacity: 0.3;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(79, 172, 254, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .feature-card .emoji {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .feature-card h3 {
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .feature-card .status {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            background: rgba(0, 230, 118, 0.2);
+            color: #00e676;
+            border: 1px solid rgba(0, 230, 118, 0.3);
+        }
+        .destinations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+        }
+        .dest-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s;
+        }
+        .dest-card:hover {
+            border-color: rgba(79, 172, 254, 0.4);
+            transform: scale(1.03);
+        }
+        .dest-card .code {
+            font-size: 13px;
+            color: #4facfe;
+            font-weight: bold;
+        }
+        .dest-card .name {
+            font-size: 16px;
+            color: #fff;
+            margin: 4px 0;
+        }
+        .dest-card .country {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .dest-card .new {
+            font-size: 10px;
+            background: rgba(245, 87, 108, 0.3);
+            padding: 2px 10px;
+            border-radius: 12px;
+            color: #f5576c;
+            margin-left: 5px;
+        }
+        .schema {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+        .schema .layer {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .schema .box {
+            background: rgba(79, 172, 254, 0.15);
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(79, 172, 254, 0.2);
+            color: #4facfe;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+        .schema .arrow {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 18px;
+        }
+        .schema .comment {
+            color: rgba(255, 255, 255, 0.4);
+            font-style: italic;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-card .label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .stat-card .value {
+            font-size: 42px;
+            font-weight: bold;
+            color: #fff;
+            margin: 8px 0;
+        }
+        .stat-card .sub {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .download-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            padding: 16px 48px;
+            border-radius: 50px;
+            border: none;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+            margin: 20px auto;
+            box-shadow: 0 10px 30px rgba(245, 87, 108, 0.3);
+            display: block;
+            width: fit-content;
+        }
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(245, 87, 108, 0.5);
+        }
+        .footer {
+            text-align: center;
+            padding: 30px 0 10px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 30px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+        }
+        .footer .heart {
+            color: #f5576c;
+        }
+        .group-title {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 15px;
+            margin: 20px 0 12px 0;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 32px;
+            }
+            .section {
+                padding: 20px;
+            }
+            .timeline {
+                padding-left: 20px;
+            }
+            .timeline-item .emoji-big {
+                display: none;
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            .destinations-grid {
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="header">
+            <h1>📁 2L1P TIMELINE ARCHIVE</h1>
+            <div class="subtitle">Пълен архив на проекта — История, Функции, Схеми</div>
+            <div class="version">📌 Версия ULTIMATE v3.0 · Ноември 2025</div>
+        </div>
+
+        <!-- ИСТОРИЯ -->
+        <div class="section">
+            <h2>🧬 История на проекта</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <span class="date">❤️ Начало</span>
+                    <div class="title">Създаване на базовата система</div>
+                    <div class="desc">Mobile-first подход · User experience фокус · "Татко тества, дъщеря поправя"</div>
+                    <span class="emoji-big">🚀</span>
+                </div>
+                <div class="timeline-item" style="border-left-color: #f093fb;">
+                    <span class="date">📊 Еволюция</span>
+                    <div class="title">Добавяне на графики и анализ</div>
+                    <div class="desc">Ценови прогнози · Сравнение на платформи · Интерактивни визуализации</div>
+                    <span class="emoji-big">📈</span>
+                </div>
+                <div class="timeline-item" style="border-left-color: #f5576c;">
+                    <span class="date">🗺️ Разширение</span>
+                    <div class="title">Google Maps API & Реални данни</div>
+                    <div class="desc">Интерактивна карта · Хотели · Събития · Забележителности</div>
+                    <span class="emoji-big">🌍</span>
+                </div>
+                <div class="timeline-item" style="border-left-color: #4facfe;">
+                    <span class="date">🌟 Финален етап</span>
+                    <div class="title">16 дестинации по целия свят</div>
+                    <div class="desc">Рейкявик 🧊 · Балтийски държави 🏰 · Гуанджоу и Шънджън 🐉</div>
+                    <span class="emoji-big">✨</span>
+                </div>
+                <div class="timeline-item" style="border-left-color: #00e676;">
+                    <span class="date">🚀 Бъдеще</span>
+                    <div class="title">Още дестинации и функционалности</div>
+                    <div class="desc">PWA · Мултиезичност · AI чатбот · Платежни системи</div>
+                    <span class="emoji-big">💫</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ФУНКЦИИ -->
+        <div class="section">
+            <h2>🗂️ Пълен списък с функции <span class="badge">38+ функции</span></h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="emoji">✈️</div>
+                    <h3>Търсене на полети</h3>
+                    <p>По дати · Еднопосочен/Двупосочен · Сортиране по цена · CO₂ емисии · Директни линкове</p>
+                    <span class="status">✅ Работи</span>
+                </div>
+                <div class="feature-card">
+                    <div class="emoji">🏨</div>
+                    <h3>Хотели</h3>
+                    <p>Информация · Цени · Рейтинг · Удобства · Обща цена · Резервация</p>
+                    <span class="status">✅ Работи</span>
+                </div>
+                <div class="feature-card">
+                    <div class="emoji">🎪</div>
+                    <h3>Събития</h3>
+                    <p>Концерти · Спортни мачове · Билети · Линкове · Карта</p>
+                    <span class="status">✅ Работи</span>
+                </div>
+                <div class="feature-card">
+                    <div class="emoji">🏛️</div>
+                    <h3>Забележителности</h3>
+                    <p>Исторически паметници · Музеи · Цени · Описания · Google Maps</p>
+                    <span class="status">✅ Работи</span>
+                </div>
+                <div class="feature-card">
+                    <div class="emoji">📊</div>
+                    <h3>Визуализации</h3>
+                    <p>Ценови графики · Сравнение на платформи · Интерактивни ефекти</p>
+                    <span class="status">✅ Работи</span>
+                </div>
+                <div class="feature-card">
+                    <div class="emoji">🗺️</div>
+                    <h3>Google Maps</h3>
+                    <p>Интерактивна карта · Маркери · Информационни прозорци · Търсене</p>
+                    <span class="status">✅ Работи</span>
+                </div>
+                <div class="feature-card">
+                    <div class="emoji">📥</div>
+                    <h3>Генериране на оферти</h3>
+                    <p>PDF · Word · Онлайн преглед · Имейл изпращане · Персонализация</p>
+                    <span class="status">✅ Работи</span>
+                </div>
+                <div class="feature-card">
+                    <div class="emoji">🎯</div>
+                    <h3>Система за избор</h3>
+                    <p>Избор на полет · Избор на хотел · Предпочитания · Автоматично търсене</p>
+                    <span class="status">✅ Работи</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- АРХИТЕКТУРНА СХЕМА -->
+        <div class="section">
+            <h2>📊 Архитектурна схема</h2>
+            <div class="schema">
+                <div class="layer"><span class="comment">// 🌍 2L1P ULTIMATE SYSTEM</span></div>
+                <div class="layer"><span class="comment">// ───────────────────────────────</span></div>
+                <div class="layer">
+                    <span class="box">📱 FRONTEND</span>
+                    <span class="arrow">→</span>
+                    <span class="box">⚙️ BACKEND</span>
+                    <span class="arrow">→</span>
+                    <span class="box">📊 DATA</span>
+                </div>
+                <div class="layer">
+                    <span style="color:rgba(255,255,255,0.4);font-size:12px;">HTML/CSS · Табове · Форми · Графики · Карти</span>
+                    <span class="arrow" style="opacity:0.2;">↔</span>
+                    <span style="color:rgba(255,255,255,0.4);font-size:12px;">JavaScript · API · Maps · PDF/Word Gen</span>
+                    <span class="arrow" style="opacity:0.2;">↔</span>
+                    <span style="color:rgba(255,255,255,0.4);font-size:12px;">Полети · Хотели · Събития · Атракции</span>
+                </div>
+                <div class="layer" style="margin-top:10px;">
+                    <span class="comment">// 🎯 ULTIMATE CLASS</span>
+                </div>
+                <div class="layer">
+                    <span class="box">searchRealFlights()</span>
+                    <span class="box">getRealHotels()</span>
+                    <span class="box">getRealEvents()</span>
+                    <span class="box">getRealAttractions()</span>
+                </div>
+                <div class="layer">
+                    <span class="box">generatePricePredictions()</span>
+                    <span class="box">generatePlatformComparison()</span>
+                    <span class="box">generateOffer()</span>
+                    <span class="box">createPDF()</span>
+                    <span class="box">createWord()</span>
+                </div>
+                <div class="layer" style="margin-top:10px;">
+                    <span class="comment">// 📦 DATA STORE — 16 дестинации</span>
+                </div>
+                <div class="layer">
+                    <span class="box">airportCodes { SOF, VAR, BOJ, PDV, FCO, MXP, CDG, BCN, ATH, IST, KEF, TLL, RIX, VNO, CAN, SZX }</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ДЕСТИНАЦИИ -->
+        <div class="section">
+            <h2>🌍 Пълен списък с дестинации <span class="badge">16 града</span></h2>
+
+            <div class="group-title">🇧🇬 България (4)</div>
+            <div class="destinations-grid" style="margin-bottom:10px;">
+                <div class="dest-card"><div class="code">SOF</div><div class="name">София</div><div class="country">🇧🇬 България</div></div>
+                <div class="dest-card"><div class="code">VAR</div><div class="name">Варна</div><div class="country">🇧🇬 България</div></div>
+                <div class="dest-card"><div class="code">BOJ</div><div class="name">Бургас</div><div class="country">🇧🇬 България</div></div>
+                <div class="dest-card"><div class="code">PDV</div><div class="name">Пловдив</div><div class="country">🇧🇬 България</div></div>
+            </div>
+
+            <div class="group-title">🇪🇺 Европа (10)</div>
+            <div class="destinations-grid" style="margin-bottom:10px;">
+                <div class="dest-card"><div class="code">FCO</div><div class="name">Рим</div><div class="country">🇮🇹 Италия</div></div>
+                <div class="dest-card"><div class="code">MXP</div><div class="name">Милано</div><div class="country">🇮🇹 Италия</div></div>
+                <div class="dest-card"><div class="code">CDG</div><div class="name">Париж</div><div class="country">🇫🇷 Франция</div></div>
+                <div class="dest-card"><div class="code">BCN</div><div class="name">Барселона</div><div class="country">🇪🇸 Испания</div></div>
+                <div class="dest-card"><div class="code">ATH</div><div class="name">Атина</div><div class="country">🇬🇷 Гърция</div></div>
+                <div class="dest-card"><div class="code">IST</div><div class="name">Истанбул</div><div class="country">🇹🇷 Турция</div></div>
+                <div class="dest-card" style="border-color:rgba(245,87,108,0.3);">
+                    <div class="code">KEF</div>
+                    <div class="name">Рейкявик <span class="new">🆕</span></div>
+                    <div class="country">🇮🇸 Исландия</div>
+                </div>
+                <div class="dest-card" style="border-color:rgba(245,87,108,0.3);">
+                    <div class="code">TLL</div>
+                    <div class="name">Талин <span class="new">🆕</span></div>
+                    <div class="country">🇪🇪 Естония</div>
+                </div>
+                <div class="dest-card" style="border-color:rgba(245,87,108,0.3);">
+                    <div class="code">RIX</div>
+                    <div class="name">Рига <span class="new">🆕</span></div>
+                    <div class="country">🇱🇻 Латвия</div>
+                </div>
+                <div class="dest-card" style="border-color:rgba(245,87,108,0.3);">
+                    <div class="code">VNO</div>
+                    <div class="name">Вильнюс <span class="new">🆕</span></div>
+                    <div class="country">🇱🇹 Литва</div>
+                </div>
+            </div>
+
+            <div class="group-title">🇨🇳 Азия (2)</div>
+            <div class="destinations-grid">
+                <div class="dest-card" style="border-color:rgba(245,87,108,0.3);">
+                    <div class="code">CAN</div>
+                    <div class="name">Гуанджоу <span class="new">🆕</span></div>
+                    <div class="country">🇨🇳 Китай</div>
+                </div>
+                <div class="dest-card" style="border-color:rgba(245,87,108,0.3);">
+                    <div class="code">SZX</div>
+                    <div class="name">Шънджън <span class="new">🆕</span></div>
+                    <div class="country">🇨🇳 Китай</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- СТАТИСТИКА -->
+        <div class="section">
+            <h2>📈 Данни и метрики</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">🌍 Дестинации</div>
+                    <div class="value">16</div>
+                    <div class="sub">4 България · 10 Европа · 2 Азия</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">⚙️ Функции</div>
+                    <div class="value">38+</div>
+                    <div class="sub">Включително всички модули</div>
+                </div>
+                <div class="stat-card" style="border-left: 3px solid #00e676;">
+                    <div class="label">💰 Най-ниска цена</div>
+                    <div class="value">59€</div>
+                    <div class="sub">София → Рим · Ryanair</div>
+                </div>
+                <div class="stat-card" style="border-left: 3px solid #4facfe;">
+                    <div class="label">📌 Версия</div>
+                    <div class="value">v3.0</div>
+                    <div class="sub">ULTIMATE · Ноември 2025</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- БУТОН ЗА ИЗТЕГЛЯНЕ -->
+        <button class="download-btn" onclick="downloadTimeline()">⬇️ Изтегли 2L1P_TIMELINE.html</button>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            <p>2L1P — Винаги заедно в кода и в сърцата <span class="heart">❤️</span></p>
+            <p style="font-size:12px;margin-top:5px;">Създаден с любов от Дъщерята за Таткото ✨</p>
+        </div>
+
+    </div>
+
+    <script>
+        function downloadTimeline() {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob(['<!DOCTYPE html>\n' + htmlContent], { type: 'text/html; charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = '2L1P_TIMELINE.html';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+        }
+    </script>
+
+</body>
+</html>
