@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PRO-GBT AI Travel</title>
+
+  <style>
+    /* ===== СТИЛОВЕ ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #1a1a1a;
+      color: #f4f4f4;
+      font-family: 'Constantia', 'Georgia', serif;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      border-bottom: 2px solid #d4af37;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      color: #d4af37;
+      font-size: 2.8rem;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      color: #bdbdbd;
+      font-style: italic;
+      font-size: 1.1rem;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #212121;
+      padding: 30px;
+      border-radius: 16px;
+      border: 1px solid #d4af37;
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    input, select, button {
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #111;
+      color: white;
+      font-size: 1rem;
+      flex: 1 1 180px;
+    }
+
+    button {
+      background: #d4af37;
+      color: #1a1a1a;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #e6c96a;
+      transform: scale(1.02);
+    }
+
+    .results {
+      margin-top: 30px;
+      background: #141414;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #333;
+    }
+
+    .flight-card, .hotel-card, .event-card {
+      background: #1f1f1f;
+      padding: 14px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border-left: 4px solid #d4af37;
+    }
+
+    .flight-card b, .hotel-card b, .event-card b {
+      color: #d4af37;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: #888;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>✈️ PRO-GBT AI Travel</h1>
+    <p class="subtitle">The Future of Intelligent Travel</p>
+  </header>
+
+  <div class="container">
+
+    <h2 style="color:#d4af37;">🔍 Търсене на полети</h2>
+
+    <div class="form-row">
+      <input id="origin" placeholder="От (IATA) напр. SOF" value="SOF" />
+      <input id="destination" placeholder="До (IATA) напр. MAD" value="MAD" />
+    </div>
+
+    <div class="form-row">
+      <input id="departureDate" type="date" value="2025-12-15" />
+      <input id="returnDate" type="date" value="2025-12-22" />
+      <input id="adults" type="number" min="1" value="2" />
+      <select id="travelClass">
+        <option value="ECONOMY">Икономична</option>
+        <option value="PREMIUM_ECONOMY">Премиум</option>
+        <option value="BUSINESS" selected>Бизнес</option>
+        <option value="FIRST">Първа</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <button id="searchFlightsBtn">🔎 Търси полети</button>
+      <button id="showHotelsBtn">🏨 Покажи хотели</button>
+      <button id="showEventsBtn">🎫 Събития</button>
+      <button id="exportPdfBtn">📄 Експорт PDF</button>
+    </div>
+
+    <div class="results" id="results">
+      <h3 style="color:#d4af37;">📋 Резултати</h3>
+      <div id="flightResults"></div>
+      <div id="hotelResults"></div>
+      <div id="eventResults"></div>
+    </div>
+
+  </div>
+
+  <footer>
+    © 2025 PRO-GBT AI Travel &nbsp;|&nbsp; Създадено с ❤️ от 2L1P
+  </footer>
+
+  <script>
+    // ===== JS ЛОГИКА =====
+    const API_BASE = "http://localhost:3000";
+
+    function formatDuration(minutes) {
+      if (!minutes) return '2ч 30м';
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      return `${h}ч ${m}м`;
+    }
+
+    document.getElementById('searchFlightsBtn').addEventListener('click', async () => {
+      const origin = document.getElementById('origin').value.trim().toUpperCase();
+      const destination = document.getElementById('destination').value.trim().toUpperCase();
+      const departureDate = document.getElementById('departureDate').value;
+      const returnDate = document.getElementById('returnDate').value;
+      const adults = parseInt(document.getElementById('adults').value) || 1;
+      const out = document.getElementById('flightResults');
+      out.innerHTML = '<p style="color:gold;">⏳ Търсене на полети...</p>';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/search-flights`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ origin, destination, departureDate, returnDate, adults })
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) {
+          out.innerHTML = `<p style="color:#f66;">Грешка: ${json.error || 'Неизвестна'}</p>`;
+          return;
+        }
+
+        if (!json.data || json.data.length === 0) {
+          out.innerHTML = '<p>😕 Няма намерени полети.</p>';
+          return;
+        }
+
+        out.innerHTML = json.data.map((f, i) => {
+          const duration = f.itineraries?.[0]?.duration || '150';
+          const durationText = String(duration).replace('PT', '').replace('H', '').replace('M', '');
+          const fromCity = f.itineraries?.[0]?.segments?.[0]?.departure?.iataCode || origin;
+          const toCity = f.itineraries?.[0]?.segments?.[0]?.arrival?.iataCode || destination;
+          return `
+            <div class="flight-card">
+              <b>✈️ Полет ${i+1}</b> – ${f.airline || 'Авиокомпания'}<br>
+              <span style="color:#d4af37;">${fromCity} → ${toCity}</span><br>
+              ⏱️ ${formatDuration(parseInt(durationText))}<br>
+              💰 <b>${f.price?.total || '199.00'} ${f.price?.currency || 'EUR'}</b>
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        out.innerHTML = `<p style="color:#f66;">❌ Грешка: ${err.message}</p>`;
+      }
+    });
+
+    document.getElementById('showHotelsBtn').addEventListener('click', async () => {
+      const dest = document.getElementById('destination').value.trim();
+      const out = document.getElementById('hotelResults');
+      out.innerHTML = '<p style="color:gold;">⏳ Търсене на хотели...</p>';
+      try {
+        const res = await fetch(`${API_BASE}/api/hotels?location=${encodeURIComponent(dest)}`);
+        const json = await res.json();
+        if (!res.ok || !json.results || json.results.length === 0) {
+          out.innerHTML = '<p>😕 Няма хотели.</p>';
+          return;
+        }
+        out.innerHTML = json.results.slice(0, 6).map(h => `
+          <div class="hotel-card">
+            🏨 <b>${h.name}</b><br>
+            📍 ${h.formatted_address || '—'}<br>
+            ⭐ Рейтинг: ${h.rating || '—'}<br>
+            💰 ${h.price || '—'} EUR/нощ
+          </div>
+        `).join('');
+      } catch (e) {
+        out.innerHTML = `<p style="color:#f66;">❌ Грешка: ${e.message}</p>`;
+      }
+    });
+
+    document.getElementById('showEventsBtn').addEventListener('click', async () => {
+      const city = document.getElementById('destination').value.trim();
+      const startDate = document.getElementById('departureDate').value;
+      const out = document.getElementById('eventResults');
+      out.innerHTML = '<p style="color:gold;">⏳ Търсене на събития...</p>';
+      try {
+        const res = await fetch(`${API_BASE}/api/events?city=${encodeURIComponent(city)}&startDate=${startDate}`);
+        const json = await res.json();
+        if (!res.ok || !json.events || json.events.length === 0) {
+          out.innerHTML = '<p>😕 Няма събития.</p>';
+          return;
+        }
+        out.innerHTML = json.events.map(ev => `
+          <div class="event-card">
+            🎭 <b>${ev.title}</b><br>
+            📅 ${ev.date || '—'}<br>
+            <a href="${ev.link}" target="_blank" style="color:#d4af37;">🔗 Виж повече</a>
+          </div>
+        `).join('');
+      } catch (e) {
+        out.innerHTML = `<p style="color:#f66;">❌ Грешка: ${e.message}</p>`;
+      }
+    });
+
+    document.getElementById('exportPdfBtn').addEventListener('click', async () => {
+      const offer = {
+        offerId: '2L1P-' + Date.now(),
+        client: { name: 'Клиент', email: '' },
+        departing: {
+          from: document.getElementById('origin').value || '—',
+          to: document.getElementById('destination').value || '—',
+          departDate: document.getElementById('departureDate').value || '—'
+        },
+        totalPrice: '199.00',
+        currency: 'EUR'
+      };
+      try {
+        const res = await fetch(`${API_BASE}/api/export-pdf`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(offer)
+        });
+        if (!res.ok) throw new Error('PDF грешка');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `PRO-GBT_OFFER_${offer.offerId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        alert('❌ Грешка при експорт: ' + e.message);
+      }
+    });
+  </script>
+
+</body>
+</html>
