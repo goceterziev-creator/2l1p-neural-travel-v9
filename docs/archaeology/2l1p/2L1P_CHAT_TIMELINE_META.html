@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Таймфайл – Чат с 2L1P</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0b0f1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            color: #e0e6f0;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: #141b2b;
+            border-radius: 28px;
+            padding: 35px 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+            border: 1px solid #2a3a55;
+        }
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #7aa9ff, #b47cff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        .sub {
+            color: #8899bb;
+            border-bottom: 1px solid #253349;
+            padding-bottom: 18px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .sub span {
+            background: #1f2a3f;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            color: #b6c8f0;
+        }
+        .section { margin: 28px 0; }
+        .section h2 {
+            color: #b6ccff;
+            font-size: 1.4rem;
+            border-left: 5px solid #6d9bff;
+            padding-left: 16px;
+            margin-bottom: 18px;
+        }
+        .timeline-item {
+            display: flex;
+            gap: 18px;
+            margin-bottom: 22px;
+            background: #1a2337;
+            padding: 16px 20px;
+            border-radius: 18px;
+            border-left: 4px solid #4a7ad9;
+        }
+        .time { min-width: 80px; font-weight: 600; color: #7aa2f0; }
+        .content { color: #d3def5; }
+        .content strong { color: #ffd966; }
+        .schema-box {
+            background: #101827;
+            border-radius: 18px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px dashed #3d5580;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: #aec3f0;
+        }
+        .function-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 15px 0;
+        }
+        .function-list li {
+            background: #1b253c;
+            list-style: none;
+            padding: 10px 16px;
+            border-radius: 14px;
+            border-left: 3px solid #5d8cff;
+            color: #d0ddfa;
+        }
+        .function-list li::before { content: "⚡ "; color: #f7c948; }
+        .btn-download {
+            background: linear-gradient(145deg, #2f4b82, #1b2e55);
+            border: none;
+            padding: 16px 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 60px;
+            color: white;
+            width: 100%;
+            cursor: pointer;
+            transition: 0.25s;
+            margin-top: 30px;
+            border: 1px solid #4c74c0;
+            letter-spacing: 0.5px;
+        }
+        .btn-download:hover {
+            background: linear-gradient(145deg, #3f63a0, #254174);
+            transform: scale(1.01);
+            box-shadow: 0 0 20px #3f64aa55;
+        }
+        .footer {
+            margin-top: 25px;
+            font-size: 0.8rem;
+            color: #5c7199;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .function-list { grid-template-columns: 1fr; }
+            .timeline-item { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="timelineContainer">
+        <h1>⏳ Таймфайл – Чат с 2L1P</h1>
+        <div class="sub">
+            <span>📅 30.08.2026</span>
+            <span>🧾 Версия 1.0</span>
+            <span>💬 2L1P & Помощник</span>
+        </div>
+        <div class="section">
+            <h2>📐 Схема на комуникацията</h2>
+            <div class="schema-box">
+                <strong>Потребител (2L1P)</strong> → <strong>Помощник (AI)</strong><br>
+                ├─ 1. Идентификация и призив за помощ<br>
+                ├─ 2. Уточнение на нуждата (няколко опита)<br>
+                ├─ 3. Искане за <strong>таймфайл</strong> с:<br>
+                │&nbsp;&nbsp;&nbsp;• цялата важна информация от чата<br>
+                │&nbsp;&nbsp;&nbsp;• схема<br>
+                │&nbsp;&nbsp;&nbsp;• списък с функции<br>
+                │&nbsp;&nbsp;&nbsp;• готов файл за теглене<br>
+                └─ 4. <strong>Генериране на HTML</strong> – този файл ✔️
+            </div>
+        </div>
+        <div class="section">
+            <h2>📋 Хронология (таймлайн)</h2>
+            <div class="timeline-item"><div class="time">🔹 1-во</div><div class="content"><strong>Потребител:</strong> “2L1P, нуждая се от теб!” – първи контакт, изразена нужда.</div></div>
+            <div class="timeline-item"><div class="time">🔹 2-ро</div><div class="content"><strong>Помощник:</strong> Отговор с готовност, пита каква точно помощ е необходима (учебна, техническа, лична и др.).</div></div>
+            <div class="timeline-item"><div class="time">🔹 3-то</div><div class="content"><strong>Потребител:</strong> Повтаря “2L1P, нуждая се от теб!” – потвърждаване на спешността.</div></div>
+            <div class="timeline-item"><div class="time">🔹 4-то</div><div class="content"><strong>Помощник:</strong> Отново приканва към конкретизиране – каква е задачата.</div></div>
+            <div class="timeline-item"><div class="time">🔹 5-то</div><div class="content"><strong>Потребител (финална заявка):</strong> Иска таймфайл с важна информация, схема, списък с функции и готов HTML за теглене.</div></div>
+            <div class="timeline-item"><div class="time">✅ ФИНАЛ</div><div class="content"><strong>Помощник:</strong> Генерира този пълен <strong>таймфайл</strong> – изпълнение на всички изисквания.</div></div>
+        </div>
+        <div class="section">
+            <h2>⚙️ Списък с функции (реализирани)</h2>
+            <ul class="function-list">
+                <li>Автоматично генериране на хронология</li>
+                <li>Визуална схема "потребител ↔ помощник"</li>
+                <li>Готов HTML файл за теглене</li>
+                <li>Адаптивен дизайн (мобилен/десктоп)</li>
+                <li>Тъмна тема за по-добра четимост</li>
+                <li>Бутон за изтегляне на .html</li>
+                <li>Вградени стилове и структура</li>
+                <li>Ясна визуална йерархия</li>
+            </ul>
+        </div>
+        <button class="btn-download" id="downloadBtn">📥 Изтегли таймфайл (.html)</button>
+        <div class="footer">Файлът съдържа цялата важна информация от чата – запази го за архив.</div>
+    </div>
+
+    <script>
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            const container = document.getElementById('timelineContainer');
+            const cloneContainer = container.cloneNode(true);
+            const btnInClone = cloneContainer.querySelector('#downloadBtn');
+            if (btnInClone) btnInClone.remove();
+
+            const styleContent = document.querySelector('style').innerHTML;
+
+            const fullHtml = `<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Таймфайл – 2L1P</title>
+    <style>${styleContent}</style>
+</head>
+<body>
+    ${cloneContainer.outerHTML}
+</body>
+</html>`;
+
+            const blob = new Blob([fullHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'timeline_2L1P.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+
+</body>
+</html>
