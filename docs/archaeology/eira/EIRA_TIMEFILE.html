@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EIRA TimeFile – Архив на проекта</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        header h1 { font-size: 28px; }
+        header p { opacity: 0.9; margin-top: 8px; }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            border-left: 4px solid #667eea;
+        }
+        .card.green { border-left-color: #4CAF50; }
+        .card.orange { border-left-color: #FF9800; }
+        .card.red { border-left-color: #f44336; }
+        .card h2 { font-size: 20px; margin-bottom: 12px; color: #333; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            background: #f8f9fa;
+            text-align: left;
+            padding: 10px 12px;
+            font-weight: 600;
+        }
+        td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+        .status-ok { color: #4CAF50; font-weight: bold; }
+        .status-warn { color: #FF9800; font-weight: bold; }
+        .status-err { color: #f44336; font-weight: bold; }
+        .status-build { color: #2196F3; font-weight: bold; }
+        pre {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+            font-family: 'Consolas', monospace;
+            margin: 10px 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-ok { background: #E8F5E9; color: #2E7D32; }
+        .badge-warn { background: #FFF3E0; color: #E65100; }
+        .badge-err { background: #FFEBEE; color: #C62828; }
+        .badge-build { background: #E3F2FD; color: #0D47A1; }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 13px;
+        }
+        .schema {
+            background: #1a1a2e;
+            color: #e0e0e0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📁 EIRA TimeFile – Архив на проекта</h1>
+        <p>Създаден: 26 Декември 2025 | Проект: Serendipity Engine → EIRA</p>
+        <p><span class="badge badge-ok">✔️ Актуален</span></p>
+    </header>
+
+    <!-- 1. ОСНОВНА КОНЦЕПЦИЯ -->
+    <div class="card green">
+        <h2>🎯 Основна концепция</h2>
+        <p><strong>Цел:</strong> Автономна система, която превръща хаоса в стратегическа стойност.</p>
+        <br>
+        <h3>🔹 Основни модули:</h3>
+        <ul style="margin-left: 20px; line-height: 1.8;">
+            <li><strong>Ambient Intelligence Layer</strong> – събира "шум" (чатове, файлове, конзолни грешки)</li>
+            <li><strong>Autonomous Processing Matrix</strong> – трансформира шума в полезни активи</li>
+            <li><strong>Zero-Effort Deployment</strong> – резултатите се появяват без човешка намеса</li>
+            <li><strong>Code Inspector</strong> – автоматичен анализ на код за проблеми</li>
+        </ul>
+    </div>
+
+    <!-- 2. АРХИТЕКТУРНА СХЕМА -->
+    <div class="card">
+        <h2>📐 Архитектурна схема</h2>
+        <div class="schema">
+┌─────────────────────────────────────────────────────────────┐
+│                    EIRA SYSTEM OVERVIEW                     │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              AMBIENT INTELLIGENCE LAYER              │   │
+│  │  • Chaos Crawlers (Slack, Gmail, Files, Console)    │   │
+│  │  • Pattern Recognition (GPT анализ на шум)          │   │
+│  │  • Weak Signal Detection (слаби сигнали)           │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                           │                                 │
+│                           ▼                                 │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │          AUTONOMOUS PROCESSING MATRIX               │   │
+│  │  • L1: Trash → Raw Material                        │   │
+│  │  • L2: Raw → Prototype Value                       │   │
+│  │  • L3: Prototype → Passive Asset                   │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                           │                                 │
+│                           ▼                                 │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │          ZERO-EFFORT DEPLOYMENT SYSTEM              │   │
+│  │  • Ghost Workers (Serverless)                      │   │
+│  │  • Ambient Integration (CRM, Docs, Slack)          │   │
+│  │  • Self-Funding (автоматични печалби)             │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                  CODE INSPECTOR                      │   │
+│  │  • JavaScript Analysis (patterns)                  │   │
+│  │  • CSS Analysis (inline styles)                    │   │
+│  │  • Console Error Monitor                           │   │
+│  │  • Performance Checks                              │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │               AUTONOMY MANAGER                       │   │
+│  │  • Suggestions Generation                          │   │
+│  │  • Trust Score (0-100)                             │   │
+│  │  • Acceptance Rate                                 │   │
+│  │  • History & Persistence (localStorage)            │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                   UI DASHBOARD                       │   │
+│  │  • Statistics Display                              │   │
+│  │  • Suggestions List                                │   │
+│  │  • Code Inspector Panel (floating)                 │   │
+│  │  • Notifications                                   │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+        </div>
+    </div>
+
+    <!-- 3. СТАТУС НА МОДУЛИТЕ -->
+    <div class="card">
+        <h2>📊 Статус на модулите</h2>
+        <table>
+            <tr><th>Модул</th><th>Състояние</th><th>Готовност</th></tr>
+            <tr><td>Autonomy Manager</td><td>✅ Работи</td><td><span class="badge badge-ok">100%</span></td></tr>
+            <tr><td>UI Dashboard</td><td>✅ Работи</td><td><span class="badge badge-ok">100%</span></td></tr>
+            <tr><td>Code Inspector</td><td>⚠️ В разработка</td><td><span class="badge badge-warn">40%</span></td></tr>
+            <tr><td>Auto-Fix Engine</td><td>🚧 Частично</td><td><span class="badge badge-warn">60%</span></td></tr>
+            <tr><td>Data Persistence</td><td>✅ Работи</td><td><span class="badge badge-ok">100%</span></td></tr>
+        </table>
+    </div>
+
+    <!-- 4. ФУНКЦИИ -->
+    <div class="card green">
+        <h2>📋 Autonomy Manager – Функции</h2>
+        <table>
+            <tr><th>ID</th><th>Функция</th><th>Описание</th><th>Статус</th></tr>
+            <tr><td>AM-01</td><td><code>generateSuggestion()</code></td><td>Създава ново предложение</td><td><span class="badge badge-ok">✅</span></td></tr>
+            <tr><td>AM-02</td><td><code>acceptSuggestion()</code></td><td>Приема предложение (+5 доверие)</td><td><span class="badge badge-ok">✅</span></td></tr>
+            <tr><td>AM-03</td><td><code>rejectSuggestion()</code></td><td>Отхвърля предложение (-3 доверие)</td><td><span class="badge badge-ok">✅</span></td></tr>
+            <tr><td>AM-04</td><td><code>getMetrics()</code></td><td>Връща всички метрики</td><td><span class="badge badge-ok">✅</span></td></tr>
+            <tr><td>AM-05</td><td><code>reset()</code></td><td>Нулира всички данни</td><td><span class="badge badge-ok">✅</span></td></tr>
+            <tr><td>AM-06</td><td><code>saveToStorage()</code></td><td>Запазва в localStorage</td><td><span class="badge badge-ok">✅</span></td></tr>
+            <tr><td>AM-07</td><td><code>loadFromStorage()</code></td><td>Зарежда от localStorage</td><td><span class="badge badge-ok">✅</span></td></tr>
+            <tr><td>AM-08</td><td><code>getWeeklyStats()</code></td><td>Статистика за седмицата</td><td><span class="badge badge-ok">✅</span></td></tr>
+        </table>
+    </div>
+
+    <div class="card orange">
+        <h2>🔍 Code Inspector – Функции</h2>
+        <table>
+            <tr><th>ID</th><th>Функция</th><th>Описание</th><th>Статус</th></tr>
+            <tr><td>CI-01</td><td><code>scanCurrentPage()</code></td><td>Сканира текущата страница</td><td><span class="badge badge-warn">⚠️</span></td></tr>
+            <tr><td>CI-02</td><td><code>analyzeInlineCode()</code></td><td>Анализира JavaScript код</td><td><span class="badge badge-warn">⚠️</span></td></tr>
+            <tr><td>CI-03</td><td><code>analyzeCSS()</code></td><td>Анализира CSS стилове</td><td><span class="badge badge-warn">⚠️</span></td></tr>
+            <tr><td>CI-04</td><td><code>monitorConsoleErrors()</code></td><td>Следи грешки в конзолата</td><td><span class="badge badge-warn">⚠️</span></td></tr>
+            <tr><td>CI-05</td><td><code>checkPerformance()</code></td><td>Проверка на производителност</td><td><span class="badge badge-warn">⚠️</span></td></tr>
+            <tr><td>CI-06</td><td><code>getProblems()</code></td><td>Връща списък с проблеми</td><td><span class="badge badge-warn">⚠️</span></td></tr>
+            <tr><td>CI-07</td><td><code>getProblemStats()</code></td><td>Статистика за проблемите</td><td><span class="badge badge-warn">⚠️</span></td></tr>
+            <tr><td>CI-08</td><td><code>markAsFixed()</code></td><td>Маркира проблем като решен</td><td><span class="badge badge-warn">⚠️</span></td></tr>
+            <tr><td>CI-09</td><td><code>notifyAutonomyManager()</code></td><td>Създава предложение в AM</td><td><span class="badge badge-warn">⚠️</span></td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>🤖 Auto-Fix Engine – Функции</h2>
+        <table>
+            <tr><th>ID</th><th>Функция</th><th>Описание</th><th>Статус</th></tr>
+            <tr><td>AF-01</td><td><code>analyzeFix()</code></td><td>Анализира проблем и предлага поправка</td><td><span class="badge badge-warn">🚧</span></td></tr>
+            <tr><td>AF-02</td><td><code>applyAutoFixes()</code></td><td>Прилага автоматични поправки</td><td><span class="badge badge-warn">🚧</span></td></tr>
+            <tr><td>AF-03</td><td><code>showConfirmationDialog()</code></td><td>Показва диалог за потвърждение</td><td><span class="badge badge-warn">🚧</span></td></tr>
+            <tr><td>AF-04</td><td><code>fixInnerHTML()</code></td><td>Поправя innerHTML → textContent</td><td><span class="badge badge-warn">🚧</span></td></tr>
+            <tr><td>AF-05</td><td><code>fixConsoleLogs()</code></td><td>Добавя conditional logging</td><td><span class="badge badge-warn">🚧</span></td></tr>
+            <tr><td>AF-06</td><td><code>fixXSS()</code></td><td>Добавя XSS защита</td><td><span class="badge badge-warn">🚧</span></td></tr>
+        </table>
+    </div>
+
+    <!-- 5. ИЗВЕСТНИ ПРОБЛЕМИ -->
+    <div class="card red">
+        <h2>🐛 Известни проблеми и решения</h2>
+        <table>
+            <tr><th>Проблем</th><th>Причина</th><th>Решение</th></tr>
+            <tr><td><code>this.scanProject is not a function</code></td><td>Липсва метод в класа</td><td>Добави <code>scanProject()</code> или промени <code>init()</code></td></tr>
+            <tr><td>Code Inspector показва 0 проблема</td><td>Регулярните изрази не работят</td><td>Добави тестови проблеми за проверка</td></tr>
+            <tr><td>Дублирани методи в класа</td><td>Копиране на код</td><td>Остави само по един метод</td></tr>
+            <tr><td><code>scannedHashes</code> грешка</td><td>Неинициализиран Set</td><td>Добави <code>this.scannedHashes = new Set()</code></td></tr>
+        </table>
+    </div>
+
+    <!-- 6. БЪДЕЩИ ПЛАНОВЕ -->
+    <div class="card green">
+        <h2>🚀 Бъдещи планове</h2>
+        <ul style="margin-left: 20px; line-height: 1.8;">
+            <li>⬜ Поправка на <strong>Code Inspector</strong> (приоритет 1)</li>
+            <li>⬜ Интеграция с реални източници (Slack, Gmail, GitHub)</li>
+            <li>⬜ Автоматични поправки (<strong>Auto-Fix Engine</strong>)</li>
+            <li>⬜ Експорт на отчети (PDF/CSV)</li>
+            <li>⬜ Екипна работа – споделяне на предложения</li>
+            <li>⬜ Мобилна версия (адаптивен дизайн)</li>
+        </ul>
+    </div>
+
+    <!-- 7. УРОЦИ -->
+    <div class="card">
+        <h2>📖 Важни уроци от разработката</h2>
+        <ul style="margin-left: 20px; line-height: 1.8;">
+            <li>✅ <strong>Винаги инициализирай</strong> обектите в конструктора</li>
+            <li>✅ <strong>Проверявай</strong> за дублирани методи преди копиране</li>
+            <li>✅ <strong>Тествай</strong> с конзолни логове (F12 → Console)</li>
+            <li>✅ <strong>Запазвай</strong> данни в localStorage за персистентност</li>
+            <li>✅ <strong>Използвай</strong> <code>try/catch</code> за безопасно изпълнение</li>
+            <li>✅ <strong>Документирай</strong> всички промени (TimeFile)</li>
+        </ul>
+    </div>
+
+    <!-- 8. РЕЗЮМЕ -->
+    <div class="card">
+        <h2>📌 Резюме</h2>
+        <p><strong>Общ статус:</strong> 70% готовност</p>
+        <ul style="margin-left: 20px; line-height: 1.8;">
+            <li>✅ <strong>Autonomy Manager</strong> – 100% работещ</li>
+            <li>⚠️ <strong>Code Inspector</strong> – 40% (има грешки)</li>
+            <li>✅ <strong>UI Dashboard</strong> – 100% работещ</li>
+            <li>🚧 <strong>Auto-Fix</strong> – 60% (добавен, но не тестван)</li>
+            <li>✅ <strong>Data Persistence</strong> – 100% (localStorage)</li>
+        </ul>
+        <br>
+        <p><strong>Следваща стъпка:</strong> Поправка на <strong>Code Inspector</strong> модула.</p>
+    </div>
+
+    <div class="footer">
+        📁 EIRA TimeFile – Архив на проекта | 26 Декември 2025
+    </div>
+</body>
+</html>
