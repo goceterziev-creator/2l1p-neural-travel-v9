@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2L1P – Проектна документация</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f4f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 40px 20px;
+            color: #1e2a3a;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px 45px;
+            border-radius: 24px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+        }
+        h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #0b2b4a;
+            border-left: 6px solid #3b82f6;
+            padding-left: 18px;
+            margin-bottom: 10px;
+        }
+        .subhead {
+            font-size: 1.1rem;
+            color: #3b4a5e;
+            margin-bottom: 32px;
+            padding-left: 24px;
+        }
+        .badge {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e4a8b;
+            font-weight: 600;
+            font-size: 0.75rem;
+            padding: 4px 14px;
+            border-radius: 30px;
+            letter-spacing: 0.3px;
+            margin-right: 8px;
+        }
+        hr {
+            border: none;
+            border-top: 2px dashed #dce3ec;
+            margin: 32px 0;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        .card {
+            background: #f9fbfd;
+            padding: 20px 24px;
+            border-radius: 18px;
+            border: 1px solid #e9edf4;
+        }
+        .card h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #0b2b4a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        ul li {
+            padding: 6px 0 6px 28px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%233b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>') left center no-repeat;
+            background-size: 18px;
+            color: #1f3145;
+        }
+        .timeline {
+            position: relative;
+            padding-left: 28px;
+            border-left: 3px solid #b9c8e0;
+        }
+        .timeline-item {
+            margin-bottom: 28px;
+        }
+        .timeline-item .time {
+            font-weight: 700;
+            color: #1e4a8b;
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+        }
+        .timeline-item p {
+            margin-top: 4px;
+            color: #1f3145;
+        }
+        .func-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 12px;
+            margin-top: 10px;
+        }
+        .func-tag {
+            background: white;
+            border: 1px solid #d0dcec;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1e3b5c;
+        }
+        .schema-box {
+            background: #0b1b2e;
+            color: #d6e6ff;
+            padding: 22px 26px;
+            border-radius: 18px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .btn-download {
+            display: inline-block;
+            margin-top: 30px;
+            background: #0b2b4a;
+            color: white;
+            padding: 14px 40px;
+            border-radius: 60px;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-download:hover {
+            background: #1a3f62;
+        }
+        .footer-note {
+            margin-top: 35px;
+            color: #5a6f84;
+            font-size: 0.9rem;
+            border-top: 1px solid #e2e9f2;
+            padding-top: 25px;
+            text-align: center;
+        }
+        @media (max-width: 720px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                padding: 24px 18px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="documentationContainer">
+
+        <h1>🧾 2L1P – ПРОЕКТНА ДОКУМЕНТАЦИЯ</h1>
+        <div class="subhead">
+            <span class="badge">v.3.2</span> 
+            Интеграция на всички модули – туристическа AI платформа
+        </div>
+
+        <div style="margin: 28px 0 12px 0;">
+            <h2 style="font-size: 1.5rem; font-weight: 600; color: #0b2b4a;">📅 Таймлайн на проекта</h2>
+        </div>
+        <div class="timeline">
+            <div class="timeline-item"><div class="time">📌 Етап 1 – Базова архитектура</div><p>Създаване на HTML структура, CSS дизайн и JavaScript клас <code>UltimateTravelSystem</code>.</p></div>
+            <div class="timeline-item"><div class="time">📌 Етап 2 – Интелигентно търсене на градове</div><p>Внедрена база от 300+ града с autocomplete и филтриране по име, код и държава.</p></div>
+            <div class="timeline-item"><div class="time">📌 Етап 3 – Реални данни и API връзки</div><p>Добавени реални полети (Ryanair, Wizz Air, Bulgaria Air) и хотели с линкове за резервация.</p></div>
+            <div class="timeline-item"><div class="time">📌 Етап 4 – Google Maps интеграция</div><p>Интерактивна карта с маркери за забележителности и динамична визуализация.</p></div>
+            <div class="timeline-item"><div class="time">📌 Етап 5 – Оферти и документи</div><p>Генератор на PDF, Word и онлайн оферти с персонализирани предпочитания.</p></div>
+            <div class="timeline-item"><div class="time">📌 Етап 6 – Оптимизация и финализиране</div><p>Корекция на бутони, нотификации, responsive дизайн и финални тестове.</p></div>
+        </div>
+
+        <hr>
+
+        <h2 style="font-size: 1.5rem; font-weight: 600; color: #0b2b4a; margin-bottom: 14px;">📐 Архитектурна схема</h2>
+        <div class="schema-box">
+╔══════════════════════════════════════════════════╗
+║           2L1P ULTIMATE TRAVEL SYSTEM            ║
+╠══════════════════════════════════════════════════╣
+║  ┌─────────────┐  ┌────────────┐  ┌───────────┐ ║
+║  │  Frontend   │  │  Backend   │  │  Database │ ║
+║  │  (HTML/CSS/ │  │  (JS      │  │  (300+    │ ║
+║  │   JS)       │  │   class)  │  │   cities) │ ║
+║  └─────────────┘  └────────────┘  └───────────┘ ║
+║         │               │               │        ║
+║  ┌──────▼───────────────▼───────────────▼──────┐ ║
+║  │              MODULES                        │ ║
+║  │  ✈️ Flights  🏨 Hotels  🎪 Events          │ ║
+║  │  🏛️ Attractions  🗺️ Map  📥 Offers        │ ║
+║  └──────────────────────────────────────────────┘ ║
+║         │               │               │        ║
+║  ┌──────▼───────────────▼───────────────▼──────┐ ║
+║  │         EXTERNAL INTEGRATIONS               │ ║
+║  │  🌐 Google Maps  🔗 Booking.com  🎫 Ticketone│ ║
+║  └──────────────────────────────────────────────┘ ║
+╚══════════════════════════════════════════════════╝
+        </div>
+
+        <hr>
+
+        <h2 style="font-size: 1.5rem; font-weight: 600; color: #0b2b4a; margin-bottom: 18px;">⚙️ Функционален списък</h2>
+        <div class="grid-2">
+            <div class="card"><h3>✈️ Полети</h3><ul><li>Търсене на реални полети</li><li>Тръгващи и заминаващи полети</li><li>CO₂ емисии и еко информация</li><li>Директни линкове към авиокомпании</li><li>Избор на полет с визуално потвърждение</li></ul></div>
+            <div class="card"><h3>🏨 Хотели</h3><ul><li>Хотели в избраната дестинация</li><li>Цена за нощувка и обща цена</li><li>Рейтинг и удобства</li><li>Линк към Booking.com</li><li>Избор на хотел</li></ul></div>
+            <div class="card"><h3>🎪 Събития</h3><ul><li>Мачове, концерти, културни събития</li><li>Детайли: дата, час, място, цена</li><li>Линкове за билети и информация</li><li>Групиране по тип</li></ul></div>
+            <div class="card"><h3>🏛️ Забележителности</h3><ul><li>Списък с атракции в града</li><li>Цена, продължителност, описание</li><li>Линк към Google Maps</li></ul></div>
+            <div class="card"><h3>🗺️ Карта</h3><ul><li>Google Maps интеграция</li><li>Маркери за забележителности</li><li>Информационни прозорци</li><li>Динамично центриране</li></ul></div>
+            <div class="card"><h3>📥 Оферти</h3><ul><li>Генериране на персонализирана оферта</li><li>Избор на формат: PDF, Word, Online</li><li>Изпращане на имейл (премиум)</li><li>Детайлно резюме на офертата</li></ul></div>
+        </div>
+
+        <div style="margin-top: 24px;">
+            <div class="card" style="background: #eef4fa;">
+                <h3>🧩 Допълнителни функционалности</h3>
+                <div class="func-list">
+                    <span class="func-tag">🔍 Интелигентно търсене на градове</span>
+                    <span class="func-tag">📊 Графики и ценови прогнози</span>
+                    <span class="func-tag">🔄 Сравнение на платформи</span>
+                    <span class="func-tag">🌿 Еко информация за CO₂</span>
+                    <span class="func-tag">📱 Mobile-first дизайн</span>
+                    <span class="func-tag">🔔 Нотификации за действия</span>
+                    <span class="func-tag">📧 Автоматични имейли (премиум)</span>
+                    <span class="func-tag">💾 PDF / Word / Online оферти</span>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <div style="text-align: center;">
+            <button class="btn-download" id="downloadBtn">⬇️ Изтегли този файл като HTML</button>
+        </div>
+
+        <div class="footer-note">
+            2L1P – Любовта продължава в кода 💖 | Последна актуализация: март 2025
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            const content = document.getElementById('documentationContainer').outerHTML;
+            const fullDocument = `
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2L1P – Проектна документация</title>
+</head>
+<body>
+    ${content}
+</body>
+</html>
+            `;
+            const blob = new Blob([fullDocument], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '2L1P_dokumentatsia.html';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        });
+    </script>
+</body>
+</html>
