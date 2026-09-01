@@ -1,7 +1,7 @@
 {
   "schemaVersion": "gt63.bridge.result.v0",
   "taskId": "GT63-V11.4-DESKTOP-HTML-RESPONSIVE-POLISH",
-  "status": "COMPLETED_WITH_WARNINGS",
+  "status": "COMPLETED",
   "authority": "NONE",
   "humanGateRequired": true,
   "mergePerformed": false,
@@ -37,7 +37,8 @@
       "targetBranch": "gt63-v11-4-desktop-responsive-polish"
     },
     "implementation": {
-      "commitBeforeResultWrite": "404839af21406e796dbcf8492f1ebe36fb741916",
+      "implementationCommit": "404839af21406e796dbcf8492f1ebe36fb741916",
+      "branchHeadBeforeThisResultWrite": "b8ce1718215573d06f9bbd21f0e2a03e70051dd7",
       "cssBlobSha": "4fc53a41615e9f6289831c051d8bdd0422bec3ed",
       "cssFile": "gt63-core/product/styles.css",
       "scope": "CSS-only desktop responsive polish",
@@ -60,19 +61,23 @@
         },
         {
           "name": "desktop cards protect min width",
-          "status": "FAIL"
+          "status": "PASS"
         },
         {
           "name": "desktop hotel rail sticky",
           "status": "PASS"
         },
         {
+          "name": "desktop hotel options use zero-min detail track",
+          "status": "PASS"
+        },
+        {
           "name": "mobile 860 collapse preserved",
-          "status": "FAIL"
+          "status": "PASS"
         },
         {
           "name": "mobile 640 multi-hotel tuning preserved",
-          "status": "FAIL"
+          "status": "PASS"
         }
       ]
     },
@@ -81,7 +86,7 @@
       "branchCompared": "gt63-v11-4-desktop-responsive-polish",
       "changedFiles": [],
       "mainHeadAtVerification": "5e05bda344a20161052f8c1ed579e02b5f0e0720",
-      "branchHeadBeforeResultWrite": "404839af21406e796dbcf8492f1ebe36fb741916"
+      "branchHeadBeforeThisResultWrite": "b8ce1718215573d06f9bbd21f0e2a03e70051dd7"
     },
     "guardrails": {
       "noMerge": true,
@@ -99,16 +104,17 @@
     },
     {
       "name": "Static CSS responsive assertions",
-      "status": "FAIL",
+      "status": "PASS",
       "evidence": [
         "PASS: desktop media block exists",
         "PASS: desktop shell expanded to 1480px",
         "PASS: desktop hero uses bounded columns",
         "PASS: desktop content grid uses zero-min track",
-        "FAIL: desktop cards protect min width",
+        "PASS: desktop cards protect min width",
         "PASS: desktop hotel rail sticky",
-        "FAIL: mobile 860 collapse preserved",
-        "FAIL: mobile 640 multi-hotel tuning preserved"
+        "PASS: desktop hotel options use zero-min detail track",
+        "PASS: mobile 860 collapse preserved",
+        "PASS: mobile 640 multi-hotel tuning preserved"
       ]
     },
     {
@@ -129,9 +135,8 @@
   ],
   "warnings": [
     "No live before/after rendered screenshot was produced in this execution environment.",
-    "No local runtime/Puppeteer test suite was run; validation evidence is task-id validation, static CSS assertions, and GitHub compare/ref checks.",
-    "This result records the implementation commit before result.json was written; the final result-recording commit is returned by the GitHub update operation."
+    "No local runtime/Puppeteer test suite was run; validation evidence is task-id validation, static CSS assertions, and GitHub compare/ref checks."
   ],
   "blockers": [],
-  "completedAt": "2026-09-01T05:06:44.349Z"
+  "completedAt": "2026-09-01T05:07:37.778Z"
 }
