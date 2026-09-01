@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "gt63.bridge.result.v0",
+  "taskId": "GT63-BRIDGE-V0-BOOTSTRAP",
+  "status": "PENDING",
+  "implementationSummary": "",
+  "changedFiles": [],
+  "testsRun": [],
+  "warnings": [],
+  "blockers": [],
+  "commitSha": null,
+  "authority": "NONE",
+  "humanGateRequired": true
+}
