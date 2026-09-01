@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "gt63.bridge.task.v0",
+  "taskId": "GT63-BRIDGE-V0-BOOTSTRAP",
+  "status": "READY",
+  "objective": "Establish the minimal GT63 task handoff contract between Architect/Reviewer and Work/Codex without changing product code.",
+  "sourceBranch": "main",
+  "sourceCommit": "5e05bda344a20161052f8c1ed579e02b5f0e0720",
+  "targetBranch": "gt63-bridge-v0",
+  "scope": [
+    "gt63/bridge/README.md",
+    "gt63/bridge/task.json",
+    "gt63/bridge/result.json"
+  ],
+  "doNot": [
+    "modify product/runtime code",
+    "modify main directly",
+    "merge or deploy",
+    "change existing architecture",
+    "claim tests not actually executed"
+  ],
+  "acceptanceCriteria": [
+    "bridge branch exists from the exact source commit",
+    "task contract is machine-readable",
+    "result contract is machine-readable",
+    "human approval remains required before merge"
+  ],
+  "authority": "NONE",
+  "humanGateRequired": true
+}
