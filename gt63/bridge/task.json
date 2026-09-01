@@ -1,28 +1,43 @@
 {
   "schemaVersion": "gt63.bridge.task.v0",
-  "taskId": "GT63-BRIDGE-V0-BOOTSTRAP",
+  "taskId": "GT63-V11.4-DESKTOP-HTML-RESPONSIVE-POLISH",
   "status": "READY",
-  "objective": "Establish the minimal GT63 task handoff contract between Architect/Reviewer and Work/Codex without changing product code.",
-  "sourceBranch": "main",
-  "sourceCommit": "5e05bda344a20161052f8c1ed579e02b5f0e0720",
-  "targetBranch": "gt63-bridge-v0",
+  "objective": "Polish the existing V11.4 desktop HTML proposal presentation so wide/desktop viewports feel intentionally composed and premium, while preserving the canonical proposal content, data semantics, existing mobile behavior, PDF behavior, and runtime architecture.",
+  "sourceBranch": "gt63-bridge-v0",
+  "sourceCommit": "53a652d4c9fc011d4efdff12702e23e52572754c",
+  "targetBranch": "gt63-v11-4-desktop-responsive-polish",
   "scope": [
-    "gt63/bridge/README.md",
-    "gt63/bridge/task.json",
-    "gt63/bridge/result.json"
+    "Inspect the current canonical proposal HTML renderer and its existing responsive CSS/layout.",
+    "Make the minimum bounded presentation changes needed for a polished desktop/wide-screen experience.",
+    "Prefer CSS/layout/responsive changes over data-model, route, renderer-architecture, or content changes.",
+    "Keep the current mobile presentation behavior intact unless a shared rule must be adjusted to prevent a regression.",
+    "Use existing repository regression/validation commands relevant to HTML proposal presentation and responsive behavior.",
+    "Record exact changed files, commands/tests, evidence, warnings, and blockers in gt63/bridge/result.json."
   ],
   "doNot": [
-    "modify product/runtime code",
     "modify main directly",
-    "merge or deploy",
-    "change existing architecture",
-    "claim tests not actually executed"
+    "merge, deploy, push to production, or create release/tag",
+    "change proposal business data, pricing, hotel/flight facts, or canonical content semantics",
+    "introduce a second proposal renderer or fork HOME/PDF/client HTML into divergent presentation sources",
+    "perform unrelated refactors or dependency upgrades",
+    "silently expand scope",
+    "claim visual or regression validation that was not actually performed"
   ],
   "acceptanceCriteria": [
-    "bridge branch exists from the exact source commit",
-    "task contract is machine-readable",
-    "result contract is machine-readable",
-    "human approval remains required before merge"
+    "Desktop/wide HTML presentation is visibly more intentional and premium than the current baseline.",
+    "No horizontal overflow, broken cards, clipped text, or obviously stretched mobile-only composition at representative desktop widths.",
+    "Existing mobile layout remains usable and materially unchanged in behavior.",
+    "Canonical proposal content and runtime semantics are preserved.",
+    "Relevant existing deterministic regression/validation suites pass, or any pre-existing/unrelated failure is reported exactly and fail-closed.",
+    "Only bounded files necessary for the responsive polish plus gt63/bridge/result.json are changed.",
+    "No merge/deploy occurs; final acceptance remains a Human Gate."
+  ],
+  "expectedEvidence": [
+    "before/after or equivalent rendered desktop evidence if the environment supports it",
+    "representative desktop viewport validation",
+    "mobile regression validation",
+    "exact git diff/file list",
+    "exact test commands and outcomes"
   ],
   "authority": "NONE",
   "humanGateRequired": true
