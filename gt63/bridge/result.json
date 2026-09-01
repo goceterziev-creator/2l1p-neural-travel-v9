@@ -2,7 +2,19 @@
   "schemaVersion": "gt63.bridge.result.v0",
   "taskId": "GT63-BRIDGE-V0-BOOTSTRAP",
   "status": "COMPLETED",
-  "implementationSummary": "Validated the minimal GT63 Bridge V0 handoff contract on branch gt63-bridge-v0. Confirmed main remains at the declared source commit, the bridge branch is ahead only by bridge contract files, and human approval remains required before merge or deploy. No product/runtime code was changed.",
+  "implementationSummary": "Executed the GT63 Bridge V0 task contract exactly as read from gt63/bridge/task.json on branch gt63-bridge-v0. Validated that main still points to the declared source commit, that the bridge branch descends from that exact commit, and that the diff remains limited to the bridge contract files. No product/runtime code was changed. No merge or deploy was performed.",
+  "contractRead": {
+    "readmePath": "gt63/bridge/README.md",
+    "readmeBlobSha": "0adf9bddd676bba2221fb92ea1904b1984fdc950",
+    "taskPath": "gt63/bridge/task.json",
+    "taskBlobSha": "66442729fff610becc6a14c60ab4d22c287b1d7e",
+    "taskStatus": "READY",
+    "sourceBranch": "main",
+    "sourceCommit": "5e05bda344a20161052f8c1ed579e02b5f0e0720",
+    "targetBranch": "gt63-bridge-v0",
+    "authority": "NONE",
+    "humanGateRequired": true
+  },
   "changedFiles": [
     "gt63/bridge/README.md",
     "gt63/bridge/task.json",
@@ -10,27 +22,54 @@
   ],
   "testsRun": [
     {
-      "name": "GitHub branch ref validation",
+      "name": "Task contract readability",
       "result": "PASS",
-      "evidence": "refs/heads/main = 5e05bda344a20161052f8c1ed579e02b5f0e0720; refs/heads/gt63-bridge-v0 existed before result recording at 0812c6394b4f35cb860d6211d7e84bc7f398d7aa"
+      "evidence": "Fetched gt63/bridge/task.json from ref gt63-bridge-v0 as UTF-8 JSON; schemaVersion gt63.bridge.task.v0; taskId GT63-BRIDGE-V0-BOOTSTRAP; status READY; authority NONE; humanGateRequired true."
     },
     {
-      "name": "Compare source commit to gt63-bridge-v0",
+      "name": "Bridge README readability",
       "result": "PASS",
-      "evidence": "compare base 5e05bda344a20161052f8c1ed579e02b5f0e0720 -> head gt63-bridge-v0 returned status ahead, ahead_by 3, behind_by 0, merge_base_commit 5e05bda344a20161052f8c1ed579e02b5f0e0720"
+      "evidence": "Fetched gt63/bridge/README.md from ref gt63-bridge-v0 as UTF-8; safety rules require no direct main modification, no automatic merge, no silent scope expansion, truthful test recording, BLOCKED on concrete blocker, and final human authority."
+    },
+    {
+      "name": "Main ref validation",
+      "result": "PASS",
+      "evidence": "GitHub ref refs/heads/main resolved to 5e05bda344a20161052f8c1ed579e02b5f0e0720, matching task.json sourceCommit exactly."
+    },
+    {
+      "name": "Target branch ref validation",
+      "result": "PASS",
+      "evidence": "GitHub ref refs/heads/gt63-bridge-v0 resolved before this result recording to 53a652d4c9fc011d4efdff12702e23e52572754c."
+    },
+    {
+      "name": "Source-to-target compare validation",
+      "result": "PASS",
+      "evidence": "Compared base 5e05bda344a20161052f8c1ed579e02b5f0e0720 to head gt63-bridge-v0; status ahead; ahead_by 4; behind_by 0; total_commits 4; merge_base_commit 5e05bda344a20161052f8c1ed579e02b5f0e0720."
     },
     {
       "name": "Scope validation",
       "result": "PASS",
-      "evidence": "Compared files were limited to gt63/bridge/README.md, gt63/bridge/task.json, and gt63/bridge/result.json before result recording"
+      "evidence": "Compare file list before this result recording contained only gt63/bridge/README.md, gt63/bridge/task.json, and gt63/bridge/result.json. No product/runtime files appeared in the diff."
+    },
+    {
+      "name": "No merge/deploy action validation",
+      "result": "PASS",
+      "evidence": "No GitHub merge, pull request merge, deployment, workflow dispatch, or main ref update tool was called during this execution. Only read operations and one gt63/bridge/result.json contents update on gt63-bridge-v0 were performed."
     }
   ],
   "warnings": [
-    "No product/runtime tests were run because task.json explicitly forbids product/runtime code changes and the task scope is limited to the bridge contract.",
-    "The final GitHub contents API commit that records this result is necessarily returned after this file content is prepared; see branch history for the exact recording commit."
+    "No product/runtime tests were run because the task objective is bridge-contract bootstrap only and task.json explicitly forbids product/runtime code changes.",
+    "Updating result.json creates a new evidence-recording commit on gt63-bridge-v0 after the pre-write branch validation. The GitHub contents API returns that recording commit as this operation's result.",
+    "GitHub commit verification metadata for the inspected commits reports unsigned; this was recorded as observed metadata, not treated as a blocker for this bridge task."
   ],
   "blockers": [],
-  "commitSha": "0812c6394b4f35cb860d6211d7e84bc7f398d7aa",
+  "commitSha": "53a652d4c9fc011d4efdff12702e23e52572754c",
+  "resultRecording": {
+    "previousResultBlobSha": "8a1f3c09e7a7b8108552388a480d2fe76df71126",
+    "recordingCommitSha": null,
+    "recordingContentSha": null,
+    "note": "The final recording commit/content SHA are returned by the GitHub contents API after this JSON payload is submitted."
+  },
   "authority": "NONE",
   "humanGateRequired": true
 }
