@@ -139,9 +139,16 @@ else
   VERDICT="VERIFIED_PASS"
 fi
 
-python - "$RUN_JSONL" "$RESULT" <<PY
+RESULT_TMP="$WORK/result.json.tmp"
+if ! python - "$RUN_JSONL" "$RESULT_TMP" "$WORKTREE_AFTER" "$CLEANUP_COMPLETED" <<PY
 import json, sys, datetime
-runlog, result_path = sys.argv[1:]
+runlog, result_path, worktree_after, cleanup_completed = sys.argv[1:]
+def shell_bool(value):
+    if value == "true":
+        return True
+    if value == "false":
+        return False
+    raise ValueError(f"invalid shell boolean: {value!r}")
 surfaces=[]
 with open(runlog, encoding="utf-8") as f:
     for line in f:
@@ -159,7 +166,7 @@ doc={
     "architecture":"$ARCH",
     "runtime":{"node":"$NODE_VERSION","npm":"$NPM_VERSION","python":"$PYTHON_VERSION"},
     "workingTreeCleanBefore":True,
-    "workingTreeCleanAfter":$WORKTREE_AFTER
+    "workingTreeCleanAfter":shell_bool(worktree_after)
   },
   "surfaces":surfaces,
   "verification":{
@@ -168,7 +175,7 @@ doc={
     "executedSuites":$EXECUTED,
     "passedSuites":$PASS,
     "failedSuites":$FAIL,
-    "cleanupCompleted":$CLEANUP_COMPLETED
+    "cleanupCompleted":shell_bool(cleanup_completed)
   },
   "verdict":"$VERDICT"
 }
@@ -176,6 +183,34 @@ with open(result_path, "w", encoding="utf-8") as f:
     json.dump(doc, f, ensure_ascii=False, indent=2)
     f.write("\n")
 PY
+then
+  rm -f "$RESULT_TMP"
+  rm -rf "$WORK"
+  echo "VERDICT=VERIFIER_INTEGRITY_FAILURE"
+  echo "RESULT_EMISSION_FAILED"
+  exit 5
+fi
+
+if ! python - "$RESULT_TMP" >/dev/null <<'PY'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as f:
+    json.load(f)
+PY
+then
+  rm -f "$RESULT_TMP"
+  rm -rf "$WORK"
+  echo "VERDICT=VERIFIER_INTEGRITY_FAILURE"
+  echo "RESULT_VALIDATION_FAILED"
+  exit 5
+fi
+
+if ! mv "$RESULT_TMP" "$RESULT"; then
+  rm -f "$RESULT_TMP"
+  rm -rf "$WORK"
+  echo "VERDICT=VERIFIER_INTEGRITY_FAILURE"
+  echo "RESULT_PUBLISH_FAILED"
+  exit 5
+fi
 
 rm -rf "$WORK"
 echo "RESULT_FILE=$RESULT"
