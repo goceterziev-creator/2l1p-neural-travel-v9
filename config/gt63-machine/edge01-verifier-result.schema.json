@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:gt63:edge01-independent-verifier-result:v0",
+  "title": "EDGE01 Independent Verifier Result V0",
+  "type": "object",
+  "required": [
+    "protocol",
+    "authority",
+    "repository",
+    "verifier",
+    "verification",
+    "verdict"
+  ],
+  "properties": {
+    "protocol": {
+      "const": "EDGE01-INDEPENDENT-VERIFIER-V0"
+    },
+    "authority": {
+      "const": "NONE"
+    },
+    "timestampUtc": {
+      "type": "string"
+    },
+    "repository": {
+      "type": "object",
+      "required": [
+        "identity",
+        "targetCommit"
+      ],
+      "properties": {
+        "identity": {
+          "type": "string"
+        },
+        "targetCommit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "verifier": {
+      "type": "object",
+      "required": [
+        "node",
+        "baselineCommitBefore",
+        "baselineCommitAfter",
+        "architecture",
+        "workingTreeCleanBefore",
+        "workingTreeCleanAfter"
+      ],
+      "properties": {
+        "node": {
+          "type": "string"
+        },
+        "baselineCommitBefore": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "baselineCommitAfter": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "architecture": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "object"
+        },
+        "workingTreeCleanBefore": {
+          "type": "boolean"
+        },
+        "workingTreeCleanAfter": {
+          "type": "boolean"
+        }
+      }
+    },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "implementationPath",
+          "implementationBlob",
+          "testPath",
+          "testBlob",
+          "result"
+        ],
+        "properties": {
+          "implementationPath": {
+            "type": "string"
+          },
+          "implementationBlob": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "testPath": {
+            "type": "string"
+          },
+          "testBlob": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "result": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "BLOCKED",
+              "INCONCLUSIVE"
+            ]
+          },
+          "exitCode": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "validationIdentity": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outputHash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "stdoutSha256": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "stderrSha256": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "deterministic": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "authority": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "suite": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cases": {},
+          "count": {}
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "required": [
+        "materialization",
+        "requiredSuites",
+        "executedSuites",
+        "passedSuites",
+        "failedSuites"
+      ],
+      "properties": {
+        "materialization": {
+          "const": "EPHEMERAL_GIT_ARCHIVE"
+        },
+        "requiredSuites": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "executedSuites": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passedSuites": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failedSuites": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cleanupCompleted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "verdict": {
+      "enum": [
+        "VERIFIED_PASS",
+        "VERIFIED_FAIL",
+        "BLOCKED",
+        "INCONCLUSIVE",
+        "VERIFIER_INTEGRITY_FAILURE"
+      ]
+    }
+  }
+}

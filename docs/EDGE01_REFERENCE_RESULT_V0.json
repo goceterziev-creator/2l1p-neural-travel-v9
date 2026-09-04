@@ -1,0 +1,122 @@
+{
+  "protocol": "EDGE01-INDEPENDENT-VERIFIER-V0",
+  "authority": "NONE",
+  "repository": {
+    "identity": "goceterziev-creator/2l1p-neural-travel-v9",
+    "targetCommit": "5e05bda344a20161052f8c1ed579e02b5f0e0720"
+  },
+  "verifier": {
+    "node": "EDGE01",
+    "baselineCommitBefore": "881e9a8a02de2e22ce0941deaf71d7cff9aa346d",
+    "baselineCommitAfter": "881e9a8a02de2e22ce0941deaf71d7cff9aa346d",
+    "architecture": "aarch64",
+    "runtime": {
+      "node": "v24.18.0",
+      "npm": "11.19.1"
+    },
+    "workingTreeCleanBefore": true,
+    "workingTreeCleanAfter": true
+  },
+  "surfaces": [
+    {
+      "id": "human-intent-layer-v0",
+      "implementationBlob": "bd7cb1d599d3e942b337d74c6b4bc8dedb3ceb2d",
+      "testBlob": "0bca3f317af8a556864a39f9643ec9a8a4630a2d",
+      "result": "PASS",
+      "exitCode": 0,
+      "implementationPath": "experiments/human-intent-layer-v0/intent-layer.js",
+      "testPath": "experiments/human-intent-layer-v0/intent-layer.test.js"
+    },
+    {
+      "id": "gate-presenter-v0",
+      "implementationBlob": "fed5b770fabf4f574e57ad0c6d6c95ed4417ef41",
+      "testBlob": "2812afb5f637357baa30666b0073533c8206af45",
+      "result": "PASS",
+      "exitCode": 0,
+      "implementationPath": "experiments/human-intent-interaction-runtime-v0/gate-presenter.js",
+      "testPath": "experiments/human-intent-interaction-runtime-v0/gate-presenter.test.js"
+    },
+    {
+      "id": "approval-resolver-v0",
+      "implementationBlob": "82b9d7c778a15e1a3289088b0df6d56cd8a00fd9",
+      "testBlob": "76b49817a4443459dcd6f2ca6b00fb17c78f92e0",
+      "result": "PASS",
+      "exitCode": 0,
+      "implementationPath": "experiments/human-intent-interaction-runtime-v0/approval-resolver.js",
+      "testPath": "experiments/human-intent-interaction-runtime-v0/approval-resolver.test.js"
+    },
+    {
+      "id": "execution-acceptance-v0",
+      "implementationBlob": "e1a1be75b3e41fb43cb955478b8497ae6a7407c4",
+      "testBlob": "d41f854f66878ff674347c3007505d3c95023206",
+      "result": "PASS",
+      "exitCode": 0,
+      "outputHash": "bd33ff1388fd5eacf3b05fa2c2706ffea2968b8558e74608da38a22c87e706bf",
+      "implementationPath": "experiments/human-intent-interaction-runtime-v0/execution-acceptance.js",
+      "testPath": "experiments/human-intent-interaction-runtime-v0/execution-acceptance.test.js"
+    },
+    {
+      "id": "runtime-execution-observation-v0",
+      "implementationBlob": "1dba9e15a128cd800dab026e76ffa70957a234d0",
+      "testBlob": "7ab88d993105cef2e47ed3a811012ac3ea7cdd58",
+      "result": "PASS",
+      "exitCode": 0,
+      "validationIdentity": "6af668b59a8f4d62021b0792c36b1c65a5555941cb694c9ba08c67bc1f8b8c23",
+      "outputHash": "6af668b59a8f4d62021b0792c36b1c65a5555941cb694c9ba08c67bc1f8b8c23",
+      "implementationPath": "scripts/gt63-machine/runtime-execution-observation.js",
+      "testPath": "scripts/gt63-machine-runtime-execution-observation-regression.js"
+    },
+    {
+      "id": "runtime-result-output-observation-v0",
+      "implementationBlob": "f86a3a3193a46960711e6d1e7ab1d562c3d9af7a",
+      "testBlob": "4dcfbd3b74af045655f3e8d3b32f8412772c9628",
+      "result": "PASS",
+      "exitCode": 0,
+      "validationIdentity": "bb1d8a1fabe08c7779d80a8f9ed0070b2a42c11ed06f4033c179a4d58ae94e22",
+      "outputHash": "bb1d8a1fabe08c7779d80a8f9ed0070b2a42c11ed06f4033c179a4d58ae94e22",
+      "implementationPath": "scripts/gt63-machine/runtime-result-output-observation.js",
+      "testPath": "scripts/gt63-machine-runtime-result-output-observation-regression.js"
+    },
+    {
+      "id": "authenticated-human-source-event-binding-v0",
+      "implementationBlob": "1eb1a46e9493b5f409a46f2da6c13f698a1a93c9",
+      "testBlob": "8f1f891df34f736f5d1fb5c4a3508db0454e3bc7",
+      "result": "PASS",
+      "exitCode": 0,
+      "validationIdentity": "69a28860ce237418deba1328f1c0923f07eb6b4f6cddf387152704649586999f",
+      "outputHash": "9575352868e62aac774bac17dadde3b4f1487cf8b46ae1ff4738c0fc542984ec",
+      "implementationPath": "scripts/gt63-machine/authenticated-human-source-event-binding.js",
+      "testPath": "scripts/gt63-machine-authenticated-human-source-event-binding-regression.js"
+    },
+    {
+      "id": "accepted-governance-role-evidence-v0",
+      "implementationBlob": "5a24b0edeb7910fb75a75f0955882a8598eb46cc",
+      "testBlob": "541f5e0076de12ab371f1288802dfc26d08df606",
+      "result": "PASS",
+      "exitCode": 0,
+      "validationIdentity": "ff54493f4522cb5033ead799a3fec79a11cbbe6e8beb9309a176cd3c45d6756d",
+      "outputHash": "73b0eb03dbfe7cb5ac8f681ce7e97a727196383025b70aa3c0694176cafa92f7",
+      "implementationPath": "scripts/gt63-machine/accepted-governance-role-evidence.js",
+      "testPath": "scripts/gt63-machine-accepted-governance-role-evidence-regression.js"
+    },
+    {
+      "id": "repository-frozen-governance-trust-root-v0",
+      "implementationBlob": "b01d050c95528a366af54a2d19791c455d6594be",
+      "testBlob": "2d76549c119d5adbed6b6f2e5f7991bf1a00686a",
+      "result": "PASS",
+      "exitCode": 0,
+      "validationIdentity": "sha256:32627999b0ad514653c72eb8fbe752a859b469e64bb5a018dd4529cbfad9a976",
+      "implementationPath": "scripts/gt63-machine/repository-frozen-governance-trust-root.js",
+      "testPath": "scripts/gt63-machine-repository-frozen-governance-trust-root-regression.js"
+    }
+  ],
+  "verification": {
+    "materialization": "EPHEMERAL_GIT_ARCHIVE",
+    "requiredSuites": 9,
+    "executedSuites": 9,
+    "passedSuites": 9,
+    "failedSuites": 0,
+    "cleanupCompleted": true
+  },
+  "verdict": "VERIFIED_PASS"
+}
