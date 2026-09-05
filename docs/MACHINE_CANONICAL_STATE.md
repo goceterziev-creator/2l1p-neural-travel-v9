@@ -1,6 +1,6 @@
 # GT63 MACHINE — CANONICAL STATE INDEX
 
-> Status: BOOTSTRAP / NAVIGATION INDEX
+> Status: CANONICAL NAVIGATION INDEX
 >
 > This file is an index into repository evidence. It is **not** itself a substitute for Git objects, validation artifacts, or runtime evidence.
 >
@@ -289,5 +289,4 @@ The latter two are general runtime-evidence cautions: declared/configured state 
 
 ---
 
-Bootstrap authority: bounded creation and maintenance-protocol definition on a non-main branch only.  
-No merge, no movement of `main`, no deploy.
+Bootstrap construction was performed on `docs/machine-canonical-state-bootstrap` without mutating `main`. Integration of this navigation index into `main` was subsequently authorized by an explicit Human Gate. That authorization is limited to this documentation integration and creates no capability implementation, runtime execution, continuation, deployment, or other MACHINE authority.
