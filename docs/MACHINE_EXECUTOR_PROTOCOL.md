@@ -1,10 +1,10 @@
 # GT63 MACHINE — BOUNDED EXECUTOR PROTOCOL
 
-> Status: PROPOSED EXECUTOR OPERATING PROTOCOL
+> Status: INTEGRATION-APPROVED EXECUTOR OPERATING PROTOCOL
 >
 > Scope: instructions for Codex / Goshko or any other bounded technical executor working on GT63 MACHINE.
 >
-> This protocol does **not** create implementation, continuation, execution, merge, deployment, or other MACHINE authority.
+> This protocol does **not** create implementation, continuation, execution, deployment, or other MACHINE authority beyond the explicitly approved documentation integration itself.
 
 ## 1. Purpose
 
@@ -208,5 +208,5 @@ The executor's ability to call a tool, write a Git object, create a branch, or a
 
 ---
 
-Protocol creation scope: documentation candidate only on a non-main branch.  
-No merge, no movement of `main`, no deploy.
+Integration authority: explicitly approved by Human Authority for this documentation protocol.  
+No runtime implementation or deploy authority is created.
