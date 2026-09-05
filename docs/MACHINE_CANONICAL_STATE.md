@@ -15,7 +15,7 @@
 - Verified main tree at bootstrap: `82f90e7bb35a90af151fb61552674e4f0457745b`
 - Bootstrap branch for this index: `docs/machine-canonical-state-bootstrap`
 
-`LAST_VERIFIED_AGAINST_REPOSITORY` is represented by the exact commit/tree identity above, not by a date alone.
+`LAST_VERIFIED_AGAINST_REPOSITORY` is represented by an exact commit/tree identity, not by a date alone.
 
 ## 2. Proven formal governance ancestry subset
 
@@ -148,35 +148,134 @@ Therefore:
 
 Do not infer the missing transition from the existence of a later descendant/candidate.
 
-## 6. Update discipline
+## 6. Maintenance protocol
 
-Future changes to this index should be derived from repository evidence and an explicit state delta. Recommended delta shape:
+The purpose of this file is to make cross-chat and cross-agent continuity depend on repository evidence rather than conversational memory.
+
+### Roles
+
+- **Human Authority (Goce):** approves authority-bearing repository mutations and decides disputed archaeology.
+- **Architecture / State Keeper (Atanas / ChatGPT):** synchronizes from repository evidence, compares new evidence with the current canonical state, proposes/applies bounded state deltas when authorized, and preserves unknowns rather than filling gaps by inference.
+- **Bounded Executor (Goshko / Codex or other authorized executor):** performs only the explicitly authorized discovery, validation, construction, or integration operation and returns exact evidence identities.
+- **Git / repository evidence:** technical evidence substrate.
+- **This file:** navigation index over that evidence, never a replacement for it.
+
+Role labels are workflow responsibilities only. They do not themselves create MACHINE governance authority.
+
+### New-chat synchronization
+
+When beginning or resuming MACHINE work:
+
+```text
+NEW CHAT
+  → READ MACHINE_CANONICAL_STATE FIRST
+  → RESOLVE authoritative refs from repository
+  → VERIFY current main commit/tree
+  → COMPARE current repository state with recorded state
+  → PRESERVE contradictions/unknowns
+  → CONTINUE only from evidenced state
+```
+
+Canonical rule:
+
+> **NEW CHAT → READ CANONICAL STATE FIRST**
+
+Conversational memory may help locate evidence, but it must not override contradictory repository evidence.
+
+### Evidence precedence
+
+For technical project state:
+
+```text
+repository / immutable artifact evidence
+        > canonical navigation summary
+        > conversational memory
+```
+
+This precedence is not a claim that Git proves semantic truth by itself. Evidence still has to be interpreted according to its type and scope.
+
+### State-update workflow
+
+For each materially new discovery, validation, candidate, integration, contradiction, or frontier change:
+
+```text
+NEW EVIDENCE
+  → identify exact source identity
+  → compare against current canonical state
+  → derive minimal STATE DELTA
+  → preserve unresolved claims explicitly
+  → update current-state sections if warranted
+  → append an audit delta when warranted
+  → read back and verify the resulting repository object
+  → verify authoritative main remains unchanged unless its mutation was explicitly authorized
+```
+
+Canonical rules:
+
+> **NEW EVIDENCE → APPLY DELTA, DO NOT RECONSTRUCT FROM MEMORY**
+>
+> **NO STATE CHANGE WITHOUT SOURCE IDENTITY**
+
+A chat statement, summary, filename, or remembered claim alone is not sufficient technical source identity.
+
+### Minimum source identity
+
+A technical state change should point to the strongest applicable evidence identity, for example:
+
+- authoritative commit + tree;
+- candidate tree / blob identity;
+- exact artifact SHA-256;
+- validation identity and result;
+- repository path + Git object identity;
+- other bounded immutable evidence anchor appropriate to the claim.
+
+Dates alone are not evidence of artifact chronology or identity.
+
+### STATE DELTA format
 
 ```text
 MACHINE_STATE_DELTA
 
 BASELINE_BEFORE:
-  main: <exact commit>
-  tree: <exact tree>
+  main_commit: <exact commit>
+  main_tree: <exact tree>
+
+SOURCE_IDENTITY:
+  <exact evidence anchors>
 
 NEW_EVIDENCE:
   <capability / finding / artifact identity>
 
+STATUS_CHANGE:
+  from: <prior status or NONE>
+  to: <new evidenced status>
+
 FRONTIER_CHANGE:
-  from: <prior frontier>
-  to: <new frontier>
+  accepted_frontier: <unchanged | exact change>
+  implementation_frontier: <unchanged | exact change>
+  semantic_frontier: <unchanged | exact change>
 
 NEW_INVARIANTS:
-  - <invariant>
+  - <new evidenced invariant or NONE>
 
 UNRESOLVED:
-  - <unknown / prohibited inference>
+  - <unknown / contradiction / prohibited inference>
 
 AUTHORITY_CREATED: NONE | <explicitly evidenced authority>
 MAIN_MUTATED: false | true
 ```
 
-A state delta is an update proposal/indexing aid. Its claims still require the underlying repository/evidence identity.
+A state delta is an indexing/update proposal. Its claims remain subordinate to the underlying evidence.
+
+### Human Gate for maintenance
+
+Reading/synchronizing the canonical state does not create mutation authority. Repository writes, branch/ref changes, PRs, merges, and deployments remain bounded by their separately granted authority.
+
+Maintenance of this index must never be interpreted as authorization to implement the capability it describes.
+
+> **STATE RECORDING ≠ IMPLEMENTATION AUTHORITY**
+>
+> **FRONTIER DISCOVERY ≠ IMPLEMENTATION AUTHORITY**
 
 ## 7. Core preservation rules
 
@@ -190,5 +289,5 @@ The latter two are general runtime-evidence cautions: declared/configured state 
 
 ---
 
-Bootstrap authority: bounded creation of this index on a non-main branch only.  
+Bootstrap authority: bounded creation and maintenance-protocol definition on a non-main branch only.  
 No merge, no movement of `main`, no deploy.
