@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict");
-const {RULESET_VERSION,OUTCOMES,createTrustedGovernanceEvidenceSurfaceProvider,canonicalStringify}=require("./trusted-governance-evidence-surface-provider");
+const {RULESET_VERSION,OUTCOMES,createTrustedGovernanceEvidenceSurfaceProvider,canonicalStringify,digestValue}=require("./trusted-governance-evidence-surface-provider");
 function fixtures(){
  const p={type:"GOVERNANCE_ROLE_POLICY_REQUIREMENT_EVIDENCE_ACCEPTANCE",policyAcceptanceId:"pacc",policyRef:"policy:main",policyRevision:"p1",authority:"NONE"};
  const a={type:"DIRECT_PRINCIPAL_ROLE_ASSIGNMENT_EVIDENCE_ACCEPTANCE",assignmentAcceptanceId:"aacc",assignmentRef:"assign:owner",assignmentRevision:"a1",authority:"NONE"};
@@ -16,13 +16,14 @@ function make(f=fixtures()){
  return createTrustedGovernanceEvidenceSurfaceProvider({
   acceptedLedgerSnapshotPort:()=>f.accepted,
   lifecycleLedgerSnapshotPort:()=>f.lifecycle,
-  ledgerRegistryPort:({ledgerRef,ledgerRevision})=>({ledgerRef,ledgerRevision,trustState:"TRUSTED",registryEvidenceRef:`registry:${ledgerRef}`,authority:"NONE"})
+  ledgerRegistryPort:({ledgerRef,ledgerRevision})=>{const s=ledgerRef==="ledger:accepted"?f.accepted:f.lifecycle;return {ledgerRef,ledgerRevision,frameRevision:s.frameRevision,completeThroughSequence:s.completeThroughSequence,snapshotDigest:digestValue(s),trustState:"TRUSTED",registryEvidenceRef:`registry:${ledgerRef}`,authority:"NONE"};}
  });
 }
 const tests=[]; const test=(n,f)=>tests.push([n,f]);
 test("produces deterministic trusted surface",()=>{const x=make();const r1=x.produce({rulesetVersion:RULESET_VERSION,frameRevision:"f1"});const r2=x.produce({rulesetVersion:RULESET_VERSION,frameRevision:"f1"});assert.equal(r1.outcome,OUTCOMES.PRODUCED);assert.equal(canonicalStringify(r1),canonicalStringify(r2));assert.equal(r1.authority,"NONE");assert.equal(r1.surface.authority,"NONE");});
 test("request cannot inject coverage",()=>{assert.equal(make().produce({rulesetVersion:RULESET_VERSION,frameRevision:"f1",coverage:[]}).outcome,OUTCOMES.REJECTED);});
-test("untrusted ledger preserves UNKNOWN",()=>{const f=fixtures();const p=createTrustedGovernanceEvidenceSurfaceProvider({acceptedLedgerSnapshotPort:()=>f.accepted,lifecycleLedgerSnapshotPort:()=>f.lifecycle,ledgerRegistryPort:({ledgerRef,ledgerRevision})=>({ledgerRef,ledgerRevision,trustState:"UNTRUSTED",registryEvidenceRef:"e:r",authority:"NONE"})});assert.equal(p.produce({rulesetVersion:RULESET_VERSION,frameRevision:"f1"}).outcome,OUTCOMES.UNKNOWN);});
+test("untrusted ledger preserves UNKNOWN",()=>{const f=fixtures();const p=createTrustedGovernanceEvidenceSurfaceProvider({acceptedLedgerSnapshotPort:()=>f.accepted,lifecycleLedgerSnapshotPort:()=>f.lifecycle,ledgerRegistryPort:({ledgerRef,ledgerRevision})=>{const s=ledgerRef==="ledger:accepted"?f.accepted:f.lifecycle;return {ledgerRef,ledgerRevision,frameRevision:s.frameRevision,completeThroughSequence:s.completeThroughSequence,snapshotDigest:digestValue(s),trustState:"UNTRUSTED",registryEvidenceRef:"e:r",authority:"NONE"};}});assert.equal(p.produce({rulesetVersion:RULESET_VERSION,frameRevision:"f1"}).outcome,OUTCOMES.UNKNOWN);});
+test("snapshot content drift against trusted registry preserves UNKNOWN",()=>{const f=fixtures();const acceptedDigest=digestValue(f.accepted), lifecycleDigest=digestValue(f.lifecycle);const p=createTrustedGovernanceEvidenceSurfaceProvider({acceptedLedgerSnapshotPort:()=>{const x=JSON.parse(JSON.stringify(f.accepted));x.entries.pop();return x;},lifecycleLedgerSnapshotPort:()=>f.lifecycle,ledgerRegistryPort:({ledgerRef,ledgerRevision})=>{const s=ledgerRef==="ledger:accepted"?f.accepted:f.lifecycle;return {ledgerRef,ledgerRevision,frameRevision:s.frameRevision,completeThroughSequence:s.completeThroughSequence,snapshotDigest:ledgerRef==="ledger:accepted"?acceptedDigest:lifecycleDigest,trustState:"TRUSTED",registryEvidenceRef:"e:r",authority:"NONE"};}});assert.equal(p.produce({rulesetVersion:RULESET_VERSION,frameRevision:"f1"}).outcome,OUTCOMES.UNKNOWN);});
 test("incomplete ledger contract is rejected",()=>{const f=fixtures();f.accepted.complete=false;assert.equal(make(f).produce({rulesetVersion:RULESET_VERSION,frameRevision:"f1"}).outcome,OUTCOMES.REJECTED);});
 test("missing lifecycle coverage preserves UNKNOWN",()=>{const f=fixtures();f.lifecycle.entries.pop();f.lifecycle.completeThroughSequence=2;assert.equal(make(f).produce({rulesetVersion:RULESET_VERSION,frameRevision:"f1"}).outcome,OUTCOMES.UNKNOWN);});
 test("unbound lifecycle record conflicts",()=>{const f=fixtures();f.lifecycle.entries[0].record.acceptanceId="missing";assert.equal(make(f).produce({rulesetVersion:RULESET_VERSION,frameRevision:"f1"}).outcome,OUTCOMES.CONFLICT);});
