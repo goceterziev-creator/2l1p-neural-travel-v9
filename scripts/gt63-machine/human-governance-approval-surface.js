@@ -102,6 +102,8 @@ function createHumanGovernanceApprovalSurface({
     if (!DECISIONS.has(decision)) throw new Error("unsupported decision");
     const presentation = presentationLedger.get(presentationId);
     if (!presentation) throw new Error("presentation not found");
+    const presentedPayload = JSON.parse(Buffer.from(presentation.exactPayloadBytesBase64, "base64").toString("utf8"));
+    if (presentedPayload.decision !== decision) throw new Error("decision does not match exact presented payload");
     if (presentation.sessionRef !== s.sessionRef
       || presentation.sessionRevision !== s.sessionRevision
       || presentation.authenticatedAccountRef !== s.authenticatedAccountRef

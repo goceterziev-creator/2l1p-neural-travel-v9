@@ -93,6 +93,12 @@ test("reject preserves the exact presented payload bytes", () => {
   assert.equal(Buffer.from(e.contentBytesBase64, "base64").toString("utf8"), rejectPayload);
 });
 
+test("button decision must match exact presented payload decision", () => {
+  const s = surface();
+  const p = s.present({ session: session(), gate: gate() });
+  assert.throws(() => s.decide({ session: session(), presentationId: p.presentationId, decision: "REJECT" }));
+});
+
 test("unsupported decision fails closed", () => {
   const s = surface();
   const p = s.present({ session: session(), gate: gate() });
