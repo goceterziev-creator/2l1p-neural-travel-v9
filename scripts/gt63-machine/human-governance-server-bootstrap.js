@@ -39,18 +39,6 @@ const approvalSurface = approval.createHumanGovernanceApprovalSurface({
 });
 const gateProvider = gateProviderModule.createExactBootstrapGateProvider();
 const approvalRoutes = wiring.createHumanGovernanceApprovalRoutes({ approvalSurface, gateProvider });
-const bindingRuntime = bindingRuntimeModule.createHumanGovernanceAuthenticatedBindingRuntime({
-  presentationLedger,
-  sourceEventLedger
-});
-const routes = boundRoutesModule.createHumanGovernanceBoundDecisionRoutes({
-  routes: approvalRoutes,
-  bindingRuntime
-});
-const basePath = "/api/gt63/governance/approval";
-
-capturedApp.get(`${basePath}/:gateId/presentation`, routes.present);
-capturedApp.post(`${basePath}/:gateId/decision`, routes.decide);
 
 const githubOAuthClientId = String(process.env.GT63_GITHUB_OAUTH_CLIENT_ID || "").trim();
 const identityBootstrap = githubOAuthClientId
@@ -62,6 +50,21 @@ const identityBootstrap = githubOAuthClientId
       }
     })
   : null;
+
+const bindingRuntime = bindingRuntimeModule.createHumanGovernanceAuthenticatedBindingRuntime({
+  presentationLedger,
+  sourceEventLedger,
+  identityProvider: identityBootstrap
+});
+const routes = boundRoutesModule.createHumanGovernanceBoundDecisionRoutes({
+  routes: approvalRoutes,
+  bindingRuntime
+});
+const basePath = "/api/gt63/governance/approval";
+
+capturedApp.get(`${basePath}/:gateId/presentation`, routes.present);
+capturedApp.post(`${basePath}/:gateId/decision`, routes.decide);
+
 const identityRoutes = identityRoutesModule.createGitHubHumanIdentityTrustRoutes({ identityBootstrap });
 const identityBasePath = "/api/gt63/governance/identity/github";
 
@@ -72,7 +75,7 @@ const port = process.env.PORT || 3001;
 capturedApp.listen(port, () => {
   console.log(`🚀 2L1P Neural Travel running on http://localhost:${port}`);
   console.log("🔐 GT63 Human Governance Approval Surface V0 active (authority NONE)");
-  console.log("🔗 GT63 Authenticated Human Source Event Binding adapter active (trust UNKNOWN until proven)");
+  console.log("🔗 GT63 Authenticated Human Source Event Binding adapter active (principal resolution may consume same-session verified GitHub identity; trust UNKNOWN until separately proven)");
   console.log(githubOAuthClientId
     ? "🪪 GT63 GitHub Human Identity Trust Bootstrap V0 active (candidate anchor; authority NONE)"
     : "🪪 GT63 GitHub Human Identity Trust Bootstrap V0 disabled: GT63_GITHUB_OAUTH_CLIENT_ID not configured");
