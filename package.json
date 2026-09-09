@@ -4,7 +4,7 @@
   "description": "2L1P Neural Travel - Offer Engine",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node scripts/gt63-machine/human-governance-server-bootstrap.js",
     "dev": "node server.js",
     "smoke": "node scripts/smoke-test.js",
     "visual-smoke": "node scripts/visual-smoke-v818.js",
