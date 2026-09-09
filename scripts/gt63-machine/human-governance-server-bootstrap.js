@@ -30,6 +30,8 @@ const bindingRuntimeModule = require("./human-governance-authenticated-binding-r
 const boundRoutesModule = require("./human-governance-bound-decision-routes");
 const identityBootstrapModule = require("./github-human-identity-trust-bootstrap");
 const identityRoutesModule = require("./github-human-identity-trust-routes");
+const trustDecisionCaptureModule = require("./human-governance-trust-decision-presentation-capture");
+const trustDecisionRoutesModule = require("./human-governance-trust-decision-routes");
 
 const presentationLedger = approval.createMemoryLedger();
 const sourceEventLedger = approval.createMemoryLedger();
@@ -71,6 +73,25 @@ const identityBasePath = "/api/gt63/governance/identity/github";
 capturedApp.post(`${identityBasePath}/start`, identityRoutes.start);
 capturedApp.post(`${identityBasePath}/poll`, identityRoutes.poll);
 
+const trustDecisionPresentationLedger = trustDecisionCaptureModule.createMemoryLedger();
+const trustDecisionLedger = trustDecisionCaptureModule.createMemoryLedger();
+const trustDecisionSurface = trustDecisionCaptureModule.createHumanGovernanceTrustDecisionPresentationCapture({
+  presentationLedger: trustDecisionPresentationLedger,
+  decisionLedger: trustDecisionLedger
+});
+const trustDecisionRoutes = identityBootstrap
+  ? trustDecisionRoutesModule.createHumanGovernanceTrustDecisionRoutes({
+      trustDecisionSurface,
+      identityBootstrap
+    })
+  : null;
+const trustDecisionBasePath = "/api/gt63/governance/trust";
+
+if (trustDecisionRoutes) {
+  capturedApp.get(`${trustDecisionBasePath}/presentation`, trustDecisionRoutes.present);
+  capturedApp.post(`${trustDecisionBasePath}/decision`, trustDecisionRoutes.decide);
+}
+
 const port = process.env.PORT || 3001;
 capturedApp.listen(port, () => {
   console.log(`🚀 2L1P Neural Travel running on http://localhost:${port}`);
@@ -79,4 +100,7 @@ capturedApp.listen(port, () => {
   console.log(githubOAuthClientId
     ? "🪪 GT63 GitHub Human Identity Trust Bootstrap V0 active (candidate anchor; authority NONE)"
     : "🪪 GT63 GitHub Human Identity Trust Bootstrap V0 disabled: GT63_GITHUB_OAUTH_CLIENT_ID not configured");
+  console.log(trustDecisionRoutes
+    ? "🧾 GT63 Human Trust Decision Presentation & Capture V0 active (verified GitHub principal required; authority NONE)"
+    : "🧾 GT63 Human Trust Decision Presentation & Capture V0 disabled: verified identity bootstrap not configured");
 });
