@@ -28,6 +28,8 @@ const wiring = require("./human-governance-approval-server-wiring");
 const gateProviderModule = require("./exact-bootstrap-gate-provider");
 const bindingRuntimeModule = require("./human-governance-authenticated-binding-runtime");
 const boundRoutesModule = require("./human-governance-bound-decision-routes");
+const identityBootstrapModule = require("./github-human-identity-trust-bootstrap");
+const identityRoutesModule = require("./github-human-identity-trust-routes");
 
 const presentationLedger = approval.createMemoryLedger();
 const sourceEventLedger = approval.createMemoryLedger();
@@ -50,9 +52,28 @@ const basePath = "/api/gt63/governance/approval";
 capturedApp.get(`${basePath}/:gateId/presentation`, routes.present);
 capturedApp.post(`${basePath}/:gateId/decision`, routes.decide);
 
+const githubOAuthClientId = String(process.env.GT63_GITHUB_OAUTH_CLIENT_ID || "").trim();
+const identityBootstrap = githubOAuthClientId
+  ? identityBootstrapModule.createGitHubHumanIdentityTrustBootstrap({
+      clientId: githubOAuthClientId,
+      expectedIdentity: {
+        githubUserId: 239696056,
+        githubLogin: "goceterziev-creator"
+      }
+    })
+  : null;
+const identityRoutes = identityRoutesModule.createGitHubHumanIdentityTrustRoutes({ identityBootstrap });
+const identityBasePath = "/api/gt63/governance/identity/github";
+
+capturedApp.post(`${identityBasePath}/start`, identityRoutes.start);
+capturedApp.post(`${identityBasePath}/poll`, identityRoutes.poll);
+
 const port = process.env.PORT || 3001;
 capturedApp.listen(port, () => {
   console.log(`🚀 2L1P Neural Travel running on http://localhost:${port}`);
   console.log("🔐 GT63 Human Governance Approval Surface V0 active (authority NONE)");
   console.log("🔗 GT63 Authenticated Human Source Event Binding adapter active (trust UNKNOWN until proven)");
+  console.log(githubOAuthClientId
+    ? "🪪 GT63 GitHub Human Identity Trust Bootstrap V0 active (candidate anchor; authority NONE)"
+    : "🪪 GT63 GitHub Human Identity Trust Bootstrap V0 disabled: GT63_GITHUB_OAUTH_CLIENT_ID not configured");
 });
