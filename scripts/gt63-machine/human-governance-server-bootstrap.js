@@ -32,6 +32,8 @@ const identityBootstrapModule = require("./github-human-identity-trust-bootstrap
 const identityRoutesModule = require("./github-human-identity-trust-routes");
 const trustDecisionCaptureModule = require("./human-governance-trust-decision-presentation-capture");
 const trustDecisionRoutesModule = require("./human-governance-trust-decision-routes");
+const trustRuntimeChainModule = require("./human-governance-trust-runtime-chain");
+const trustRuntimeChainRoutesModule = require("./human-governance-trust-runtime-chain-routes");
 
 const presentationLedger = approval.createMemoryLedger();
 const sourceEventLedger = approval.createMemoryLedger();
@@ -92,6 +94,23 @@ if (trustDecisionRoutes) {
   capturedApp.post(`${trustDecisionBasePath}/decision`, trustDecisionRoutes.decide);
 }
 
+const trustRuntimeChain = identityBootstrap
+  ? trustRuntimeChainModule.createHumanGovernanceTrustRuntimeChain({
+      decisionLedger: trustDecisionLedger,
+      identityBootstrap
+    })
+  : null;
+const trustRuntimeChainRoutes = trustRuntimeChain
+  ? trustRuntimeChainRoutesModule.createHumanGovernanceTrustRuntimeChainRoutes({
+      runtimeChain: trustRuntimeChain,
+      identityBootstrap
+    })
+  : null;
+
+if (trustRuntimeChainRoutes) {
+  capturedApp.post(`${trustDecisionBasePath}/consume`, trustRuntimeChainRoutes.consume);
+}
+
 const port = process.env.PORT || 3001;
 capturedApp.listen(port, () => {
   console.log(`🚀 2L1P Neural Travel running on http://localhost:${port}`);
@@ -103,4 +122,7 @@ capturedApp.listen(port, () => {
   console.log(trustDecisionRoutes
     ? "🧾 GT63 Human Trust Decision Presentation & Capture V0 active (verified GitHub principal required; authority NONE)"
     : "🧾 GT63 Human Trust Decision Presentation & Capture V0 disabled: verified identity bootstrap not configured");
+  console.log(trustRuntimeChainRoutes
+    ? "🧬 GT63 Human Trust Runtime Chain V0 active (explicit decision consumption; authority NONE)"
+    : "🧬 GT63 Human Trust Runtime Chain V0 disabled: verified identity bootstrap not configured");
 });
