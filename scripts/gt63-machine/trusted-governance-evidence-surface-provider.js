@@ -25,8 +25,18 @@ function deepFreeze(v){ if(v && typeof v === "object" && !Object.isFrozen(v)){ O
 function result(outcome, reason, surface=null){ return deepFreeze({ outcome, reason: reason || null, surface, authority:"NONE" }); }
 function call(port,arg){ try { return {ok:true,value:port(deepFreeze(canonicalize(arg)))}; } catch(_){ return {ok:false,value:null}; } }
 
-function validRegistry(r, ref, revision){
-  return plain(r) && r.ledgerRef===ref && r.ledgerRevision===revision && r.trustState==="TRUSTED" && nonEmpty(r.registryEvidenceRef) && r.authority==="NONE";
+function snapshotMaterial(s){
+  return canonicalize({
+    type:s.type, ledgerRef:s.ledgerRef, ledgerRevision:s.ledgerRevision, frameRevision:s.frameRevision,
+    completeThroughSequence:s.completeThroughSequence, complete:s.complete, entries:s.entries,
+    snapshotEvidenceRef:s.snapshotEvidenceRef, authority:s.authority
+  });
+}
+function validRegistry(r, snapshot){
+  return plain(r) && r.ledgerRef===snapshot.ledgerRef && r.ledgerRevision===snapshot.ledgerRevision
+    && r.frameRevision===snapshot.frameRevision && r.completeThroughSequence===snapshot.completeThroughSequence
+    && r.snapshotDigest===digestValue(snapshotMaterial(snapshot)) && r.trustState==="TRUSTED"
+    && nonEmpty(r.registryEvidenceRef) && r.authority==="NONE";
 }
 function validAccepted(record, kind){
   if (!plain(record) || record.authority !== "NONE") return false;
@@ -70,9 +80,9 @@ function createTrustedGovernanceEvidenceSurfaceProvider({ acceptedLedgerSnapshot
     if(a.value.entries.some(e=>e.sequence>a.value.completeThroughSequence) || l.value.entries.some(e=>e.sequence>l.value.completeThroughSequence)) return result(OUTCOMES.CONFLICT,"entry exceeds complete ledger head");
 
     for(const s of [a.value,l.value]){
-      const rr=call(ledgerRegistryPort,{ledgerRef:s.ledgerRef,ledgerRevision:s.ledgerRevision});
+      const rr=call(ledgerRegistryPort,{ledgerRef:s.ledgerRef,ledgerRevision:s.ledgerRevision,frameRevision:s.frameRevision});
       if(!rr.ok) return result(OUTCOMES.UNKNOWN,"ledger registry unavailable");
-      if(!validRegistry(rr.value,s.ledgerRef,s.ledgerRevision)) return result(OUTCOMES.UNKNOWN,"ledger snapshot source not trusted or unbound");
+      if(!validRegistry(rr.value,s)) return result(OUTCOMES.UNKNOWN,"ledger snapshot bytes/head/frame are not trusted and bound");
     }
 
     const accepted={POLICY:[],ASSIGNMENT:[],DELEGATION:[]};
