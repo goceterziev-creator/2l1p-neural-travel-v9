@@ -27,11 +27,13 @@ function clone(value) {
 function createHumanGovernanceAuthenticatedBindingRuntime({
   presentationLedger,
   sourceEventLedger,
+  identityProvider = null,
   bindingLedger = createMemoryBindingLedger()
 }) {
   const adapter = createHumanGovernanceAuthenticatedBindingAdapter({
     presentationLedger,
-    sourceEventLedger
+    sourceEventLedger,
+    identityProvider
   });
 
   const binding = createAuthenticatedHumanSourceEventBinding({
@@ -49,16 +51,7 @@ function createHumanGovernanceAuthenticatedBindingRuntime({
       return Object.freeze({ outcome: "BINDING_EVIDENCE_REJECTED", reason: "invalid human source event", binding: null, authority: "NONE" });
     }
 
-    return binding.accept({
-      rulesetVersion: "authenticated-human-source-event-binding-v1.0.0",
-      sourceEventRef: sourceEvent.sourceEventRef,
-      expectedSourceEventRevision: sourceEvent.sourceEventRevision,
-      expectedSourceProviderRevision: sourceEvent.sourceProviderRevision,
-      expectedPrincipalRevision: null,
-      expectedVerificationMethodRevision: "1",
-      expectedRoutingRevision: "1",
-      expectedContextRevision: sourceEvent.contextRevision
-    });
+    return binding.accept(adapter.createBindingRequest(sourceEvent.sourceEventRef));
   }
 
   return Object.freeze({
