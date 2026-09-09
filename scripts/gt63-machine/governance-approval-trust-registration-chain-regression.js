@@ -5,10 +5,10 @@ const producerModule = require("./governance-approval-trust-registration-provena
 const acceptanceModule = require("./governance-approval-trust-registration-evidence-acceptance");
 const resolverModule = require("./governance-approval-trust-registration");
 
-const REGISTRATION_REF = "gt63-machine:trust-registration:approval-surface-v0";
-const REGISTRATION_REVISION = "1";
-const APPROVAL_DIGEST = "sha256:0bba51ea1427c2e5a3542c9a46de7b4de7e44861ebdf82f14469d2f8777899aa";
-const PRINCIPAL_REF = "gt63-machine:principal:github:239696056";
+const REGISTRATION_REF = producerModule.EXPECTED_REGISTRATION_REF;
+const REGISTRATION_REVISION = producerModule.EXPECTED_REGISTRATION_REVISION;
+const APPROVAL_DIGEST = producerModule.EXPECTED_APPROVAL_DIGEST;
+const PRINCIPAL_REF = producerModule.EXPECTED_PRINCIPAL_REF;
 const SESSION_REF = "gt63-runtime-session:USR-ADMIN:chain-test";
 
 function clone(value) {
@@ -33,10 +33,13 @@ function fixture(overrides = {}) {
     outcome: "BINDING_EVIDENCE_ACCEPTED",
     authority: "NONE",
     binding: {
+      bindingId: "human-source-binding:chain-test",
       sourceEventRef: "gt63-human-source-event:chain-test",
       principalResolutionState: "RESOLVED",
       principalRef: PRINCIPAL_REF,
       principalRevision: "1",
+      principalLifecycleState: "CURRENT",
+      principalFreshnessState: "CURRENT",
       sessionRef: SESSION_REF,
       sessionRevision: "1",
       contentDigest: APPROVAL_DIGEST,
@@ -65,7 +68,7 @@ function fixture(overrides = {}) {
   };
   const producer = producerModule.createGovernanceApprovalTrustRegistrationProvenanceProducer({
     approvalBindingPort() { return clone(binding); },
-    principalEvidencePort() { return clone(principal); },
+    principalIdentityPort() { return clone(principal); },
     provenanceLedger: producerLedger
   });
   const provenanceResult = producer.produce({
@@ -99,7 +102,7 @@ function registrationFromAcceptedEvidence(accepted) {
 
 function acceptedChain(overrides = {}) {
   const f = fixture(overrides);
-  assert.equal(f.provenanceResult.outcome, "TRUST_REGISTRATION_PROVENANCE_ACCEPTED");
+  assert.equal(f.provenanceResult.outcome, producerModule.OUTCOMES.PRODUCED);
   const provenance = f.provenanceResult.provenance;
   const registrationSnapshot = {
     type: acceptanceModule.EXPECTED_TYPE,
@@ -173,24 +176,24 @@ test("chain does not assert principal eligibility role or governance authorizati
   }
 });
 
-test("wrong principal breaks the chain before provenance acceptance", () => {
+test("wrong principal breaks the chain before provenance production", () => {
   const f = fixture({ bindingPatch: { principalRef: "gt63-machine:principal:github:999" } });
-  assert.notEqual(f.provenanceResult.outcome, "TRUST_REGISTRATION_PROVENANCE_ACCEPTED");
+  assert.notEqual(f.provenanceResult.outcome, producerModule.OUTCOMES.PRODUCED);
 });
 
-test("wrong approval digest breaks the chain before provenance acceptance", () => {
+test("wrong approval digest breaks the chain before provenance production", () => {
   const f = fixture({ bindingPatch: { contentDigest: `sha256:${"f".repeat(64)}` } });
-  assert.notEqual(f.provenanceResult.outcome, "TRUST_REGISTRATION_PROVENANCE_ACCEPTED");
+  assert.notEqual(f.provenanceResult.outcome, producerModule.OUTCOMES.PRODUCED);
 });
 
-test("different session breaks the chain before provenance acceptance", () => {
+test("different session breaks the chain before provenance production", () => {
   const f = fixture({ principalPatch: { sessionRef: "gt63-runtime-session:OTHER:1" } });
-  assert.notEqual(f.provenanceResult.outcome, "TRUST_REGISTRATION_PROVENANCE_ACCEPTED");
+  assert.notEqual(f.provenanceResult.outcome, producerModule.OUTCOMES.PRODUCED);
 });
 
-test("contradiction breaks the chain before provenance acceptance", () => {
+test("contradiction breaks the chain before provenance production", () => {
   const f = fixture({ bindingPatch: { contradictionState: "CONTRADICTORY_EVIDENCE" } });
-  assert.notEqual(f.provenanceResult.outcome, "TRUST_REGISTRATION_PROVENANCE_ACCEPTED");
+  assert.notEqual(f.provenanceResult.outcome, producerModule.OUTCOMES.PRODUCED);
 });
 
 test("trust registration resolution remains authority NONE end to end", () => {
