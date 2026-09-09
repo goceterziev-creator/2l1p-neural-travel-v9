@@ -134,11 +134,7 @@ function createHumanGovernanceApprovalSurface({
       claimedActorRef: s.authenticatedAccountRef,
       presentationClass: "DIRECT",
       attributedPrincipalRef: null,
-      sourceEventEvidenceRef: randomRef("gt63-evidence:human-source-event"),
-      decision,
-      presentationEvidenceRef: presentation.presentationId,
-      exactPayloadDigest: presentation.exactPayloadDigest,
-      authority: AUTHORITY
+      sourceEventEvidenceRef: randomRef("gt63-evidence:human-source-event")
     });
 
     sourceEventLedger.commit(sourceEvent.sourceEventRef, sourceEvent);

@@ -67,21 +67,30 @@ test("decision must match presenting authenticated session", () => {
   assert.throws(() => s.decide({ session: session({ sessionRef: "session:other" }), presentationId: p.presentationId, decision: "APPROVE" }));
 });
 
-test("approval emits HUMAN_SOURCE_EVENT but no authority", () => {
+test("approval emits exact-schema HUMAN_SOURCE_EVENT without authority fields", () => {
   const s = surface();
   const p = s.present({ session: session(), gate: gate() });
   const e = s.decide({ session: session(), presentationId: p.presentationId, decision: "APPROVE" });
   assert.equal(e.type, "HUMAN_SOURCE_EVENT");
-  assert.equal(e.authority, "NONE");
+  assert.equal(Object.prototype.hasOwnProperty.call(e, "authority"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(e, "decision"), false);
   assert.equal(e.attributedPrincipalRef, null);
+  assert.deepEqual(Object.keys(e).sort(), [
+    "attributedPrincipalRef", "channelRef", "channelRevision", "claimedActorRef",
+    "contentBindingContractRef", "contentBindingContractRevision", "contentBytesBase64",
+    "contentEncoding", "contentMediaType", "contextRevision", "interactionId",
+    "occurredTemporalFrameRef", "presentationClass", "providerEventId",
+    "receivedTemporalFrameRef", "sessionRef", "sessionRevision", "sourceEventEvidenceRef",
+    "sourceEventRef", "sourceEventRevision", "sourceProviderRef", "sourceProviderRevision", "type"
+  ].sort());
 });
 
-test("reject emits source event and still no authority", () => {
+test("reject preserves the exact presented payload bytes", () => {
   const s = surface();
-  const p = s.present({ session: session(), gate: gate() });
+  const rejectPayload = '{"decision":"REJECT","type":"GT63_BOOTSTRAP_APPROVAL"}\n';
+  const p = s.present({ session: session(), gate: gate({ approvalPayloadText: rejectPayload }) });
   const e = s.decide({ session: session(), presentationId: p.presentationId, decision: "REJECT" });
-  assert.equal(e.decision, "REJECT");
-  assert.equal(e.authority, "NONE");
+  assert.equal(Buffer.from(e.contentBytesBase64, "base64").toString("utf8"), rejectPayload);
 });
 
 test("unsupported decision fails closed", () => {
