@@ -2,7 +2,7 @@
 
 const crypto = require("node:crypto");
 
-const ADAPTER_RULESET_VERSION = "human-governance-authenticated-binding-adapter-v0.1.0";
+const ADAPTER_RULESET_VERSION = "human-governance-authenticated-binding-adapter-v0.2.0";
 const BINDING_RULESET_VERSION = "authenticated-human-source-event-binding-v1.0.0";
 const SOURCE_PROVIDER_REF = "gt63-machine:human-governance-approval-surface-v0";
 const SOURCE_PROVIDER_REVISION = "1";
@@ -35,9 +35,16 @@ function requireLedger(name, ledger) {
   if (!ledger || typeof ledger.get !== "function") throw new TypeError(`${name}.get must be a function`);
 }
 
-function createHumanGovernanceAuthenticatedBindingAdapter({ presentationLedger, sourceEventLedger }) {
+function createHumanGovernanceAuthenticatedBindingAdapter({
+  presentationLedger,
+  sourceEventLedger,
+  identityProvider = null
+}) {
   requireLedger("presentationLedger", presentationLedger);
   requireLedger("sourceEventLedger", sourceEventLedger);
+  if (identityProvider !== null && (!identityProvider || typeof identityProvider.getIdentityBySession !== "function")) {
+    throw new TypeError("identityProvider.getIdentityBySession must be a function");
+  }
 
   function sourceEventSnapshotPort({ sourceEventRef }) {
     if (!nonEmpty(sourceEventRef)) return null;
@@ -59,13 +66,46 @@ function createHumanGovernanceAuthenticatedBindingAdapter({ presentationLedger, 
   function principalIdentityPort({ sourceEventRef, sourceProviderRef, providerEventId }) {
     const source = sourceEventLedger.get(sourceEventRef);
     if (!source || source.sourceProviderRef !== sourceProviderRef || source.providerEventId !== providerEventId) return null;
+
+    const identity = identityProvider ? identityProvider.getIdentityBySession(source.sessionRef) : null;
+    const exactIdentity = Boolean(identity
+      && identity.type === "GT63_EXTERNAL_AUTHENTICATED_IDENTITY_BINDING"
+      && nonEmpty(identity.principalRef)
+      && nonEmpty(identity.principalNamespace)
+      && nonEmpty(identity.principalRevision)
+      && identity.sessionRef === source.sessionRef
+      && identity.sessionRevision === source.sessionRevision
+      && identity.lifecycleState === "CURRENT"
+      && identity.freshnessState === "CURRENT"
+      && identity.contradictionState === "NONE"
+      && nonEmpty(identity.principalEvidenceRef));
+
+    if (!exactIdentity) {
+      return deepFreeze({
+        sourceEventRef,
+        sourceProviderRef,
+        providerEventId,
+        status: "MISSING",
+        candidates: [],
+        resolutionEvidenceRef: localEvidenceRef("principal-resolution-missing", sourceEventRef)
+      });
+    }
+
     return deepFreeze({
       sourceEventRef,
       sourceProviderRef,
       providerEventId,
-      status: "MISSING",
-      candidates: [],
-      resolutionEvidenceRef: localEvidenceRef("principal-resolution-missing", sourceEventRef)
+      status: "RESOLVED",
+      candidates: [{
+        principalRef: identity.principalRef,
+        principalNamespace: identity.principalNamespace,
+        principalRevision: identity.principalRevision,
+        lifecycleState: identity.lifecycleState,
+        freshnessState: identity.freshnessState,
+        principalEvidenceRef: identity.principalEvidenceRef,
+        displayName: nonEmpty(identity.githubLogin) ? identity.githubLogin : null
+      }],
+      resolutionEvidenceRef: localEvidenceRef("principal-resolution-github-session-bound", sourceEventRef)
     });
   }
 
@@ -83,19 +123,33 @@ function createHumanGovernanceAuthenticatedBindingAdapter({ presentationLedger, 
 
   function originVerifierPort({ sourceEvent, principal, verificationMethodRef, verificationMethodRevision }) {
     if (!sourceEvent || sourceEvent.sourceProviderRef !== SOURCE_PROVIDER_REF) return null;
-    if (principal !== null) return null;
     if (verificationMethodRef !== VERIFICATION_METHOD_REF
       || verificationMethodRevision !== VERIFICATION_METHOD_REVISION) return null;
+
+    const principalMatchesSessionIdentity = Boolean(principal && identityProvider
+      && (() => {
+        const identity = identityProvider.getIdentityBySession(sourceEvent.sessionRef);
+        return identity
+          && identity.sessionRef === sourceEvent.sessionRef
+          && identity.sessionRevision === sourceEvent.sessionRevision
+          && identity.principalRef === principal.principalRef
+          && identity.principalRevision === principal.principalRevision
+          && identity.contradictionState === "NONE";
+      })());
+
     return deepFreeze({
       verificationState: "UNKNOWN",
-      verifiedPrincipalRef: null,
+      verifiedPrincipalRef: principalMatchesSessionIdentity ? principal.principalRef : null,
       verifiedSourceEventRef: null,
       verifiedContentDigest: null,
       verifiedChannelRef: null,
-      verifiedSessionRef: null,
+      verifiedSessionRef: principalMatchesSessionIdentity ? sourceEvent.sessionRef : null,
       freshnessState: "CURRENT",
       contradictionState: "NONE",
-      evidenceRefs: [localEvidenceRef("origin-verification-unknown", sourceEvent.sourceEventRef)]
+      evidenceRefs: [localEvidenceRef(
+        principalMatchesSessionIdentity ? "origin-session-principal-related-but-untrusted" : "origin-verification-unknown",
+        sourceEvent.sourceEventRef
+      )]
     });
   }
 
@@ -129,12 +183,21 @@ function createHumanGovernanceAuthenticatedBindingAdapter({ presentationLedger, 
   function createBindingRequest(sourceEventRef) {
     const source = sourceEventLedger.get(sourceEventRef);
     if (!source) throw new Error("source event unavailable");
+    const identity = identityProvider ? identityProvider.getIdentityBySession(source.sessionRef) : null;
+    const expectedPrincipalRevision = identity
+      && identity.sessionRef === source.sessionRef
+      && identity.sessionRevision === source.sessionRevision
+      && identity.lifecycleState === "CURRENT"
+      && identity.freshnessState === "CURRENT"
+      && identity.contradictionState === "NONE"
+      ? identity.principalRevision
+      : null;
     return deepFreeze({
       rulesetVersion: BINDING_RULESET_VERSION,
       sourceEventRef: source.sourceEventRef,
       expectedSourceEventRevision: source.sourceEventRevision,
       expectedSourceProviderRevision: source.sourceProviderRevision,
-      expectedPrincipalRevision: null,
+      expectedPrincipalRevision,
       expectedVerificationMethodRevision: VERIFICATION_METHOD_REVISION,
       expectedRoutingRevision: ROUTING_REVISION,
       expectedContextRevision: source.contextRevision
