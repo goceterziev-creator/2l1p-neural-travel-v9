@@ -14,7 +14,11 @@ function memoryLedger() {
   const records = new Map();
   return {
     get(k) { return records.has(k) ? clone(records.get(k)) : null; },
-    commit(k, v) { if (records.has(k)) throw new Error("immutable-ledger-conflict"); records.set(k, clone(v)); return clone(v); },
+    commit(k, v) {
+      if (records.has(k)) throw new Error("immutable-ledger-conflict");
+      records.set(k, clone(v));
+      return clone(v);
+    },
     records() { return [...records.values()].map(clone); }
   };
 }
@@ -56,7 +60,7 @@ function fixture(options = {}) {
   const decisionLedger = memoryLedger();
   const capture = captureModule.createHumanGovernanceTrustDecisionPresentationCapture({
     presentationLedger,
-    trustDecisionLedger: decisionLedger,
+    decisionLedger,
     clock: () => "2026-09-10T00:00:00.000Z"
   });
   const s = session(options.sessionPatch || {});
