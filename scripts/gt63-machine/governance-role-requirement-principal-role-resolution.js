@@ -217,7 +217,8 @@ function createGovernanceRoleRequirementPrincipalRoleResolution({
       governanceAct: requirement.governanceAct,
       requiredRoleRef: requirement.requiredRoleRef,
       requiredRoleRevision: requirement.requiredRoleRevision,
-      contextScope: canonicalize(requirement.contextScope),
+      contextScope: canonicalize(request.contextScope),
+      acceptedRequirementScope: canonicalize(requirement.contextScope),
       policyAcceptanceId: policy.policyAcceptanceId,
       authority: AUTHORITY
     };
@@ -321,7 +322,8 @@ function createGovernanceRoleRequirementPrincipalRoleResolution({
       principalRevision: request.principalRevision,
       roleRef: request.roleRef,
       roleRevision: request.roleRevision,
-      contextScope: canonicalize(matches[0].contextScope),
+      contextScope: canonicalize(request.contextScope),
+      acceptedRoleScope: canonicalize(matches[0].contextScope),
       roleEvidenceRefs,
       policyAcceptanceId: policyAcceptanceIds[0],
       lifecycleState: "CURRENT",
