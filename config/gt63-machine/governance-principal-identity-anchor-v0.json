@@ -1,0 +1,15 @@
+{
+  "type": "GT63_GOVERNANCE_PRINCIPAL_IDENTITY_ANCHOR",
+  "schemaVersion": "1.0",
+  "rulesetVersion": "governance-principal-identity-anchor-v0.1.0",
+  "governancePrincipalRef": "gt63-machine:human-principal:goce-v0",
+  "governancePrincipalRevision": "1",
+  "identityProvider": "github.com",
+  "githubUserId": 239696056,
+  "githubLogin": "goceterziev-creator",
+  "lifecycleState": "CURRENT",
+  "freshnessState": "CURRENT",
+  "contradictionState": "NONE",
+  "acceptanceState": "ACCEPTED",
+  "authority": "NONE"
+}
