@@ -1,0 +1,42 @@
+'use strict';
+
+const crypto=require('node:crypto');
+const RULESET_VERSION='effect-authority-grant-v0.1.0';
+const AUTHORITY='NONE';
+const OUTCOMES=Object.freeze({GRANTED:'GRANTED',NOT_GRANTED:'NOT_GRANTED',UNKNOWN:'UNKNOWN',INVALID:'INVALID'});
+function plain(v){return !!(v&&typeof v==='object'&&!Array.isArray(v));}
+function nonEmpty(v){return typeof v==='string'&&v.length>0;}
+function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
+function freeze(v){if(v&&typeof v==='object'&&!Object.isFrozen(v)){Object.freeze(v);Object.values(v).forEach(freeze);}return v;}
+function canonical(v){return Array.isArray(v)?v.map(canonical):(v&&typeof v==='object'?Object.keys(v).sort().reduce((o,k)=>(o[k]=canonical(v[k]),o),{}):v);}
+function stringify(v){return JSON.stringify(canonical(v));}
+function digest(v){return `sha256:${crypto.createHash('sha256').update(Buffer.from(stringify(v),'utf8')).digest('hex')}`;}
+function exact(o,f){return plain(o)&&Object.keys(o).length===f.length&&Object.keys(o).every(k=>f.includes(k));}
+function validScope(s){return plain(s)&&s.scopeType==='GATE'&&nonEmpty(s.interactionId)&&Number.isInteger(s.fromInteractionRevision)&&s.fromInteractionRevision>=0&&Number.isInteger(s.throughInteractionRevision)&&s.throughInteractionRevision===s.fromInteractionRevision&&nonEmpty(s.gateId)&&Number.isInteger(s.gateRevision)&&s.gateRevision>0&&/^sha256:[0-9a-f]{64}$/.test(s.authorityScopeDigest)&&nonEmpty(s.continuationTargetRef);}
+function validConsumption(c){return plain(c)&&nonEmpty(c.toolInvocationConsumptionId)&&c.type==='GT63_TOOL_INVOCATION_AUTHORITY_CONSUMPTION'&&c.schemaVersion==='1.0'&&nonEmpty(c.rulesetVersion)&&nonEmpty(c.toolInvocationAuthorityId)&&nonEmpty(c.executionAuthorityId)&&nonEmpty(c.continuationConsumptionId)&&nonEmpty(c.principalRef)&&nonEmpty(c.principalRevision)&&validScope(c.contextScope)&&c.continuationTargetRef===c.contextScope.continuationTargetRef&&nonEmpty(c.executionTargetRef)&&nonEmpty(c.actionType)&&/^sha256:[0-9a-f]{64}$/.test(c.actionContractDigest)&&nonEmpty(c.toolIdentityRef)&&nonEmpty(c.operation)&&/^sha256:[0-9a-f]{64}$/.test(c.invocationContractDigest)&&c.consumptionState==='CONSUMED'&&c.authority===AUTHORITY&&c.executionAuthorityGranted===true&&c.toolInvocationAuthorized===true&&c.toolInvocationExecuted===true&&c.effectAuthorized===false&&c.effectPerformed===false;}
+function validEffectContract(e){return plain(e)&&exact(e,['effectTargetRef','effectType','effectContractDigest'])&&nonEmpty(e.effectTargetRef)&&nonEmpty(e.effectType)&&/^sha256:[0-9a-f]{64}$/.test(e.effectContractDigest);}
+function result(outcome,reason,evidence=null){return freeze({outcome,reason:reason||null,evidence:clone(evidence),authority:AUTHORITY,effectAuthorityGranted:outcome===OUTCOMES.GRANTED,effectPerformed:false});}
+function createEffectAuthorityGrant({toolInvocationConsumptionLedger,effectAuthorityLedger}={}){
+ if(!toolInvocationConsumptionLedger||typeof toolInvocationConsumptionLedger.get!=='function')throw new TypeError('toolInvocationConsumptionLedger.get is required');
+ if(!effectAuthorityLedger||typeof effectAuthorityLedger.get!=='function'||typeof effectAuthorityLedger.commit!=='function')throw new TypeError('effectAuthorityLedger get/commit required');
+ function assess(request){
+  const fields=['rulesetVersion','toolInvocationConsumptionId','continuationTargetRef','interactionId','interactionRevision','gateId','gateRevision','authorityScopeDigest','expectedPrincipalRef','expectedPrincipalRevision','executionTargetRef','actionType','actionContractDigest','toolIdentityRef','operation','invocationContractDigest','effectContract'];
+  if(!exact(request,fields)||request.rulesetVersion!==RULESET_VERSION||!nonEmpty(request.toolInvocationConsumptionId)||!nonEmpty(request.continuationTargetRef)||!nonEmpty(request.interactionId)||!Number.isInteger(request.interactionRevision)||request.interactionRevision<0||!nonEmpty(request.gateId)||!Number.isInteger(request.gateRevision)||request.gateRevision<1||!/^sha256:[0-9a-f]{64}$/.test(request.authorityScopeDigest)||!nonEmpty(request.expectedPrincipalRef)||!nonEmpty(request.expectedPrincipalRevision)||!nonEmpty(request.executionTargetRef)||!nonEmpty(request.actionType)||!/^sha256:[0-9a-f]{64}$/.test(request.actionContractDigest)||!nonEmpty(request.toolIdentityRef)||!nonEmpty(request.operation)||!/^sha256:[0-9a-f]{64}$/.test(request.invocationContractDigest)||!validEffectContract(request.effectContract))return result(OUTCOMES.INVALID,'unsupported request schema or ruleset');
+  let raw;try{raw=toolInvocationConsumptionLedger.get(request.toolInvocationConsumptionId);}catch(_){return result(OUTCOMES.UNKNOWN,'tool invocation consumption unavailable');}
+  if(raw==null)return result(OUTCOMES.UNKNOWN,'tool invocation consumption unavailable');const list=Array.isArray(raw)?raw:[raw];if(list.length!==1)return result(OUTCOMES.UNKNOWN,'tool invocation consumption identity conflict');
+  const c=list[0];if(!validConsumption(c)||c.toolInvocationConsumptionId!==request.toolInvocationConsumptionId)return result(OUTCOMES.UNKNOWN,'tool invocation consumption invalid or non-current');
+  if(c.principalRef!==request.expectedPrincipalRef||c.principalRevision!==request.expectedPrincipalRevision)return result(OUTCOMES.NOT_GRANTED,'principal mismatch');const s=c.contextScope;
+  if(c.continuationTargetRef!==request.continuationTargetRef||s.interactionId!==request.interactionId||s.gateId!==request.gateId||s.gateRevision!==request.gateRevision||s.authorityScopeDigest!==request.authorityScopeDigest)return result(OUTCOMES.NOT_GRANTED,'invocation scope mismatch');
+  if(s.fromInteractionRevision!==request.interactionRevision||s.throughInteractionRevision!==request.interactionRevision)return result(OUTCOMES.NOT_GRANTED,'tool invocation consumption stale for requested revision');
+  if(c.executionTargetRef!==request.executionTargetRef||c.actionType!==request.actionType||c.actionContractDigest!==request.actionContractDigest)return result(OUTCOMES.NOT_GRANTED,'execution contract mismatch');
+  if(c.toolIdentityRef!==request.toolIdentityRef||c.operation!==request.operation||c.invocationContractDigest!==request.invocationContractDigest)return result(OUTCOMES.NOT_GRANTED,'invocation contract mismatch');
+  const material={type:'GT63_EFFECT_AUTHORITY_EVIDENCE',schemaVersion:'1.0',rulesetVersion:RULESET_VERSION,toolInvocationConsumptionId:c.toolInvocationConsumptionId,toolInvocationAuthorityId:c.toolInvocationAuthorityId,executionAuthorityId:c.executionAuthorityId,continuationConsumptionId:c.continuationConsumptionId,principalRef:c.principalRef,principalRevision:c.principalRevision,contextScope:clone(s),continuationTargetRef:c.continuationTargetRef,executionTargetRef:c.executionTargetRef,actionType:c.actionType,actionContractDigest:c.actionContractDigest,toolIdentityRef:c.toolIdentityRef,operation:c.operation,invocationContractDigest:c.invocationContractDigest,effectTargetRef:request.effectContract.effectTargetRef,effectType:request.effectContract.effectType,effectContractDigest:request.effectContract.effectContractDigest,grantState:'GRANTED',authority:AUTHORITY,executionAuthorityGranted:true,toolInvocationAuthorized:true,toolInvocationExecuted:true,effectAuthorized:true,effectPerformed:false};
+  const evidence=freeze({effectAuthorityId:`effect-authority:${digest(material).slice(7)}`,...material});let prior;try{prior=effectAuthorityLedger.get(evidence.effectAuthorityId);}catch(_){return result(OUTCOMES.UNKNOWN,'effect authority ledger unavailable');}
+  if(prior)return stringify(prior)===stringify(evidence)?result(OUTCOMES.GRANTED,'same effect authority already accepted',prior):result(OUTCOMES.UNKNOWN,'effect authority identity conflict');
+  try{const committed=effectAuthorityLedger.commit(evidence.effectAuthorityId,evidence);if(!committed||stringify(committed)!==stringify(evidence))return result(OUTCOMES.UNKNOWN,'effect authority ledger commit conflict');}catch(_){return result(OUTCOMES.UNKNOWN,'effect authority ledger commit conflict');}
+  return result(OUTCOMES.GRANTED,null,evidence);
+ }
+ return freeze({rulesetVersion:RULESET_VERSION,authority:AUTHORITY,assess});
+}
+function createMemoryLedger(){const m=new Map();return freeze({get:k=>m.has(k)?m.get(k):null,commit(k,v){if(m.has(k))throw new Error('immutable-ledger-conflict');m.set(k,freeze(clone(v)));return m.get(k);}});}
+module.exports=freeze({RULESET_VERSION,AUTHORITY,OUTCOMES,createEffectAuthorityGrant,createMemoryLedger});
