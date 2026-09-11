@@ -1,0 +1,67 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {RULESET_VERSION,AUTHORITY,OUTCOMES,createExecutionAuthorityGrant,createMemoryLedger}=require('./execution-authority-grant');
+let passed=0;function test(n,f){try{f();console.log(`PASS - ${n}`);passed++;}catch(e){console.error(`FAIL - ${n}`);throw e;}}
+const D='sha256:'+'a'.repeat(64), A='sha256:'+'b'.repeat(64);
+function consumption(over={}){const scope={scopeType:'GATE',interactionId:'i-1',fromInteractionRevision:4,throughInteractionRevision:4,gateId:'g-1',gateRevision:2,authorityScopeDigest:D,continuationTargetRef:'continuation:build'};return {continuationConsumptionId:'cc-1',type:'GT63_CONTINUATION_AUTHORIZATION_CONSUMPTION',schemaVersion:'1.0',rulesetVersion:'continuation-authorization-consumption-v0.1.0',continuationAuthorizationId:'ca-1',satisfactionId:'sat-1',authorizationBindingId:'bind-1',gateRequirementEvidenceRef:'gate-e-1',principalRef:'principal:goce',principalRevision:'1',contextScope:scope,continuationTargetRef:'continuation:build',consumptionState:'CONSUMED',authority:'NONE',humanGateSatisfied:true,continuationAuthorized:true,continuationExecuted:true,executionAuthorityCreated:false,toolInvocationAuthorized:false,effectAuthorized:false,effectPerformed:false,...over};}
+function req(over={}){return {rulesetVersion:RULESET_VERSION,continuationConsumptionId:'cc-1',continuationTargetRef:'continuation:build',interactionId:'i-1',interactionRevision:4,gateId:'g-1',gateRevision:2,authorityScopeDigest:D,expectedPrincipalRef:'principal:goce',expectedPrincipalRevision:'1',actionContract:{executionTargetRef:'executor:bounded-v0',actionType:'VALIDATE_CANDIDATE',actionContractDigest:A},...over};}
+function source(value=consumption()){return {get:k=>k==='cc-1'?value:null};}
+function make(src=source(),ledger=createMemoryLedger()){return createExecutionAuthorityGrant({continuationConsumptionLedger:src,executionAuthorityLedger:ledger});}
+test('constructor-requires-consumption-ledger',()=>assert.throws(()=>createExecutionAuthorityGrant({executionAuthorityLedger:createMemoryLedger()})));
+test('constructor-requires-authority-ledger',()=>assert.throws(()=>createExecutionAuthorityGrant({continuationConsumptionLedger:source()})));
+const p=make(),r=p.assess(req());
+test('exact-consumption-grants-execution-authority',()=>assert.equal(r.outcome,OUTCOMES.GRANTED));
+test('evidence-type-exact',()=>assert.equal(r.evidence.type,'GT63_EXECUTION_AUTHORITY_EVIDENCE'));
+test('grant-state-exact',()=>assert.equal(r.evidence.grantState,'GRANTED'));
+test('preserves-consumption-id',()=>assert.equal(r.evidence.continuationConsumptionId,'cc-1'));
+test('preserves-authorization-id',()=>assert.equal(r.evidence.continuationAuthorizationId,'ca-1'));
+test('preserves-satisfaction-id',()=>assert.equal(r.evidence.satisfactionId,'sat-1'));
+test('preserves-binding-id',()=>assert.equal(r.evidence.authorizationBindingId,'bind-1'));
+test('preserves-gate-ref',()=>assert.equal(r.evidence.gateRequirementEvidenceRef,'gate-e-1'));
+test('preserves-principal',()=>assert.equal(r.evidence.principalRef,'principal:goce'));
+test('preserves-continuation-target',()=>assert.equal(r.evidence.continuationTargetRef,'continuation:build'));
+test('binds-execution-target',()=>assert.equal(r.evidence.executionTargetRef,'executor:bounded-v0'));
+test('binds-action-type',()=>assert.equal(r.evidence.actionType,'VALIDATE_CANDIDATE'));
+test('binds-action-contract-digest',()=>assert.equal(r.evidence.actionContractDigest,A));
+test('human-gate-remains-satisfied',()=>assert.equal(r.evidence.humanGateSatisfied,true));
+test('continuation-remains-executed',()=>assert.equal(r.evidence.continuationExecuted,true));
+test('grant-record-represents-execution-authority',()=>assert.equal(r.evidence.executionAuthorityGranted,true));
+test('primitive-authority-remains-none',()=>assert.equal(p.authority,AUTHORITY));
+test('result-authority-remains-none',()=>assert.equal(r.authority,AUTHORITY));
+test('evidence-container-authority-remains-none',()=>assert.equal(r.evidence.authority,AUTHORITY));
+test('grant-does-not-authorize-tool-invocation',()=>assert.equal(r.evidence.toolInvocationAuthorized,false));
+test('grant-does-not-authorize-effect',()=>assert.equal(r.evidence.effectAuthorized,false));
+test('grant-does-not-perform-effect',()=>assert.equal(r.evidence.effectPerformed,false));
+test('missing-consumption-unknown',()=>assert.equal(make({get:()=>null}).assess(req()).outcome,OUTCOMES.UNKNOWN));
+test('consumption-ledger-throw-unknown',()=>assert.equal(make({get:()=>{throw Error('x')}}).assess(req()).outcome,OUTCOMES.UNKNOWN));
+test('consumption-identity-conflict-unknown',()=>assert.equal(make({get:()=>[consumption(),consumption()]}).assess(req()).outcome,OUTCOMES.UNKNOWN));
+test('invalid-consumption-type-unknown',()=>assert.equal(make(source(consumption({type:'OTHER'}))).assess(req()).outcome,OUTCOMES.UNKNOWN));
+test('unconsumed-record-unknown',()=>assert.equal(make(source(consumption({consumptionState:'NOT_CONSUMED'}))).assess(req()).outcome,OUTCOMES.UNKNOWN));
+test('wrong-consumption-authority-unknown',()=>assert.equal(make(source(consumption({authority:'EXECUTE'}))).assess(req()).outcome,OUTCOMES.UNKNOWN));
+test('consumption-with-existing-execution-authority-unknown',()=>assert.equal(make(source(consumption({executionAuthorityCreated:true}))).assess(req()).outcome,OUTCOMES.UNKNOWN));
+test('consumption-with-tool-authority-unknown',()=>assert.equal(make(source(consumption({toolInvocationAuthorized:true}))).assess(req()).outcome,OUTCOMES.UNKNOWN));
+test('principal-mismatch-not-granted',()=>assert.equal(make().assess(req({expectedPrincipalRef:'other'})).outcome,OUTCOMES.NOT_GRANTED));
+test('principal-revision-mismatch-not-granted',()=>assert.equal(make().assess(req({expectedPrincipalRevision:'2'})).outcome,OUTCOMES.NOT_GRANTED));
+test('continuation-target-mismatch-not-granted',()=>assert.equal(make().assess(req({continuationTargetRef:'other'})).outcome,OUTCOMES.NOT_GRANTED));
+test('interaction-mismatch-not-granted',()=>assert.equal(make().assess(req({interactionId:'other'})).outcome,OUTCOMES.NOT_GRANTED));
+test('gate-id-mismatch-not-granted',()=>assert.equal(make().assess(req({gateId:'other'})).outcome,OUTCOMES.NOT_GRANTED));
+test('gate-revision-mismatch-not-granted',()=>assert.equal(make().assess(req({gateRevision:3})).outcome,OUTCOMES.NOT_GRANTED));
+test('digest-mismatch-not-granted',()=>assert.equal(make().assess(req({authorityScopeDigest:'sha256:'+'c'.repeat(64)})).outcome,OUTCOMES.NOT_GRANTED));
+test('older-consumption-revision-fails-closed-as-stale',()=>assert.equal(make().assess(req({interactionRevision:5})).outcome,OUTCOMES.NOT_GRANTED));
+test('wrong-ruleset-invalid',()=>assert.equal(make().assess(req({rulesetVersion:'wrong'})).outcome,OUTCOMES.INVALID));
+test('extra-field-invalid',()=>assert.equal(make().assess({...req(),extra:true}).outcome,OUTCOMES.INVALID));
+test('malformed-action-contract-invalid',()=>assert.equal(make().assess(req({actionContract:{executionTargetRef:'x',actionType:'Y',actionContractDigest:'bad'}})).outcome,OUTCOMES.INVALID));
+test('extra-action-contract-field-invalid',()=>assert.equal(make().assess(req({actionContract:{...req().actionContract,extra:true}})).outcome,OUTCOMES.INVALID));
+const replayLedger=createMemoryLedger(),rp=make(source(),replayLedger),r1=rp.assess(req()),r2=rp.assess(req());
+test('same-replay-granted',()=>assert.equal(r2.outcome,OUTCOMES.GRANTED));
+test('same-replay-preserves-authority-id',()=>assert.equal(r1.evidence.executionAuthorityId,r2.evidence.executionAuthorityId));
+test('different-action-contract-produces-distinct-authority',()=>{const x=rp.assess(req({actionContract:{executionTargetRef:'executor:bounded-v0',actionType:'OTHER_ACTION',actionContractDigest:'sha256:'+'d'.repeat(64)}}));assert.equal(x.outcome,OUTCOMES.GRANTED);assert.notEqual(x.evidence.executionAuthorityId,r1.evidence.executionAuthorityId);});
+test('authority-ledger-get-failure-unknown',()=>assert.equal(make(source(),{get:()=>{throw Error('x')},commit:()=>{}}).assess(req()).outcome,OUTCOMES.UNKNOWN));
+test('authority-ledger-commit-failure-unknown',()=>assert.equal(make(source(),{get:()=>null,commit:()=>{throw Error('x')}}).assess(req()).outcome,OUTCOMES.UNKNOWN));
+test('authority-ledger-commit-conflict-unknown',()=>assert.equal(make(source(),{get:()=>null,commit:()=>null}).assess(req()).outcome,OUTCOMES.UNKNOWN));
+test('granted-result-frozen',()=>assert.equal(Object.isFrozen(r),true));
+test('granted-evidence-frozen',()=>assert.equal(Object.isFrozen(r.evidence),true));
+test('execution-authority-is-not-tool-invocation-authority',()=>assert.equal(r.toolInvocationAuthorized,false));
+test('execution-authority-is-not-effect-authority',()=>assert.equal(r.effectAuthorized,false));
+test('execution-authority-is-not-effect-execution',()=>assert.equal(r.effectPerformed,false));
+console.log(`${passed}/${passed} PASS`);
