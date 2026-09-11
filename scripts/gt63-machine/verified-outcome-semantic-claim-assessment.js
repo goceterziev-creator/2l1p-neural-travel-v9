@@ -1,0 +1,31 @@
+'use strict';
+const crypto=require('node:crypto');
+const RULESET_VERSION='verified-outcome-semantic-claim-assessment-v0.1.0',AUTHORITY='NONE';
+const OUTCOMES=Object.freeze({SUPPORTED:'SUPPORTED',NOT_SUPPORTED:'NOT_SUPPORTED',UNKNOWN:'UNKNOWN',CONFLICT:'CONFLICT',INVALID:'INVALID'});
+const POLICY_ID='EXACT_VERIFIED_STATE_DIGEST_V0',POLICY_VERSION='1.0';
+const plain=v=>!!(v&&typeof v==='object'&&!Array.isArray(v)),nonEmpty=v=>typeof v==='string'&&v.length>0,sha=v=>typeof v==='string'&&/^sha256:[0-9a-f]{64}$/.test(v),clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
+function freeze(v){if(v&&typeof v==='object'&&!Object.isFrozen(v)){Object.freeze(v);Object.values(v).forEach(freeze);}return v;}
+const canonical=v=>Array.isArray(v)?v.map(canonical):(v&&typeof v==='object'?Object.keys(v).sort().reduce((o,k)=>(o[k]=canonical(v[k]),o),{}):v),stringify=v=>JSON.stringify(canonical(v)),digest=v=>`sha256:${crypto.createHash('sha256').update(Buffer.from(stringify(v))).digest('hex')}`,exact=(o,f)=>plain(o)&&Object.keys(o).length===f.length&&Object.keys(o).every(k=>f.includes(k));
+function validVerification(e){return plain(e)&&nonEmpty(e.outcomeVerificationId)&&e.type==='GT63_EXTERNAL_OUTCOME_VERIFICATION_EVIDENCE'&&e.schemaVersion==='1.0'&&nonEmpty(e.rulesetVersion)&&nonEmpty(e.outcomeObservationId)&&nonEmpty(e.effectConsumptionId)&&nonEmpty(e.effectAuthorityId)&&nonEmpty(e.principalRef)&&nonEmpty(e.principalRevision)&&plain(e.contextScope)&&nonEmpty(e.effectTargetRef)&&nonEmpty(e.effectType)&&sha(e.effectContractDigest)&&nonEmpty(e.observationSourceRef)&&nonEmpty(e.observationSourceRevision)&&sha(e.observedStateDigest)&&sha(e.observationProvenanceDigest)&&nonEmpty(e.verifierIdentityRef)&&nonEmpty(e.verifierRevision)&&nonEmpty(e.verificationMethod)&&sha(e.verificationEvidenceDigest)&&e.verificationState==='VERIFIED'&&e.externalOutcomeObserved===true&&e.externalOutcomeVerified===true&&e.semanticTruthEstablished===false&&e.authority===AUTHORITY;}
+function validClaim(c){return exact(c,['claimId','claimRevision','subjectRef','predicate','valueStateDigest','assessmentPolicyId','assessmentPolicyVersion'])&&nonEmpty(c.claimId)&&nonEmpty(c.claimRevision)&&nonEmpty(c.subjectRef)&&nonEmpty(c.predicate)&&sha(c.valueStateDigest)&&nonEmpty(c.assessmentPolicyId)&&nonEmpty(c.assessmentPolicyVersion);}
+function result(outcome,reason,evidence=null){return freeze({outcome,assessmentState:outcome,reason:reason||null,evidence:clone(evidence),authority:AUTHORITY,semanticTruthEstablished:false,canonicalTruthEstablished:false});}
+function createVerifiedOutcomeSemanticClaimAssessment({outcomeVerificationLedger,claimAssessmentLedger}={}){
+ if(!outcomeVerificationLedger||typeof outcomeVerificationLedger.get!=='function')throw TypeError('outcomeVerificationLedger.get is required');
+ if(!claimAssessmentLedger||typeof claimAssessmentLedger.get!=='function'||typeof claimAssessmentLedger.commit!=='function')throw TypeError('claimAssessmentLedger get/commit required');
+ function assess(request){
+  if(!exact(request,['rulesetVersion','outcomeVerificationId','claim'])||request.rulesetVersion!==RULESET_VERSION||!nonEmpty(request.outcomeVerificationId)||!validClaim(request.claim))return result(OUTCOMES.INVALID,'unsupported request schema or claim contract');
+  const c=request.claim;if(c.assessmentPolicyId!==POLICY_ID||c.assessmentPolicyVersion!==POLICY_VERSION)return result(OUTCOMES.UNKNOWN,'assessment policy not implemented');
+  let raw;try{raw=outcomeVerificationLedger.get(request.outcomeVerificationId);}catch(_){return result(OUTCOMES.UNKNOWN,'verified outcome unavailable');}if(raw==null)return result(OUTCOMES.UNKNOWN,'verified outcome unavailable');const list=Array.isArray(raw)?raw:[raw];if(list.length!==1)return result(OUTCOMES.CONFLICT,'verified outcome identity conflict');const e=list[0];if(!validVerification(e)||e.outcomeVerificationId!==request.outcomeVerificationId)return result(OUTCOMES.UNKNOWN,'verified outcome invalid or non-current');
+  const state=c.valueStateDigest===e.observedStateDigest?OUTCOMES.SUPPORTED:OUTCOMES.NOT_SUPPORTED;
+  const claimKey={claimId:c.claimId,claimRevision:c.claimRevision,subjectRef:c.subjectRef,predicate:c.predicate,assessmentPolicyId:c.assessmentPolicyId,assessmentPolicyVersion:c.assessmentPolicyVersion};
+  const assessmentId=`semantic-claim-assessment:${digest(claimKey).slice(7)}`;
+  const material={type:'GT63_SEMANTIC_CLAIM_ASSESSMENT_EVIDENCE',schemaVersion:'1.0',rulesetVersion:RULESET_VERSION,assessmentId,outcomeVerificationId:e.outcomeVerificationId,outcomeObservationId:e.outcomeObservationId,effectConsumptionId:e.effectConsumptionId,effectAuthorityId:e.effectAuthorityId,claimId:c.claimId,claimRevision:c.claimRevision,subjectRef:c.subjectRef,predicate:c.predicate,valueStateDigest:c.valueStateDigest,assessmentPolicyId:c.assessmentPolicyId,assessmentPolicyVersion:c.assessmentPolicyVersion,verifiedObservedStateDigest:e.observedStateDigest,verificationEvidenceDigest:e.verificationEvidenceDigest,assessmentState:state,verifiedOutcomeConsumed:true,semanticTruthEstablished:false,canonicalTruthEstablished:false,authority:AUTHORITY};const evidence=freeze(material);
+  let prior;try{prior=claimAssessmentLedger.get(assessmentId);}catch(_){return result(OUTCOMES.UNKNOWN,'claim assessment ledger unavailable');}
+  if(prior)return stringify(prior)===stringify(evidence)?result(state,'same assessment already accepted',prior):result(OUTCOMES.CONFLICT,'claim assessment conflict');
+  try{const committed=claimAssessmentLedger.commit(assessmentId,evidence);if(!committed||stringify(committed)!==stringify(evidence))return result(OUTCOMES.CONFLICT,'claim assessment commit conflict');}catch(_){return result(OUTCOMES.CONFLICT,'claim assessment commit conflict');}
+  return result(state,null,evidence);
+ }
+ return freeze({rulesetVersion:RULESET_VERSION,authority:AUTHORITY,policyId:POLICY_ID,policyVersion:POLICY_VERSION,assess});
+}
+function createMemoryLedger(){const m=new Map();return freeze({get:k=>m.has(k)?m.get(k):null,commit(k,v){if(m.has(k))throw Error('immutable-ledger-conflict');m.set(k,freeze(clone(v)));return m.get(k);}});}
+module.exports=freeze({RULESET_VERSION,AUTHORITY,OUTCOMES,POLICY_ID,POLICY_VERSION,createVerifiedOutcomeSemanticClaimAssessment,createMemoryLedger});
