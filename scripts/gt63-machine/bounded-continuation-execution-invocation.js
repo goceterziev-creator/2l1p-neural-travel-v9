@@ -86,6 +86,14 @@ function validAdapterResult(value){
     && plain(value.runtimeOccurrenceMaterial);
 }
 
+function validPrior(prior, invocationId, invocationMaterial){
+  if(!plain(prior) || !plain(prior.invocationRecord)) return false;
+  const r=prior.invocationRecord;
+  if(r.invocationId !== invocationId || !nonEmpty(r.runtimeOccurrenceRef) || !plain(r.runtimeOccurrenceMaterial)) return false;
+  const core=clone(r); delete core.invocationId; delete core.runtimeOccurrenceRef; delete core.runtimeOccurrenceMaterial;
+  return stringify(core) === stringify(invocationMaterial);
+}
+
 function createBoundedContinuationExecutionInvocation({ currentExecutionStartResultPort, executionAdapter, invocationLedger } = {}){
   if(typeof currentExecutionStartResultPort !== 'function') throw new TypeError('currentExecutionStartResultPort must be a function');
   if(typeof executionAdapter !== 'function') throw new TypeError('executionAdapter must be a function');
@@ -135,9 +143,7 @@ function createBoundedContinuationExecutionInvocation({ currentExecutionStartRes
       || e.contextScope.authorityScopeDigest !== request.authorityScopeDigest
       || e.contextScope.continuationTargetRef !== request.continuationTargetRef
       || request.interactionRevision < e.contextScope.fromInteractionRevision
-      || (e.contextScope.throughInteractionRevision !== null && request.interactionRevision > e.contextScope.throughInteractionRevision)) {
-      return result(OUTCOMES.NOT_INVOKABLE,'current execution start evidence does not match requested governed scope');
-    }
+      || (e.contextScope.throughInteractionRevision !== null && request.interactionRevision > e.contextScope.throughInteractionRevision)) return result(OUTCOMES.NOT_INVOKABLE,'current execution start evidence does not match requested governed scope');
 
     const governedEnvelope=Object.freeze({
       executionStartId:e.executionStartId,
@@ -172,7 +178,7 @@ function createBoundedContinuationExecutionInvocation({ currentExecutionStartRes
     let prior;
     try { prior = invocationLedger.get(invocationId); }
     catch(_) { return result(OUTCOMES.UNKNOWN,'invocation ledger unavailable'); }
-    if(prior) return stringify(prior.invocationRecord)===stringify(prior.invocationRecord)
+    if(prior) return validPrior(prior,invocationId,invocationMaterial)
       ? result(OUTCOMES.INVOKED,'same invocation already accepted',prior.invocationRecord)
       : result(OUTCOMES.UNKNOWN,'invocation identity conflict');
 
@@ -190,7 +196,8 @@ function createBoundedContinuationExecutionInvocation({ currentExecutionStartRes
 
     try {
       const committed = invocationLedger.commit(invocationId,Object.freeze({ invocationRecord }));
-      if(!committed || !committed.invocationRecord || stringify(committed.invocationRecord)!==stringify(invocationRecord)) return result(OUTCOMES.UNKNOWN,'invocation ledger commit conflict');
+      if(!validPrior(committed,invocationId,invocationMaterial)
+        || stringify(committed.invocationRecord)!==stringify(invocationRecord)) return result(OUTCOMES.UNKNOWN,'invocation ledger commit conflict');
     } catch(_) { return result(OUTCOMES.UNKNOWN,'invocation ledger commit conflict'); }
 
     return result(OUTCOMES.INVOKED,null,invocationRecord);
