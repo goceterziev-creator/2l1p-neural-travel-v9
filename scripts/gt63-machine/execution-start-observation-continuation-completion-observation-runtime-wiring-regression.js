@@ -7,7 +7,9 @@ const { createMemoryLedger }=require('./continuation-completion-observation-curr
 let pass=0, fail=0;
 function test(name,fn){try{if(!fn()) throw new Error('assertion');console.log(`PASS - ${name}`);pass++;}catch(e){console.log(`FAIL - ${name}`);fail++;}}
 function throws(fn){try{fn();return false;}catch(_){return true;}}
-const digest=v=>`sha256:${crypto.createHash('sha256').update(Buffer.from(JSON.stringify(v),'utf8')).digest('hex')}`;
+const plain=v=>Boolean(v&&typeof v==='object'&&!Array.isArray(v));
+const canonical=v=>Array.isArray(v)?v.map(canonical):(plain(v)?Object.keys(v).sort().reduce((o,k)=>(o[k]=canonical(v[k]),o),{}):v);
+const digest=v=>`sha256:${crypto.createHash('sha256').update(Buffer.from(JSON.stringify(canonical(v)),'utf8')).digest('hex')}`;
 const scope={scopeType:'GATE',interactionId:'interaction:1',fromInteractionRevision:3,throughInteractionRevision:3,gateId:'gate:1',gateRevision:1,authorityScopeDigest:`sha256:${'a'.repeat(64)}`,continuationTargetRef:'continuation:1'};
 const executionStartDigest=`sha256:${'b'.repeat(64)}`;
 const invocationDigest=`sha256:${'c'.repeat(64)}`;
