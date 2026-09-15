@@ -1,0 +1,112 @@
+{
+  "type": "GT63_AUTH_SESSION_EVIDENCE_SOURCE_DEFINITION_MATERIAL",
+  "materialIdentity": "gt63-machine:source-definition-material:aya-session-normal-auth-session-evidence@1",
+  "materialRevision": 1,
+  "sourceDefinitionEvidenceIdentity": "gt63-machine:source-definition-evidence:aya-session-normal-auth-session-evidence@1",
+  "sourceSubject": {
+    "sourceIdentity": "gt63-machine:evidence-source:aya-session-normal-auth-session",
+    "sourceFamily": "APPLICATION_AUTH_SESSION_EVIDENCE_SOURCE",
+    "sourceRevision": 1,
+    "subjectSemantics": "BOUNDED_NORMAL_APPLICATION_AUTHENTICATION_SESSION_EVIDENCE_PRODUCING_SUBSYSTEM"
+  },
+  "implementationAnchors": {
+    "repository": "goceterziev-creator/2l1p-neural-travel-v9",
+    "authoritativeRefObserved": "refs/heads/main",
+    "observedCommit": "1aafcd2068fef45f014dc3a9b6413470c218373d",
+    "observedTree": "3eb98768b3a89f4d05322e534267eb5e8ac866f7",
+    "serverPath": "server.js",
+    "serverBlob": "e17a162457a426b67f2402b53f07791dc67e09b3",
+    "coveredSemantics": [
+      "PASSWORD_AUTHENTICATION",
+      "NORMAL_SESSION_ISSUANCE",
+      "SIGNED_AYA_SESSION",
+      "HMAC_VERIFICATION",
+      "EXPIRY_CHECK",
+      "CURRENT_USER_LOOKUP",
+      "USER_AGENCY_ROLE_SESSION_VERSION_CONSISTENCY",
+      "SESSION_VERSION_INVALIDATION",
+      "BETA_AUTH_BYPASS_SEPARATION"
+    ],
+    "anchorSemantics": "SUPPORTING_IMPLEMENTATION_EVIDENCE_NOT_SOURCE_IDENTITY_OR_AUTHORITY"
+  },
+  "provenanceBoundary": {
+    "admittedPath": [
+      "NORMAL_PASSWORD_AUTHENTICATION_SUCCESS",
+      "NORMAL_SESSION_ISSUANCE",
+      "SIGNED_AYA_SESSION",
+      "HMAC_VERIFICATION_SUCCESS",
+      "EXPIRY_QUALIFICATION",
+      "CURRENT_USER_LOOKUP",
+      "USER_SUBJECT_MATCH",
+      "AGENCY_ROLE_SESSION_VERSION_CONSISTENCY"
+    ],
+    "excludedPaths": [
+      "BETA_AUTH_BYPASS_SYNTHESIZED_REQUEST_CONTEXT"
+    ],
+    "positiveProvenanceRequired": true,
+    "absenceOfBypassMarkerIsNotNormalPathProof": true
+  },
+  "evidenceClassCoverage": [
+    {
+      "class": "ACCOUNT_AUTHENTICATION_EVIDENCE",
+      "maximumSourceSupportedClaim": "THE_EXACT_APPLICATION_ACCOUNT_SUBJECT_SUCCESSFULLY_SATISFIED_THE_DEFINED_NORMAL_PASSWORD_AUTHENTICATION_MECHANISM_FOR_THE_EVIDENCED_AUTHENTICATION_EVENT"
+    },
+    {
+      "class": "APPLICATION_SESSION_EVIDENCE",
+      "maximumSourceSupportedClaim": "THE_EXACT_APPLICATION_SESSION_EVIDENCE_WAS_NORMALLY_ISSUED_AND_OR_VERIFIED_UNDER_THE_DEFINED_SESSION_MECHANISM"
+    },
+    {
+      "class": "SESSION_ACCOUNT_BINDING_EVIDENCE",
+      "maximumSourceSupportedClaim": "THE_EXACT_VERIFIED_APPLICATION_SESSION_WAS_POSITIVELY_RESOLVED_OR_CONSISTENT_WITH_THE_EXACT_CURRENT_APPLICATION_ACCOUNT_UNDER_THE_DEFINED_BINDING_CHECKS"
+    },
+    {
+      "class": "CURRENTNESS_INVALIDATION_EVIDENCE",
+      "maximumSourceSupportedClaim": "THE_EXACT_SESSION_OR_BINDING_SATISFIES_OR_FAILS_THE_PARTICULAR_APPLICATION_CURRENT_STATE_OR_INVALIDATION_CONDITIONS_EVIDENCED_BY_THE_DEFINED_MECHANISM"
+    }
+  ],
+  "futureEvidenceSourceBindingRule": {
+    "required": [
+      "EXACT_EVIDENCE_ITEM",
+      "EXACT_SOURCE_IDENTITY",
+      "EXACT_SOURCE_REVISION",
+      "EXACT_ADMITTED_PROVENANCE_PATH",
+      "EXACT_EVIDENCE_CLASS",
+      "EVIDENCE_SPECIFIC_PROVENANCE_REFERENCE",
+      "SOURCE_DEFINITION_REFERENCE",
+      "SOURCE_REVISION_REFERENCE",
+      "IMPLEMENTATION_ANCHOR_RELATIONSHIP"
+    ],
+    "callerSourceAttributionSufficient": false,
+    "thisMaterialCreatesEvidenceSpecificSourceBoundStatus": false
+  },
+  "lifecycleSemantics": {
+    "allowedStates": [
+      "CURRENT",
+      "SUPERSEDED",
+      "REVOKED_OR_WITHDRAWN",
+      "UNKNOWN"
+    ],
+    "ttl": null,
+    "laterRevisionRewritesHistoricalEvidence": false,
+    "sourceRevisionCurrentnessIsSessionCurrentness": false
+  },
+  "materialState": "CANDIDATE_DEFINED_NOT_ACCEPTED",
+  "authorityEffect": "NONE",
+  "nonClaims": [
+    "MATERIAL_VALIDATED",
+    "SOURCE_ESTABLISHED",
+    "EVIDENCE_SPECIFIC_SOURCE_BOUND",
+    "ISSUER_IDENTITY",
+    "ISSUER_SOURCE_BINDING",
+    "ISSUER_PERMISSION",
+    "GT63_EVIDENCE_ACCEPTANCE",
+    "GT63_SESSION_IDENTITY",
+    "GT63_ACCOUNT_IDENTITY",
+    "PRINCIPAL_IDENTITY",
+    "PRINCIPAL_ELIGIBILITY",
+    "CAPABILITY_AUTHORIZATION",
+    "MATERIAL_ACCEPTANCE",
+    "FILESYSTEM_EFFECT_AUTHORITY",
+    "MACHINE_AUTHORITY"
+  ]
+}
