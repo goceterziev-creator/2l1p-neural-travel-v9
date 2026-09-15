@@ -1,0 +1,73 @@
+{
+  "type": "GT63_SOURCE_ESTABLISHMENT_EVIDENCE",
+  "establishmentEvidenceIdentity": "gt63-machine:source-establishment-evidence:aya-session-normal-auth-session@1",
+  "establishmentEvidenceRevision": 1,
+  "establishmentDecisionIdentity": "gt63-machine:human-governance-decision:establish-aya-session-normal-auth-session-source@1",
+  "decision": {
+    "decisionType": "HUMAN_GOVERNANCE_SOURCE_ESTABLISHMENT",
+    "decisionPolarity": "POSITIVE",
+    "decisionProvenance": "EXPLICIT_HUMAN_GOVERNANCE_DECISION",
+    "outcome": "SOURCE_ESTABLISHED"
+  },
+  "establishmentTarget": {
+    "sourceIdentity": "gt63-machine:evidence-source:aya-session-normal-auth-session",
+    "sourceRevision": 1,
+    "validatedSourceDefinitionMaterialIdentity": "gt63-machine:source-definition-material:aya-session-normal-auth-session-evidence@1",
+    "validatedSourceDefinitionMaterialBlob": "382ec5ce18858e93981e8792de8a050042252e15",
+    "sourceDefinitionMaterializationCommit": "f9f65020a741f2ec07dfc98d4866f09bf6a43929"
+  },
+  "boundedPurpose": {
+    "purpose": "ESTABLISHED_GT63_SOURCE_DEFINITION_FOR_APPROVED_BOUNDED_A_B_C_D_APPLICATION_AUTH_SESSION_EVIDENCE",
+    "provenanceBoundary": "NORMAL_AYA_SESSION",
+    "excludedProvenance": [
+      "BETA_AUTH_BYPASS"
+    ]
+  },
+  "decisionBasis": {
+    "sourceDefinitionMaterialReference": "config/gt63-machine/aya-session-auth-session-evidence-source-definition-v0.json",
+    "sourceDefinitionMaterialBlob": "382ec5ce18858e93981e8792de8a050042252e15",
+    "semanticValidationResult": "SOURCE_DEFINITION_MATERIAL_SEMANTICALLY_VALIDATED",
+    "semanticValidationEvidenceReference": "GT63_MACHINE_MATERIAL_ACCEPTANCE_AYA_SESSION_SOURCE_DEFINITION_READ_ONLY_SEMANTIC_VALIDATION_DISCOVERY_1",
+    "implementationAnchorSupport": "SUPPORTED"
+  },
+  "decisionTimeAssessment": {
+    "contradictionState": "NO_KNOWN_MATERIAL_CONTRADICTION",
+    "assessmentScope": "AT_ESTABLISHMENT_DECISION",
+    "doesNotAssertAbsoluteAbsenceOfContradiction": true,
+    "doesNotAssertSourceCurrentness": true
+  },
+  "evidenceLifecycleSemantics": {
+    "allowedStates": [
+      "CURRENT",
+      "SUPERSEDED",
+      "WITHDRAWN",
+      "UNKNOWN"
+    ],
+    "ttl": null,
+    "historicalEstablishmentIsSourceCurrentApplicability": false,
+    "durableEstablishmentEvidenceIsPermanentSourceCurrentness": false
+  },
+  "materialState": "ESTABLISHMENT_EVIDENCE_CREATED_NOT_YET_INDEPENDENTLY_VALIDATED",
+  "authorityEffect": "NONE",
+  "nonClaims": [
+    "NEW_SOURCE_ESTABLISHMENT_DECISION",
+    "SOURCE_CURRENT",
+    "EVIDENCE_SPECIFIC_SOURCE_BOUND",
+    "SOURCE_TRUSTED_FOR_ALL_PURPOSES",
+    "ISSUER_IDENTITY",
+    "ISSUER_SOURCE_BINDING",
+    "ISSUER_PERMISSION",
+    "GT63_EVIDENCE_ACCEPTANCE",
+    "GT63_SESSION_IDENTITY",
+    "GT63_ACCOUNT_IDENTITY",
+    "AUTHENTICATED_HUMAN_PRINCIPAL",
+    "PRINCIPAL_IDENTITY",
+    "PRINCIPAL_ELIGIBILITY",
+    "ROLE_ASSIGNMENT",
+    "DELEGATION",
+    "CAPABILITY_AUTHORIZATION",
+    "MATERIAL_ACCEPTANCE",
+    "FILESYSTEM_EFFECT_AUTHORITY",
+    "MACHINE_AUTHORITY"
+  ]
+}
