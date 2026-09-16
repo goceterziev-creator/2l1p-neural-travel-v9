@@ -8395,11 +8395,25 @@ app.get("/api/auth/me", requireAuthApi, (req, res) => {
   });
 });
 
-function buildAClassAuthenticationEvidence(user = {}, nonce = "") {
-  if (!nonce) throw new Error("A-class evidence nonce is required");
-  const now = new Date().toISOString();
+function createAClassAuthenticationCaptureContext() {
+  const nonce = crypto.randomBytes(16).toString("hex");
   return {
-    id: `gt63-evidence:a-class:${nonce}`,
+    nonce,
+    activityIdentity: `gt63-activity:a-class:${nonce}`,
+    evidenceIdentity: `gt63-evidence:a-class:${nonce}`,
+    authenticationEventIdentity: `gt63-auth-event:${nonce}`,
+    capturedAt: new Date().toISOString()
+  };
+}
+
+function buildAClassAuthenticationEvidence(user = {}, capture = {}) {
+  if (!capture?.nonce) throw new Error("A-class evidence nonce is required");
+  if (!capture?.activityIdentity || !capture?.evidenceIdentity || !capture?.authenticationEventIdentity || !capture?.capturedAt) {
+    throw new Error("Complete A-class capture context is required");
+  }
+
+  return {
+    id: capture.activityIdentity,
     type: "gt63_a_class_authentication_evidence",
     category: "auth",
     userId: user.id,
@@ -8407,12 +8421,12 @@ function buildAClassAuthenticationEvidence(user = {}, nonce = "") {
     offerId: null,
     clientId: null,
     agencyId: user.agencyId || "AGY-AYA",
-    timestamp: now,
-    createdAt: now,
+    timestamp: capture.capturedAt,
+    createdAt: capture.capturedAt,
     metadata: {
-      evidenceIdentity: `gt63-evidence:a-class:${nonce}`,
+      evidenceIdentity: capture.evidenceIdentity,
       evidenceRevision: 1,
-      authenticationEventIdentity: `gt63-auth-event:${nonce}`,
+      authenticationEventIdentity: capture.authenticationEventIdentity,
       evidenceClass: "ACCOUNT_AUTHENTICATION_EVIDENCE",
       applicationAccountSubject: {
         id: user.id,
@@ -8429,7 +8443,21 @@ function buildAClassAuthenticationEvidence(user = {}, nonce = "") {
       capturePoint: "POST_PASSWORD_VERIFICATION_SUCCESS_PRE_SESSION_ISSUANCE",
       sourceContext: {
         sourceIdentity: "gt63-machine:evidence-source:aya-session-normal-auth-session",
-        sourceRevision: 1
+        sourceRevision: 1,
+        validatedSourceDefinitionMaterialIdentity: "gt63-machine:source-definition-material:aya-session-normal-auth-session-evidence@1",
+        validatedSourceDefinitionMaterialBlob: "382ec5ce18858e93981e8792de8a050042252e15",
+        sourceEstablishmentEvidence: {
+          path: "config/gt63-machine/aya-session-source-establishment-evidence-v0.json",
+          commit: "79cb2005dcf9e286b8289c0c4a037740626f9234",
+          blob: "6a07b191731f06a553c403087384202e6c2cbc75"
+        },
+        priorSourceCurrentnessEvidence: {
+          path: "config/gt63-machine/aya-session-source-currentness-evidence-v0.json",
+          commit: "71fda9fe0f109fa9b1714a4b644ebb84fae53ff0",
+          assessedRelevantImplementationBlob: "e17a162457a426b67f2402b53f07791dc67e09b3",
+          applicabilityScope: "EXACT_ASSESSMENT_BOUNDARY",
+          finalCorrectedImplementationCurrentnessAssessed: false
+        }
       },
       sourceBindingState: "NOT_ASSESSED",
       authorityEffect: "NONE",
@@ -8446,42 +8474,55 @@ function buildAClassAuthenticationEvidence(user = {}, nonce = "") {
   };
 }
 
-function persistAClassAuthenticationEvidence(db = {}, user = {}, nonce = "") {
+function aClassImmutableView(activity = {}) {
+  return {
+    id: activity.id,
+    type: activity.type,
+    category: activity.category,
+    userId: activity.userId,
+    actorType: activity.actorType,
+    offerId: activity.offerId,
+    clientId: activity.clientId,
+    agencyId: activity.agencyId,
+    timestamp: activity.timestamp,
+    createdAt: activity.createdAt,
+    metadata: activity.metadata
+  };
+}
+
+function sameAClassImmutableEvidence(left = {}, right = {}) {
+  return JSON.stringify(aClassImmutableView(left)) === JSON.stringify(aClassImmutableView(right));
+}
+
+function persistAClassAuthenticationEvidence(db = {}, user = {}, capture = {}, write = writeDb) {
   if (!Array.isArray(db.activities)) db.activities = [];
 
-  const evidenceIdentity = `gt63-evidence:a-class:${nonce}`;
-  const authenticationEventIdentity = `gt63-auth-event:${nonce}`;
-
+  const expected = buildAClassAuthenticationEvidence(user, capture);
+  const sameActivityIdentity = db.activities.find((activity) => activity?.id === capture.activityIdentity);
   const sameEvidenceIdentity = db.activities.find((activity) =>
-    activity?.metadata?.evidenceIdentity === evidenceIdentity
+    activity?.metadata?.evidenceIdentity === capture.evidenceIdentity
   );
   const sameEventIdentity = db.activities.find((activity) =>
-    activity?.metadata?.authenticationEventIdentity === authenticationEventIdentity
+    activity?.metadata?.authenticationEventIdentity === capture.authenticationEventIdentity
   );
-  const existing = sameEvidenceIdentity || sameEventIdentity || null;
+  const existing = sameActivityIdentity || sameEvidenceIdentity || sameEventIdentity || null;
 
   if (existing) {
-    const exactReplay =
-      existing?.metadata?.evidenceIdentity === evidenceIdentity &&
-      existing?.metadata?.authenticationEventIdentity === authenticationEventIdentity &&
-      existing?.metadata?.evidenceRevision === 1 &&
-      existing?.metadata?.evidenceClass === "ACCOUNT_AUTHENTICATION_EVIDENCE" &&
-      existing?.metadata?.applicationAccountSubject?.id === user.id &&
-      existing?.metadata?.authenticationMethod === "PASSWORD" &&
-      existing?.metadata?.authenticationResult === "SUCCESS" &&
-      existing?.metadata?.capturePoint === "POST_PASSWORD_VERIFICATION_SUCCESS_PRE_SESSION_ISSUANCE";
-
-    if (!exactReplay) {
+    if (!sameAClassImmutableEvidence(existing, expected)) {
       throw new Error("Conflicting A-class authentication evidence identity");
     }
-
     return existing;
   }
 
-  const evidence = buildAClassAuthenticationEvidence(user, nonce);
-  db.activities.unshift(evidence);
-  writeDb(db);
-  return evidence;
+  db.activities.unshift(expected);
+  try {
+    write(db);
+  } catch (err) {
+    const index = db.activities.indexOf(expected);
+    if (index >= 0) db.activities.splice(index, 1);
+    throw err;
+  }
+  return expected;
 }
 
 app.post("/api/auth/login", (req, res) => {
@@ -8494,9 +8535,9 @@ app.post("/api/auth/login", (req, res) => {
     return res.status(401).json({ error: "Invalid email or password" });
   }
 
-  const authenticationEvidenceNonce = crypto.randomBytes(16).toString("hex");
+  const authenticationCapture = createAClassAuthenticationCaptureContext();
   try {
-    persistAClassAuthenticationEvidence(db, user, authenticationEvidenceNonce);
+    persistAClassAuthenticationEvidence(db, user, authenticationCapture);
   } catch (err) {
     console.error("A-class authentication evidence persistence failed:", err);
     return res.status(500).json({
@@ -12243,6 +12284,11 @@ if (require.main === module) app.listen(PORT, () => {
 });
 
 module.exports = {
+  app,
+  createAClassAuthenticationCaptureContext,
+  buildAClassAuthenticationEvidence,
+  persistAClassAuthenticationEvidence,
+  resolveSessionContext,
   buildBookingAndroidFlightProfileTrace,
   cleanupFlightDateTimeDisplay,
   detectGenericConnectingFlight,
