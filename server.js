@@ -8395,6 +8395,95 @@ app.get("/api/auth/me", requireAuthApi, (req, res) => {
   });
 });
 
+function buildAClassAuthenticationEvidence(user = {}, nonce = "") {
+  if (!nonce) throw new Error("A-class evidence nonce is required");
+  const now = new Date().toISOString();
+  return {
+    id: `gt63-evidence:a-class:${nonce}`,
+    type: "gt63_a_class_authentication_evidence",
+    category: "auth",
+    userId: user.id,
+    actorType: "user",
+    offerId: null,
+    clientId: null,
+    agencyId: user.agencyId || "AGY-AYA",
+    timestamp: now,
+    createdAt: now,
+    metadata: {
+      evidenceIdentity: `gt63-evidence:a-class:${nonce}`,
+      evidenceRevision: 1,
+      authenticationEventIdentity: `gt63-auth-event:${nonce}`,
+      evidenceClass: "ACCOUNT_AUTHENTICATION_EVIDENCE",
+      applicationAccountSubject: {
+        id: user.id,
+        email: user.email || "",
+        agencyId: user.agencyId || "AGY-AYA"
+      },
+      authenticationMethod: "PASSWORD",
+      authenticationResult: "SUCCESS",
+      normalPathProvenance: {
+        state: "POSITIVE",
+        bypassExcluded: true,
+        source: "NORMAL_PASSWORD_VERIFICATION"
+      },
+      capturePoint: "POST_PASSWORD_VERIFICATION_SUCCESS_PRE_SESSION_ISSUANCE",
+      sourceContext: {
+        sourceIdentity: "gt63-machine:evidence-source:aya-session-normal-auth-session",
+        sourceRevision: 1
+      },
+      sourceBindingState: "NOT_ASSESSED",
+      authorityEffect: "NONE",
+      nonClaims: {
+        sourceBound: false,
+        issuerEstablished: false,
+        issuerPermissionEstablished: false,
+        acceptedByGt63: false,
+        materialAcceptance: false,
+        sessionEstablished: false,
+        downstreamAuthority: false
+      }
+    }
+  };
+}
+
+function persistAClassAuthenticationEvidence(db = {}, user = {}, nonce = "") {
+  if (!Array.isArray(db.activities)) db.activities = [];
+
+  const evidenceIdentity = `gt63-evidence:a-class:${nonce}`;
+  const authenticationEventIdentity = `gt63-auth-event:${nonce}`;
+
+  const sameEvidenceIdentity = db.activities.find((activity) =>
+    activity?.metadata?.evidenceIdentity === evidenceIdentity
+  );
+  const sameEventIdentity = db.activities.find((activity) =>
+    activity?.metadata?.authenticationEventIdentity === authenticationEventIdentity
+  );
+  const existing = sameEvidenceIdentity || sameEventIdentity || null;
+
+  if (existing) {
+    const exactReplay =
+      existing?.metadata?.evidenceIdentity === evidenceIdentity &&
+      existing?.metadata?.authenticationEventIdentity === authenticationEventIdentity &&
+      existing?.metadata?.evidenceRevision === 1 &&
+      existing?.metadata?.evidenceClass === "ACCOUNT_AUTHENTICATION_EVIDENCE" &&
+      existing?.metadata?.applicationAccountSubject?.id === user.id &&
+      existing?.metadata?.authenticationMethod === "PASSWORD" &&
+      existing?.metadata?.authenticationResult === "SUCCESS" &&
+      existing?.metadata?.capturePoint === "POST_PASSWORD_VERIFICATION_SUCCESS_PRE_SESSION_ISSUANCE";
+
+    if (!exactReplay) {
+      throw new Error("Conflicting A-class authentication evidence identity");
+    }
+
+    return existing;
+  }
+
+  const evidence = buildAClassAuthenticationEvidence(user, nonce);
+  db.activities.unshift(evidence);
+  writeDb(db);
+  return evidence;
+}
+
 app.post("/api/auth/login", (req, res) => {
   const email = String(req.body?.email || "").trim().toLowerCase();
   const password = String(req.body?.password || "");
@@ -8403,6 +8492,18 @@ app.post("/api/auth/login", (req, res) => {
 
   if (!user || !verifyPassword(password, user.passwordHash)) {
     return res.status(401).json({ error: "Invalid email or password" });
+  }
+
+  const authenticationEvidenceNonce = crypto.randomBytes(16).toString("hex");
+  try {
+    persistAClassAuthenticationEvidence(db, user, authenticationEvidenceNonce);
+  } catch (err) {
+    console.error("A-class authentication evidence persistence failed:", err);
+    return res.status(500).json({
+      error: "Authentication evidence persistence failed",
+      authenticationResult: "SUCCESS",
+      sessionIssued: false
+    });
   }
 
   user.lastLoginAt = new Date().toISOString();
