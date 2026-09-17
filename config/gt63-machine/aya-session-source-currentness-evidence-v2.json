@@ -1,0 +1,106 @@
+{
+  "type": "GT63_SOURCE_CURRENTNESS_EVIDENCE",
+  "sourceCurrentnessEvidenceIdentity": "gt63-machine:source-currentness-evidence:aya-session-normal-auth-session@3",
+  "sourceCurrentnessEvidenceRevision": 3,
+  "sourceCurrentnessAssessmentIdentity": "gt63-machine:source-currentness-assessment:aya-session-normal-auth-session@3",
+  "assessmentTarget": {
+    "sourceIdentity": "gt63-machine:evidence-source:aya-session-normal-auth-session",
+    "sourceRevision": 1,
+    "validatedSourceDefinitionMaterialIdentity": "gt63-machine:source-definition-material:aya-session-normal-auth-session-evidence@1",
+    "validatedSourceDefinitionMaterialBlob": "382ec5ce18858e93981e8792de8a050042252e15"
+  },
+  "establishmentEvidenceDependency": {
+    "path": "config/gt63-machine/aya-session-source-establishment-evidence-v0.json",
+    "commit": "79cb2005dcf9e286b8289c0c4a037740626f9234",
+    "blob": "6a07b191731f06a553c403087384202e6c2cbc75"
+  },
+  "priorCurrentnessEvidenceDependency": {
+    "path": "config/gt63-machine/aya-session-source-currentness-evidence-v1.json",
+    "materialBlob": "1ccb685160a1b75162d2fb414eee4c796540fa4a",
+    "materializationCommit": "11bcd39fa767c214cf3ba45b5289f973d5504cd3",
+    "priorAssessedImplementationBlob": "a37f6f96c76d9641b629c4d4eadc5486a96a6a54",
+    "priorOutcome": "CURRENT",
+    "priorApplicabilityScope": "EXACT_CORRECTED_ASSESSMENT_BOUNDARY"
+  },
+  "assessmentBoundary": {
+    "authoritativeRepository": "goceterziev-creator/2l1p-neural-travel-v9",
+    "assessedCommit": "56b2ca2041175109a9a3ded7a1970bd3800ef18e",
+    "assessedTree": "03afdea95dd50cba21589ed14abe6548a218e8b5",
+    "relevantImplementationPath": "server.js",
+    "priorImplementationBlob": "a37f6f96c76d9641b629c4d4eadc5486a96a6a54",
+    "assessedImplementationBlob": "0c3f6e8a00a78bbb0414aae3d0b39b800c9a4476"
+  },
+  "implementationContinuity": {
+    "equalityResult": "IMPLEMENTATION_BLOB_CHANGED",
+    "semanticContinuityResult": "PRESERVED",
+    "primaryCurrentnessBasis": "POSITIVE_SOURCE_RELEVANT_SEMANTIC_CONTINUITY"
+  },
+  "semanticDimensions": {
+    "PASSWORD_AUTHENTICATION": "PRESERVED",
+    "APPLICATION_ACCOUNT_RESOLUTION": "PRESERVED",
+    "SUCCESSFUL_PASSWORD_BRANCH": "PRESERVED",
+    "NORMAL_PATH_PROVENANCE": "PRESERVED",
+    "BETA_AUTH_BYPASS_SEPARATION": "PRESERVED",
+    "A_CLASS_CAPTURE_SEAM": "POST_PASSWORD_VERIFICATION_SUCCESS_PRE_SESSION_ISSUANCE",
+    "NORMAL_SESSION_ISSUANCE_ORDERING": "PRESERVED_WITH_FAIL_CLOSED_A_CLASS_CAPTURE_INTERPOSITION",
+    "SOURCE_PROVENANCE_EXCLUSIONS": "PRESERVED",
+    "A_B_C_D_MAXIMUM_CLAIM_SEMANTICS": "PRESERVED"
+  },
+  "supportingValidation": {
+    "aClassRegressionMaterialBlob": "84fcf34584f68ec0f22f4c42d93b3abfd9ff63a2",
+    "aClassResult": "28/28_PASS",
+    "isolationRegressionMaterialBlob": "3951a60bfece4ec3fd9721a6218907addcca4af7",
+    "isolationResult": "14/14_PASS",
+    "evidentiaryRole": "BOUNDED_SUPPORTING_EVIDENCE_NOT_PRIMARY_SOURCE_CURRENTNESS_PROOF"
+  },
+  "outcome": {
+    "lifecycleOutcome": "CURRENT",
+    "applicabilityScope": "EXACT_56B2CA2_ASSESSMENT_BOUNDARY",
+    "doesNotAssertPermanentCurrentness": true,
+    "doesNotAssertCurrentnessAtUnassessedFutureState": true
+  },
+  "lifecycleSemantics": {
+    "reuseRequires": [
+      "SOURCE_IDENTITY_AND_REVISION_EXACT",
+      "RELEVANT_IMPLEMENTATION_BLOB_EXACT",
+      "NO_POSITIVE_SUPERSESSION_WITHDRAWAL_REVOCATION_OR_MATERIAL_CONTRADICTION"
+    ],
+    "reassessmentRequiredOn": [
+      "RELEVANT_IMPLEMENTATION_BLOB_CHANGE",
+      "SOURCE_REVISION_CHANGE",
+      "SOURCE_DEFINITION_MATERIAL_CHANGE",
+      "POSITIVE_SOURCE_SUPERSESSION",
+      "POSITIVE_WITHDRAWAL_OR_REVOCATION",
+      "MATERIAL_CONTRADICTION",
+      "RELEVANT_CURRENT_IMPLEMENTATION_EVIDENCE_UNAVAILABLE_FOR_POSITIVE_REQUALIFICATION"
+    ],
+    "repositoryHeadChangeAloneDoesNotRequireReassessmentWhenRelevantImplementationIsExact": true,
+    "relevantImplementationChangeDoesNotAutomaticallyMeanNotCurrent": true
+  },
+  "nonClaims": [
+    "PERMANENT_SOURCE_CURRENT",
+    "SOURCE_CURRENT_AT_UNASSESSED_FUTURE_STATE",
+    "SOURCE_CURRENT_FOR_OTHER_SOURCE_REVISION",
+    "EVIDENCE_SPECIFIC_SOURCE_BOUND",
+    "REAL_E_A",
+    "REAL_AUTHENTICATION",
+    "REAL_SESSION",
+    "ISSUER_IDENTITY",
+    "ISSUER_SOURCE_BINDING",
+    "ISSUER_PERMISSION",
+    "GT63_EVIDENCE_ACCEPTANCE",
+    "MATERIAL_ACCEPTANCE",
+    "GT63_SESSION_IDENTITY",
+    "GT63_ACCOUNT_IDENTITY",
+    "AUTHENTICATED_HUMAN_PRINCIPAL",
+    "PRINCIPAL_IDENTITY",
+    "PRINCIPAL_ELIGIBILITY",
+    "ROLE_ASSIGNMENT",
+    "DELEGATION",
+    "CAPABILITY_AUTHORIZATION",
+    "FILESYSTEM_EFFECT_AUTHORITY",
+    "REMOTE_PROMOTION_AUTHORITY",
+    "MACHINE_AUTHORITY"
+  ],
+  "authorityEffect": "NONE"
+}
