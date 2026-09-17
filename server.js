@@ -152,16 +152,52 @@ validateRuntimeIsolation();
 ensureDb();
 ensureMediaHealthFile();
 
+function isStrictDescendantPath(parentPath, candidatePath) {
+  const relative = path.relative(path.resolve(parentPath), path.resolve(candidatePath));
+
+  return Boolean(relative)
+    && !path.isAbsolute(relative)
+    && relative !== ".."
+    && !relative.startsWith(`..${path.sep}`);
+}
+
 function validateRuntimeIsolation() {
   if (!GT63_REQUIRE_ISOLATED_STORAGE) return;
 
-  const hasExplicitRuntimeRoot = Boolean(process.env.DB_FILE || process.env.DATA_DIR || process.env.PERSISTENT_DATA_DIR);
-  if (!hasExplicitRuntimeRoot) {
-    throw new Error("GT63 V9 staging requires DB_FILE, DATA_DIR, or PERSISTENT_DATA_DIR to avoid unsafe runtime fallback");
+  if (!process.env.DB_FILE) {
+    throw new Error("GT63 isolated storage requires explicit DB_FILE");
   }
-  if (path.resolve(DATA_DIR) === path.resolve(__dirname) && !process.env.DB_FILE) {
-    throw new Error("GT63 V9 staging DATA_DIR resolves to the application directory; configure an isolated Railway volume path");
+
+  const railwayVolumeMountPath = String(
+    process.env.RAILWAY_VOLUME_MOUNT_PATH || ""
+  ).trim();
+
+  if (!railwayVolumeMountPath) {
+    throw new Error("GT63 isolated storage requires RAILWAY_VOLUME_MOUNT_PATH");
   }
+
+  const persistentRoot = path.resolve(railwayVolumeMountPath);
+  const dbFile = path.resolve(DB_FILE);
+
+  if (!fs.existsSync(persistentRoot)) {
+    throw new Error("GT63 Railway volume mount path does not exist");
+  }
+
+  let mountStat;
+  try {
+    mountStat = fs.statSync(persistentRoot);
+  } catch {
+    throw new Error("GT63 Railway volume mount path is unavailable");
+  }
+
+  if (!mountStat.isDirectory()) {
+    throw new Error("GT63 Railway volume mount path is not a directory");
+  }
+
+  if (!isStrictDescendantPath(persistentRoot, dbFile)) {
+    throw new Error("GT63 DB_FILE must be a strict descendant of the Railway volume mount path");
+  }
+
   if (/2l1p-neural-travel-production\.up\.railway\.app/i.test(LIVE_BASE_URL)) {
     throw new Error("GT63 V9 staging must not use the V8 production LIVE_BASE_URL");
   }
