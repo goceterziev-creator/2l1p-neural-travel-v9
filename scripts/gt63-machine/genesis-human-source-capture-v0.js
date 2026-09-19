@@ -122,6 +122,13 @@ function createGenesisHumanSourceCapture({
     if(temporal.contradictionState!=="NONE") return result(OUTCOMES.IDENTITY_CONFLICT,"temporal evidence contradictory");
     if(temporal.freshnessState!=="CURRENT") return result(OUTCOMES.STALE,"temporal evidence not current");
     if(priorExact){
+      const sameCurrentProvenance=priorExact.sourceProviderRevision===registry.sourceProviderRevision
+        && priorExact.channelRef===registry.channelRef && priorExact.channelRevision===registry.channelRevision
+        && priorExact.sessionRef===session.sessionRef && priorExact.sessionRevision===session.sessionRevision
+        && priorExact.authenticatedAccountRef===session.authenticatedAccountRef
+        && priorExact.principalRef===principal.principalRef && priorExact.principalRevision===principal.principalRevision
+        && priorExact.principalEvidenceRef===principal.principalEvidenceRef;
+      if(!sameCurrentProvenance) return result(OUTCOMES.IDENTITY_CONFLICT,"provider event current provenance changed");
       const sameTemporal=priorExact.humanOccurrenceState===temporal.humanOccurrenceState
         && priorExact.receivedTemporalFrameRef===temporal.receivedTemporalFrameRef
         && (temporal.humanOccurrenceState==="UNKNOWN"
