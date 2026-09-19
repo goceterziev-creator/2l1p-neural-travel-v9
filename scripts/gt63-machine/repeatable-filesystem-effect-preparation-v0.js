@@ -6,8 +6,8 @@ const plain=v=>Boolean(v&&typeof v==="object"&&!Array.isArray(v)),nonEmpty=v=>ty
 function canonical(v){if(Array.isArray(v))return v.map(canonical);if(plain(v))return Object.keys(v).sort().reduce((o,k)=>(o[k]=canonical(v[k]),o),{});return v;}
 const stringify=v=>JSON.stringify(canonical(v)),digest=v=>"sha256:"+crypto.createHash("sha256").update(Buffer.from(stringify(v),"utf8")).digest("hex");
 const result=(outcome,reason=null,execution=null)=>Object.freeze({outcome,reason,execution:clone(execution),authority:AUTHORITY,authorityEffect:"NONE",effectPerformed:false,effectVerified:false});
-function createRepeatableFilesystemEffectPreparationV0({authorizationPort,rootResolutionPort,adapterPort,executionLedger}={}){
- for(const [n,p] of Object.entries({authorizationPort,rootResolutionPort,adapterPort}))if(typeof p!=="function")throw new TypeError(n+" required");
+function createRepeatableFilesystemEffectPreparationV0({authorizationPort,rootResolutionPort,toolAuthorityPort,executionLedger}={}){
+ for(const [n,p] of Object.entries({authorizationPort,rootResolutionPort,toolAuthorityPort}))if(typeof p!=="function")throw new TypeError(n+" required");
  if(!executionLedger||typeof executionLedger.findByAuthorizationId!=="function"||typeof executionLedger.commit!=="function")throw new TypeError("executionLedger required");
  function prepare(req){
   if(!plain(req)||Object.keys(req).sort().join("|")!==["rulesetVersion","authorizationId"].sort().join("|")||req.rulesetVersion!==RULESET_VERSION||!nonEmpty(req.authorizationId))return result(OUTCOMES.INVALID,"unsupported request schema");
