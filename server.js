@@ -336,6 +336,13 @@ function mutateDb(mutationFn) {
   return job;
 }
 
+function createGt63GovernancePersistencePort() {
+  return Object.freeze({
+    read: () => readDb(),
+    mutate: (mutationFn) => mutateDb(mutationFn)
+  });
+}
+
 function routeError(message, status = 500, details = null) {
   const err = new Error(message);
   err.status = status;
@@ -12325,6 +12332,7 @@ module.exports = {
   buildAClassAuthenticationEvidence,
   persistAClassAuthenticationEvidence,
   resolveSessionContext,
+  createGt63GovernancePersistencePort,
   buildBookingAndroidFlightProfileTrace,
   cleanupFlightDateTimeDisplay,
   detectGenericConnectingFlight,
