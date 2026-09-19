@@ -15,7 +15,7 @@ function env(o={}){
  const session={sessionRef:"session:1",sessionRevision:"4",authenticatedAccountRef:"account:1",authenticationProviderRef:"auth:signed",authenticationEvidenceRef:"evidence:session",authenticationState:"AUTHENTICATED",freshnessState:"CURRENT",...(o.session||{})};
  const principal={principalRef:"principal:1",principalRevision:"11",sessionRef:"session:1",sessionRevision:"4",principalEvidenceRef:"evidence:principal",resolutionState:"RESOLVED",lifecycleState:"CURRENT",freshnessState:"CURRENT",contradictionState:"NONE",...(o.principal||{})};
  const registry={sourceProviderRef:"source:test",sourceProviderRevision:"7",channelRef:"channel:test",channelRevision:"3",trustState:"TRUSTED",registryEvidenceRef:"evidence:registry",...(o.registry||{})};
- const temporal={occurredTemporalFrameRef:"time:occurred:1",receivedTemporalFrameRef:"time:received:1",freshnessState:"CURRENT",contradictionState:"NONE",...(o.temporal||{})};
+ const temporal={humanOccurrenceState:"KNOWN",occurredTemporalFrameRef:"time:occurred:1",receivedTemporalFrameRef:"time:received:1",freshnessState:"CURRENT",contradictionState:"NONE",...(o.temporal||{})};
  const fail=o.fail;
  const c=cap.createGenesisHumanSourceCapture({
   authenticatedSessionPort(){if(fail==="session")throw Error();return clone(session);},
@@ -51,11 +51,23 @@ function run(){
  ok("stale-source-revision-stale",()=>assert.equal(env({registry:{sourceProviderRevision:"8"}}).c.capture(req()).outcome,O.STALE));
  ok("temporal-unavailable-uncertain",()=>assert.equal(env({fail:"temporal"}).c.capture(req()).outcome,O.UNCERTAIN));
  ok("immutable-ledger-conflict",()=>{const l=ledger();const original=l.commit.bind(l);let n=0;l.commit=v=>{n++;if(n===1)throw Error("conflict");return original(v);};assert.equal(env({ledger:l}).c.capture(req()).outcome,O.IDENTITY_CONFLICT);});
+ ok("unknown-human-occurrence-with-real-receipt-captures",()=>{const x=env({temporal:{humanOccurrenceState:"UNKNOWN",occurredTemporalFrameRef:undefined}}).c.capture(req());assert.equal(x.outcome,O.CAPTURED);assert.equal(x.evidence.humanOccurrenceState,"UNKNOWN");assert.equal(x.evidence.receivedTemporalFrameRef,"time:received:1");});
+ ok("unknown-human-occurrence-does-not-materialize-occurrence-ref",()=>{const x=env({temporal:{humanOccurrenceState:"UNKNOWN",occurredTemporalFrameRef:undefined}}).c.capture(req());assert.equal(Object.prototype.hasOwnProperty.call(x.evidence,"occurredTemporalFrameRef"),false);});
+ ok("known-human-occurrence-requires-exact-occurrence-ref",()=>{const x=env({temporal:{humanOccurrenceState:"KNOWN",occurredTemporalFrameRef:undefined}}).c.capture(req());assert.equal(x.outcome,O.UNCERTAIN);});
+ ok("known-human-occurrence-preserved-exactly",()=>{const x=env({temporal:{humanOccurrenceState:"KNOWN",occurredTemporalFrameRef:"time:occurred:exact"}}).c.capture(req());assert.equal(x.outcome,O.CAPTURED);assert.equal(x.evidence.occurredTemporalFrameRef,"time:occurred:exact");});
+ ok("replay-with-stale-session-is-stale",()=>{const l=ledger();const a=env({ledger:l});assert.equal(a.c.capture(req()).outcome,O.CAPTURED);const b=env({ledger:l,session:{freshnessState:"STALE"}});assert.equal(b.c.capture(req()).outcome,O.STALE);});
+ ok("replay-with-revoked-principal-is-stale",()=>{const l=ledger();assert.equal(env({ledger:l}).c.capture(req()).outcome,O.CAPTURED);const x=env({ledger:l,principal:{lifecycleState:"REVOKED"}}).c.capture(req());assert.equal(x.outcome,O.STALE);});
+ ok("replay-with-contradictory-principal-is-conflict",()=>{const l=ledger();assert.equal(env({ledger:l}).c.capture(req()).outcome,O.CAPTURED);const x=env({ledger:l,principal:{contradictionState:"CONTRADICTORY_EVIDENCE"}}).c.capture(req());assert.equal(x.outcome,O.IDENTITY_CONFLICT);});
+ ok("replay-with-stale-source-registry-is-stale",()=>{const l=ledger();assert.equal(env({ledger:l}).c.capture(req()).outcome,O.CAPTURED);const x=env({ledger:l,registry:{trustState:"UNTRUSTED"}}).c.capture(req());assert.equal(x.outcome,O.STALE);});
+ ok("replay-with-unavailable-temporal-evidence-is-uncertain",()=>{const l=ledger();assert.equal(env({ledger:l}).c.capture(req()).outcome,O.CAPTURED);const x=env({ledger:l,fail:"temporal"}).c.capture(req());assert.equal(x.outcome,O.UNCERTAIN);});
+ ok("replay-with-stale-temporal-evidence-is-stale",()=>{const l=ledger();assert.equal(env({ledger:l}).c.capture(req()).outcome,O.CAPTURED);const x=env({ledger:l,temporal:{freshnessState:"STALE"}}).c.capture(req());assert.equal(x.outcome,O.STALE);});
+ ok("exact-current-replay-remains-already-captured",()=>{const l=ledger();const a=env({ledger:l}).c.capture(req()),b=env({ledger:l}).c.capture(req());assert.equal(a.outcome,O.CAPTURED);assert.equal(b.outcome,O.ALREADY_CAPTURED);assert.equal(a.evidence.genesisSourceEvidenceRef,b.evidence.genesisSourceEvidenceRef);});
+ ok("replay-does-not-mutate-historical-evidence",()=>{const l=ledger();const first=env({ledger:l}).c.capture(req());const before=JSON.stringify(l.records());const replay=env({ledger:l}).c.capture(req());assert.equal(replay.outcome,O.ALREADY_CAPTURED);assert.equal(JSON.stringify(l.records()),before);assert.equal(l.records().length,1);assert.equal(first.evidence.genesisSourceEvidenceRef,replay.evidence.genesisSourceEvidenceRef);});
  ok("all-outcomes-no-authority-no-interaction-intent-effect",()=>{
   const xs=[env().c.capture(req()),env({session:{freshnessState:"STALE"}}).c.capture(req()),env({fail:"temporal"}).c.capture(req()),env().c.capture({...req(),authority:true})];
   for(const x of xs){noAuthority(x);const s=JSON.stringify(x);for(const bad of ["interactionId","contextRevision","intentContractRef","INTENT_ACCEPTED","EFFECT_AUTHORIZED"])assert(!s.includes(bad));}
  });
- assert.equal(cases.length,24);
+ assert.equal(cases.length,36);
  return {status:"PASS",workflow:"genesis-human-source-capture-v0-regression",cases:cases.length,names:cases};
 }
 const a=run(),b=run();assert.deepEqual(a,b);
