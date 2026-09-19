@@ -1,0 +1,32 @@
+"use strict";
+const assert=require("node:assert/strict"),crypto=require("node:crypto"),fs=require("node:fs"),os=require("node:os"),path=require("node:path"),mod=require("./gt63-machine/repeatable-filesystem-readonly-evidence-provider-v0");
+const cases=[],run=(n,f)=>{f();cases.push(n)},ROOT_ID="GT63_REPEATABLE_EFFECT_TEST/";
+const temp=fs.mkdtempSync(path.join(os.tmpdir(),"gt63-readonly-provider-"));
+try{
+ const p=mod.createRepeatableFilesystemReadonlyEvidenceProviderV0({rootBindings:{[ROOT_ID]:temp}});
+ run("root-binding-resolves",()=>assert.equal(p.rootRegistryPort({authorizedRootIdentity:ROOT_ID}).rootPath,path.resolve(temp)));
+ run("root-binding-current",()=>{const x=p.rootRegistryPort({authorizedRootIdentity:ROOT_ID});assert.equal(x.lifecycleState,"CURRENT");assert.equal(x.freshnessState,"CURRENT");assert.equal(x.contradictionState,"NONE")});
+ run("unknown-root-fails-closed",()=>assert.throws(()=>p.rootRegistryPort({authorizedRootIdentity:"OTHER/"})));
+ run("root-exists-observed",()=>assert.equal(p.filesystemObservationPort({rootPath:temp,targetPath:"RUN_2.txt"}).rootExists,true));
+ run("root-directory-observed",()=>assert.equal(p.filesystemObservationPort({rootPath:temp,targetPath:"RUN_2.txt"}).rootIsDirectory,true));
+ run("absent-target-observed",()=>assert.equal(p.filesystemObservationPort({rootPath:temp,targetPath:"RUN_2.txt"}).targetExists,false));
+ run("existing-target-observed",()=>{const f=path.join(temp,"EXISTING.txt");fs.writeFileSync(f,"fixture");assert.equal(p.filesystemObservationPort({rootPath:temp,targetPath:"EXISTING.txt"}).targetExists,true);fs.unlinkSync(f)});
+ run("absolute-target-rejected",()=>assert.throws(()=>p.filesystemObservationPort({rootPath:temp,targetPath:path.resolve(temp,"x.txt")})));
+ run("traversal-target-rejected",()=>assert.throws(()=>p.filesystemObservationPort({rootPath:temp,targetPath:"../x.txt"})));
+ run("observation-current",()=>{const x=p.filesystemObservationPort({rootPath:temp,targetPath:"RUN_2.txt"});assert.equal(x.observationState,"CURRENT");assert.equal(x.contradictionState,"NONE")});
+ run("provider-authority-none",()=>assert.equal(p.authority,"NONE"));
+ run("root-record-authority-none",()=>assert.equal(p.rootRegistryPort({authorizedRootIdentity:ROOT_ID}).authority,"NONE"));
+ run("observation-authority-none",()=>assert.equal(p.filesystemObservationPort({rootPath:temp,targetPath:"RUN_2.txt"}).authority,"NONE"));
+ run("provider-read-only-capability",()=>assert.equal(p.capability,"READ_ONLY_FILESYSTEM_EVIDENCE"));
+ const before=fs.readdirSync(temp).sort();
+ p.rootRegistryPort({authorizedRootIdentity:ROOT_ID});p.filesystemObservationPort({rootPath:temp,targetPath:"RUN_2.txt"});
+ run("observation-does-not-create-target",()=>assert.equal(fs.existsSync(path.join(temp,"RUN_2.txt")),false));
+ run("observation-does-not-mutate-directory",()=>assert.deepEqual(fs.readdirSync(temp).sort(),before));
+ run("strict-descendant-direct",()=>assert.equal(mod.strictDescendant(temp,"RUN_2.txt"),true));
+ run("strict-descendant-nested",()=>assert.equal(mod.strictDescendant(temp,"nested/RUN_2.txt"),true));
+ run("strict-descendant-dotdot-false",()=>assert.equal(mod.strictDescendant(temp,"../RUN_2.txt"),false));
+ run("ruleset-exact",()=>assert.equal(p.rulesetVersion,"repeatable-filesystem-readonly-evidence-provider-v0.1.0"));
+}finally{fs.rmSync(temp,{recursive:true,force:true});}
+const semantic={cases,rulesetVersion:mod.RULESET_VERSION,evidenceMode:"REAL_LOCAL_TEMP_FILESYSTEM_READ_ONLY"};
+const validationIdentity="sha256:"+crypto.createHash("sha256").update(JSON.stringify(semantic)).digest("hex");
+process.stdout.write(JSON.stringify({status:"PASS",workflow:"repeatable-filesystem-readonly-evidence-provider-v0-regression",cases:cases.length,validationIdentity,evidenceMode:"REAL_LOCAL_TEMP_FILESYSTEM_READ_ONLY",semantic})+"\n");
