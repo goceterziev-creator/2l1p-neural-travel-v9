@@ -2,7 +2,7 @@
 
 const crypto = require("node:crypto");
 
-const RULESET_VERSION = "genesis-human-source-capture-v0.1.0";
+const RULESET_VERSION = "genesis-human-source-capture-v0.2.0";
 const SCHEMA_VERSION = "1.0";
 const AUTHORITY = "NONE";
 const AUTHORITY_EFFECT = "NONE";
@@ -54,8 +54,11 @@ function validRegistry(r){
   return plain(r) && ["sourceProviderRef","sourceProviderRevision","channelRef","channelRevision","trustState","registryEvidenceRef"].every(k=>nonEmpty(r[k]));
 }
 function validTemporal(t){
-  return plain(t) && nonEmpty(t.occurredTemporalFrameRef) && nonEmpty(t.receivedTemporalFrameRef)
-    && nonEmpty(t.freshnessState) && nonEmpty(t.contradictionState);
+  if(!plain(t) || !["KNOWN","UNKNOWN"].includes(t.humanOccurrenceState)
+    || !nonEmpty(t.receivedTemporalFrameRef)
+    || !nonEmpty(t.freshnessState) || !nonEmpty(t.contradictionState)) return false;
+  if(t.humanOccurrenceState==="KNOWN") return nonEmpty(t.occurredTemporalFrameRef);
+  return t.occurredTemporalFrameRef===undefined || t.occurredTemporalFrameRef===null;
 }
 
 function createGenesisHumanSourceCapture({
@@ -81,14 +84,15 @@ function createGenesisHumanSourceCapture({
     catch(_){ return result(OUTCOMES.UNCERTAIN,"genesis source ledger unavailable"); }
     if(!Array.isArray(historical)) return result(OUTCOMES.UNCERTAIN,"genesis source ledger evidence invalid");
     if(historical.length>1) return result(OUTCOMES.IDENTITY_CONFLICT,"multiple records for provider event");
+    let priorExact=null;
     if(historical.length===1){
       const prior=historical[0];
       const same=prior.sourceProviderRevision===request.expectedSourceProviderRevision
         && prior.channelRef===request.channelRef && prior.channelRevision===request.expectedChannelRevision
         && prior.contentBytesBase64===request.contentBytesBase64 && prior.contentDigest===contentDigest
         && prior.contentEncoding===request.contentEncoding && prior.contentMediaType===request.contentMediaType;
-      return same ? result(OUTCOMES.ALREADY_CAPTURED,"same genesis source already captured",prior)
-        : result(OUTCOMES.IDENTITY_CONFLICT,"provider event identity reused with changed material");
+      if(!same) return result(OUTCOMES.IDENTITY_CONFLICT,"provider event identity reused with changed material");
+      priorExact=prior;
     }
 
     const reg=call(sourceRegistryPort,{sourceProviderRef:request.sourceProviderRef,channelRef:request.channelRef});
@@ -117,6 +121,15 @@ function createGenesisHumanSourceCapture({
     const temporal=tr.value;
     if(temporal.contradictionState!=="NONE") return result(OUTCOMES.IDENTITY_CONFLICT,"temporal evidence contradictory");
     if(temporal.freshnessState!=="CURRENT") return result(OUTCOMES.STALE,"temporal evidence not current");
+    if(priorExact){
+      const sameTemporal=priorExact.humanOccurrenceState===temporal.humanOccurrenceState
+        && priorExact.receivedTemporalFrameRef===temporal.receivedTemporalFrameRef
+        && (temporal.humanOccurrenceState==="UNKNOWN"
+          ? priorExact.occurredTemporalFrameRef===undefined
+          : priorExact.occurredTemporalFrameRef===temporal.occurredTemporalFrameRef);
+      if(!sameTemporal) return result(OUTCOMES.IDENTITY_CONFLICT,"provider event temporal identity changed");
+      return result(OUTCOMES.ALREADY_CAPTURED,"same genesis source already captured",priorExact);
+    }
 
     const sourceMaterial={
       sourceProviderRef:request.sourceProviderRef, sourceProviderRevision:registry.sourceProviderRevision,
@@ -131,7 +144,9 @@ function createGenesisHumanSourceCapture({
       channelRef:registry.channelRef, channelRevision:registry.channelRevision,
       sessionRef:session.sessionRef, sessionRevision:session.sessionRevision, authenticatedAccountRef:session.authenticatedAccountRef,
       principalRef:principal.principalRef, principalRevision:principal.principalRevision, principalEvidenceRef:principal.principalEvidenceRef,
-      occurredTemporalFrameRef:temporal.occurredTemporalFrameRef, receivedTemporalFrameRef:temporal.receivedTemporalFrameRef,
+      humanOccurrenceState:temporal.humanOccurrenceState,
+      ...(temporal.humanOccurrenceState==="KNOWN" ? {occurredTemporalFrameRef:temporal.occurredTemporalFrameRef} : {}),
+      receivedTemporalFrameRef:temporal.receivedTemporalFrameRef,
       originAuthenticationState:"AUTHENTICATED", contentIntegrityState:"EXACT_BYTES",
       principalLifecycleState:principal.lifecycleState, principalFreshnessState:principal.freshnessState, contradictionState:"NONE",
       authority:AUTHORITY, authorityEffect:AUTHORITY_EFFECT
