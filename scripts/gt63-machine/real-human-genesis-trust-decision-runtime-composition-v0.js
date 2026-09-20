@@ -7,7 +7,6 @@ const {
 }=require("./genesis-principal-bootstrap-runtime-bridge-v0");
 const {
  createReadOnlySessionValidationPort,
- attachValidatedContext,
  establishReadOnlyDbGuard,
  EXPECTED_GITHUB_IDENTITY
 }=require("./isolated-local-real-context-proof-surface-v0");
@@ -24,6 +23,20 @@ const ROUTES=Object.freeze([
 ]);
 function freeze(v){if(v&&typeof v==="object"&&!Object.isFrozen(v)){Object.freeze(v);for(const x of Object.values(v))freeze(x);}return v;}
 function safe(e){return String(e&&e.message||e);}
+
+function attachValidatedContext(validateSession){
+ return function(req,res,next){
+  try{
+   const c=validateSession(req);
+   if(c&&c.user)req.user=c.user;
+   if(c&&c.session)req.session=c.session;
+   if(c&&c.identity)req.sessionIdentity=c.identity;
+   next();
+  }catch(_){
+   res.status(401).json({error:"Authentication required",authority:AUTHORITY,authorityEffect:AUTHORITY_EFFECT});
+  }
+ };
+}
 
 function createRealHumanGenesisTrustDecisionRuntime({validateSession,bridge,dbGuard,clock}={}){
  if(typeof validateSession!=="function")throw new TypeError("validateSession required");
