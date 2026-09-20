@@ -10,7 +10,7 @@ const {
 
 const SECRET="provider-free-secret";
 const USER={id:"USR-ADMIN",agencyId:"AGY-AYA",role:"admin",sessionVersion:1};
-const NOW=1789835197040;
+const NOW=2000000000000;
 function sign(payload){const encoded=Buffer.from(JSON.stringify(payload)).toString("base64url");const sig=crypto.createHmac("sha256",SECRET).update(encoded).digest("base64url");return encoded+"."+sig;}
 const SESSION={userId:"USR-ADMIN",agencyId:"AGY-AYA",role:"admin",sessionVersion:1,iat:NOW,exp:NOW+60000};
 const TOKEN=sign(SESSION);
