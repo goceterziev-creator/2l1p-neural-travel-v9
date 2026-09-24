@@ -344,3 +344,47 @@ Preserve:
 
 Do not reopen archaeology without an explicit Human Principal decision and materially new primary evidence.
 
+
+
+---
+
+## Post-origin archaeology closeout — 2026-09-24
+
+A separate evidence-bounded origin closeout is now preserved at:
+
+`docs/archaeology/GT63_MACHINE_ORIGIN_RECONSTRUCTION_2026_09_24.md`
+
+The origin pass distinguishes conceptual/product naming, documented architectural formation, executable birth, and later executable evidence/authority separation.
+
+Preserve the closeout boundaries:
+
+- `CONTINUOUS LINEAGE PROVEN: NO`
+- `FORMATION SEQUENCE: STRONGLY / DIRECTLY EVIDENCED`
+- `EXECUTABLE BIRTH: PROVEN`
+- `MISSING PRIMARY ARTIFACTS: PRESERVED AS UNKNOWN`
+- `ARCHAEOLOGY STATUS: CLOSED`
+- `LATER ARCHITECTURAL COMPLETENESS ≠ EVIDENCE OF ORIGINAL DESIGN INTENT`
+- MACHINE AUTHORITY: NONE
+- authorityEffect: NONE
+
+Do not use archaeology itself to set implementation priority.
+
+### Next operational entry point
+
+Perform a **READ-ONLY CURRENT-AS-BUILT RESYNC** of authoritative current `main` before resuming the first-governed-effect chain.
+
+The resync must establish:
+
+- exact currently integrated governed-effect chain;
+- implemented but dormant/unintegrated components;
+- contract/material-only components;
+- the earliest causal blocker preventing one real bounded governed filesystem effect;
+- the minimum next intervention required to remove only that blocker.
+
+Classify findings as:
+
+`PROVEN CURRENT` / `DORMANT OR UNINTEGRATED` / `NOT ESTABLISHED` / `BLOCKER`.
+
+Finish with exactly one `EARLIEST NEXT PREREQUISITE`.
+
+No implementation, repository mutation beyond this continuity update, merge, deploy, effect execution, or authority widening is authorized by this checkpoint.
