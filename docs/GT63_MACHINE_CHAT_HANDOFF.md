@@ -388,3 +388,41 @@ Classify findings as:
 Finish with exactly one `EARLIEST NEXT PREREQUISITE`.
 
 No implementation, repository mutation beyond this continuity update, merge, deploy, effect execution, or authority widening is authorized by this checkpoint.
+
+
+---
+
+## 2026-09-24 — Real Human Genesis Trust Decision Capture / persistence frontier
+
+Real bounded runtime evidence was produced from candidate HEAD `ee21f2a5f78ee35ad7c3def0c26a4759ec97b66d` (`candidate/real-human-genesis-trust-decision-runtime-composition-v0`). A normal AYA authenticated session was accepted; the human completed GitHub Device Flow; the runtime returned `EXTERNAL_IDENTITY_VERIFIED` for `gt63-machine:principal:github:239696056`; a real Genesis trust-decision presentation was produced; the human explicitly approved `APPROVE_TRUST_REGISTRATION`; and the runtime returned `GENESIS_TRUST_DECISION_APPROVED_CAPTURED` with `downstreamTrustRegistration: NOT_PERFORMED`, `authority: NONE`, and `authorityEffect: NONE`.
+
+Exact presentationId:
+`gt63-genesis-trust-decision-presentation:f483c652e9fb39040d7b837f06abaa1f`
+
+Primary AYA DB SHA-256 before Genesis and after the complete real identity/presentation/approval-capture chain was identical:
+`d8230f94dbb5b116eb3a0db72c567bd76303cbfa51aaffe994b1788570ca1c09`
+
+Bounded conclusion: REAL HUMAN APPROVAL CAPTURE = PROVEN; PRIMARY DB NON-MUTATION = PROVEN.
+
+Read-only source inspection then established that the current real-human runtime exposes only identity start/poll and decision present/decide. The isolated decision surface defaults its presentation/decision ledgers to process-local memory and exports only `present`/`decide`; no authoritative read/export bridge from the internal captured decision ledger is exposed. Existing provenance acceptance and persistent-ledger components are separate/unintegrated with this runtime. Persistence would be a distinct DB mutation and is not implied by the human approval.
+
+Current boundary:
+- persisted decision evidence: NOT PERFORMED;
+- real decision → provenance bridge: NOT PROVEN / UNINTEGRATED;
+- provenance acceptance: NOT PERFORMED;
+- trust registration: NOT PERFORMED;
+- real accepted Genesis trust instance: NOT YET PROVEN;
+- MACHINE authority: NONE;
+- authorityEffect: NONE.
+
+Preserve:
+- `PROCESS-LOCAL HUMAN APPROVAL ≠ PERSISTED DECISION EVIDENCE`
+- `OBSERVED DECISION RESPONSE ≠ PERSISTED DECISION EVIDENCE`
+- `HUMAN APPROVAL ≠ PERSISTENCE AUTHORIZATION`
+- `PERSISTED DECISION ≠ ACCEPTED PROVENANCE`
+- `ACCEPTED PROVENANCE ≠ TRUST REGISTRATION`
+- `APPROVAL ≠ REGISTRATION`
+
+EARLIEST NEXT PREREQUISITE: read-only/minimum-causal design for a bounded real decision-evidence persistence/continuation bridge that can preserve the already captured real-human approval without silently promoting the browser response into authoritative evidence, without automatic registration, and without authority widening.
+
+At checkpoint time the real Genesis Node process was intentionally left running because the authoritative captured decision ledger is process-local. Re-verify runtime liveness before relying on it later.
