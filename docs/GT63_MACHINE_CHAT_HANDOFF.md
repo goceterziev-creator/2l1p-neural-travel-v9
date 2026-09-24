@@ -311,3 +311,36 @@ Start from latest candidate tree:
 `4e6d68c51c3a5303d13d53f8b8382075e73107f5`
 
 and continue with read-only Source-to-Material Binding Evidence discovery.
+
+## Closed archaeology canonical boundary — 2026-09-24
+
+This file remains a **NON-CANONICAL CONTINUITY ARTIFACT**. The authoritative archaeology boundary is stored separately and must be read in this order:
+
+1. `docs/archaeology/GT63_MACHINE_Post-Archaeology_Handoff_v1.0.md`
+   - size: `15,779 bytes`
+   - SHA-256: `72afc6be1939738c63027a2d7807a8cde73a3ae33e3180f3f45f56f846c18702`
+2. `docs/archaeology/GT63_MACHINE_Post-Archaeology_Handoff_v1.0_PASS2_ADDENDUM.md`
+   - size: `11,039 bytes`
+   - SHA-256: `9cd7f90b882712a741641f5a9d49cde52c3f2492612b4430c7cd56bf39c8dbc8`
+3. `docs/archaeology/GT63_ARCHAEOLOGY_CANONICAL_INDEX.md`
+   - compact navigation for Atanascho, Goshko, and future chats.
+
+Pass #2 admitted only bounded deltas:
+
+- verified GBT root `8cc952595bb819cfde796d071b0cdad3070aa443` at `2025-10-27T15:49:47+02:00`;
+- verified first exact PRO-GBT code state `ae0a1a72b33c3a6ad8f4d661eb6d2453c671b127` at `2025-11-05T02:10:00Z`;
+- GTB→GBT remains `ANCESTOR UNKNOWN`;
+- separate experiments are supported;
+- lineage edge is not proven;
+- the meaning of GBT, B4GT63, L1FE.AI bridges, and missing transitions remain unresolved.
+
+Preserve:
+
+- `CONTINUOUS LINEAGE PROVEN: NO`
+- `MISSING ARROWS PRESERVED: YES`
+- `ARCHAEOLOGY STATUS: CLOSED`
+- `MACHINE AUTHORITY: NONE`
+- `authorityEffect: NONE`
+
+Do not reopen archaeology without an explicit Human Principal decision and materially new primary evidence.
+
