@@ -42,6 +42,10 @@ const {
   normalizeGeminiVisionModel,
   uniqueGeminiModels
 } = require("./provider-layer");
+const {
+  createProductionTrustRuntimeComposition,
+  attachProductionTrustRuntimeRoutes
+} = require("./scripts/gt63-machine/human-governance-trust-production-composition");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -8403,6 +8407,16 @@ async function dismissOfferWarning() {
 </body>
 </html>`;
 }
+
+const gt63TrustRuntimeComposition = createProductionTrustRuntimeComposition({
+  readDb,
+  writeDb,
+  githubClientId: String(process.env.GT63_GITHUB_OAUTH_CLIENT_ID || "")
+});
+attachProductionTrustRuntimeRoutes(app, {
+  requireAuthApi,
+  composition: gt63TrustRuntimeComposition
+});
 
 app.get("/login", (req, res) => res.sendFile(path.join(PUBLIC_DIR, "login.html")));
 app.get("/register", (req, res) => res.sendFile(path.join(PUBLIC_DIR, "register.html")));
