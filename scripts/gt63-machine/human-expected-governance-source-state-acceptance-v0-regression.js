@@ -1,0 +1,40 @@
+"use strict";
+const assert=require("node:assert/strict");
+const C=require("./human-expected-governance-source-state-acceptance-v0");
+const D=require("./expected-governance-source-state-durable-evidence-v0");
+let passed=0;const test=(n,f)=>{f();passed++;console.log("PASS - "+n);};
+const fixedRandom=()=>Buffer.from("00112233445566778899aabbccddeeff","hex");
+const session=()=>({sessionRef:"session:1",sessionRevision:"1",authenticatedAccountRef:"account:1",authenticationProviderRef:"auth:1",authenticationEvidenceRef:"auth-e:1",authenticationState:"AUTHENTICATED",freshnessState:"CURRENT"});
+const principal=()=>({principalRef:"principal:human:1",principalRevision:"1",principalEvidenceRef:"principal-e:1",sessionRef:"session:1",sessionRevision:"1",lifecycleState:"CURRENT",freshnessState:"CURRENT",contradictionState:"NONE",authority:"NONE"});
+const snapshot=()=>({type:"GT63_CANDIDATE_GOVERNANCE_SOURCE_STATE_OBSERVATION",repositoryIdentity:C.REPOSITORY_IDENTITY,authoritativeRef:C.AUTHORITATIVE_REF,commitSha:"a".repeat(40),treeSha:"b".repeat(40),rootPath:C.ROOT_PATH,rootBlobSha:"c".repeat(40),rootAnchorId:"sha256:"+"d".repeat(64),observationEvidenceRefs:["git:ref:1","git:commit:1","git:root:1"],authority:"NONE"});
+function dbLedger(initial=[]){let db={gt63GovernanceEvidence:JSON.parse(JSON.stringify(initial))};return {readDb:()=>JSON.parse(JSON.stringify(db)),writeDb:v=>{db=JSON.parse(JSON.stringify(v));},raw:()=>db};}
+function fixture(store=dbLedger()){const decisionLedger=D.createDurableExpectedGovernanceSourceStateDecisionLedger(store);const presentationLedger=C.createMemoryLedger();const capture=C.createHumanExpectedGovernanceSourceStateAcceptance({clock:()=>"2026-09-28T00:00:00.000Z",randomBytes:fixedRandom,presentationLedger,decisionLedger});return {store,decisionLedger,presentationLedger,capture};}
+function presented(f=fixture()){const s=session(),p=principal(),x=snapshot(),presentation=f.capture.present({session:s,principal:p,candidateSnapshot:x});return {f,s,p,x,presentation};}
+function decide(x){return x.f.capture.decide({session:x.s,principal:x.p,candidateSnapshot:x.x,presentationId:x.presentation.presentationId,decision:C.DECISION});}
+
+test("module authority remains NONE",()=>{assert.equal(C.AUTHORITY,"NONE");assert.equal(D.AUTHORITY,"NONE");});
+test("presents exact expected source state",()=>{const x=presented();assert.equal(x.presentation.exactPayload.expectedCommitSha,x.x.commitSha);assert.equal(x.presentation.exactPayload.expectedTreeSha,x.x.treeSha);assert.equal(x.presentation.exactPayload.expectedRootAnchorId,x.x.rootAnchorId);assert.equal(x.presentation.authority,"NONE");});
+test("captures exact human decision",()=>{const x=presented(),d=decide(x);assert.equal(d.decision,C.DECISION);assert.equal(d.expectedCommitSha,x.x.commitSha);assert.equal(d.authority,"NONE");});
+test("decision exact replay is idempotent",()=>{const x=presented();assert.deepEqual(decide(x),decide(x));});
+test("durable decision survives ledger recreation",()=>{const x=presented(),d=decide(x);const recreated=D.createDurableExpectedGovernanceSourceStateDecisionLedger(x.f.store);assert.deepEqual(recreated.get(d.expectedStateDecisionEvidenceRef),d);});
+test("unrelated governance evidence is preserved",()=>{const unrelated={evidenceRef:"other:1",evidenceType:"OTHER",representationRevision:1,record:{x:1}},f=fixture(dbLedger([unrelated])),x=presented(f);decide(x);assert.deepEqual(f.store.raw().gt63GovernanceEvidence[0],unrelated);});
+test("changed commit rejected",()=>{const x=presented();x.x={...x.x,commitSha:"e".repeat(40)};assert.throws(()=>decide(x),/does not match/);});
+test("changed tree rejected",()=>{const x=presented();x.x={...x.x,treeSha:"e".repeat(40)};assert.throws(()=>decide(x),/does not match/);});
+test("changed root blob rejected",()=>{const x=presented();x.x={...x.x,rootBlobSha:"e".repeat(40)};assert.throws(()=>decide(x),/does not match/);});
+test("changed root anchor rejected",()=>{const x=presented();x.x={...x.x,rootAnchorId:"sha256:"+"e".repeat(64)};assert.throws(()=>decide(x),/does not match/);});
+test("wrong repository rejected",()=>{const f=fixture(),s=session(),p=principal(),x={...snapshot(),repositoryIdentity:"other/repo"};assert.throws(()=>f.capture.present({session:s,principal:p,candidateSnapshot:x}),/exact candidate/);});
+test("wrong ref rejected",()=>{const f=fixture(),s=session(),p=principal(),x={...snapshot(),authoritativeRef:"refs/heads/candidate"};assert.throws(()=>f.capture.present({session:s,principal:p,candidateSnapshot:x}),/exact candidate/);});
+test("wrong root path rejected",()=>{const f=fixture(),s=session(),p=principal(),x={...snapshot(),rootPath:"config/other.json"};assert.throws(()=>f.capture.present({session:s,principal:p,candidateSnapshot:x}),/exact candidate/);});
+test("changed principal rejected",()=>{const x=presented();x.p={...x.p,principalRef:"principal:human:2",principalEvidenceRef:"principal-e:2"};assert.throws(()=>decide(x),/does not match/);});
+test("changed session rejected",()=>{const x=presented();x.s={...x.s,sessionRef:"session:2"};x.p={...x.p,sessionRef:"session:2"};assert.throws(()=>decide(x),/does not match/);});
+test("stale session rejected",()=>{const f=fixture(),s={...session(),freshnessState:"STALE"};assert.throws(()=>f.capture.present({session:s,principal:principal(),candidateSnapshot:snapshot()}),/current authenticated/);});
+test("stale principal rejected",()=>{const f=fixture(),p={...principal(),freshnessState:"STALE"};assert.throws(()=>f.capture.present({session:session(),principal:p,candidateSnapshot:snapshot()}),/current exact/);});
+test("wrong decision literal rejected",()=>{const x=presented();assert.throws(()=>x.f.capture.decide({session:x.s,principal:x.p,candidateSnapshot:x.x,presentationId:x.presentation.presentationId,decision:"APPROVE_TRUST_REGISTRATION"}),/unsupported/);});
+test("decision without presentation rejected",()=>{const f=fixture();assert.throws(()=>f.capture.decide({session:session(),principal:principal(),candidateSnapshot:snapshot(),presentationId:"missing",decision:C.DECISION}),/presentation unavailable/);});
+test("duplicate observation evidence rejected",()=>{const f=fixture(),x={...snapshot(),observationEvidenceRefs:["same","same"]};assert.throws(()=>f.capture.present({session:session(),principal:principal(),candidateSnapshot:x}),/exact candidate/);});
+test("missing governance collection fails closed",()=>{const store={readDb:()=>({}),writeDb:()=>{}};const l=D.createDurableExpectedGovernanceSourceStateDecisionLedger(store);assert.throws(()=>l.get("x"),/ledger not established/);});
+test("duplicate durable identity fails closed",()=>{const x=presented(),d=decide(x),entry=x.f.store.raw().gt63GovernanceEvidence[0],store=dbLedger([entry,entry]),l=D.createDurableExpectedGovernanceSourceStateDecisionLedger(store);assert.throws(()=>l.get(d.expectedStateDecisionEvidenceRef),/duplicate/);});
+test("conflicting durable identity rejected",()=>{const x=presented(),d=decide(x),entry=x.f.store.raw().gt63GovernanceEvidence[0],bad=JSON.parse(JSON.stringify(entry));bad.record.expectedTreeSha="f".repeat(40);const store=dbLedger([bad]),l=D.createDurableExpectedGovernanceSourceStateDecisionLedger(store);assert.throws(()=>l.commit(d.expectedStateDecisionEvidenceRef,d),/conflicting|invalid/);});
+test("decision creates no role eligibility gate continuation execution or effect authority",()=>{const x=presented(),d=decide(x);assert.equal(d.roleAssigned,false);assert.equal(d.principalEligible,false);assert.equal(d.humanGateSatisfied,false);assert.equal(d.continuationAuthorityCreated,false);assert.equal(d.executionAuthorityCreated,false);assert.equal(d.effectAuthorized,false);assert.equal(d.authority,"NONE");});
+
+console.log(JSON.stringify({testsPassed:passed,authorityInvariant:"PASS: NONE",decisionInvariant:"PASS: EXACT HUMAN DECISION ONLY",expectedStateInvariant:"PASS: EXACT REPO/REF/COMMIT/TREE/ROOT",durabilityInvariant:"PASS: SHARED GOVERNANCE EVIDENCE COLLECTION",scopeInvariant:"PASS: NO ROLE / ELIGIBILITY / GATE / CONTINUATION / EXECUTION / EFFECT AUTHORITY"},null,2));
