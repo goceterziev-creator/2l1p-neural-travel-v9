@@ -426,3 +426,74 @@ Preserve:
 EARLIEST NEXT PREREQUISITE: read-only/minimum-causal design for a bounded real decision-evidence persistence/continuation bridge that can preserve the already captured real-human approval without silently promoting the browser response into authoritative evidence, without automatic registration, and without authority widening.
 
 At checkpoint time the real Genesis Node process was intentionally left running because the authoritative captured decision ledger is process-local. Re-verify runtime liveness before relying on it later.
+
+
+---
+
+## Real production-composed trust runtime checkpoint — 2026-09-28
+
+Authoritative pre-experiment implementation main:
+
+`7aa6207e228b566b62995676a06777886aab1d0a`
+
+Dedicated evidence checkpoint:
+
+`docs/gt63-machine/GT63_REAL_PRODUCTION_COMPOSED_TRUST_RUNTIME_EXPERIMENT_1_CHECKPOINT_2026-09-28.md`
+
+Status:
+
+**PASS — REAL PRODUCTION-COMPOSED TRUST RUNTIME EXECUTION PROVEN IN ISOLATED STAGING**
+
+Observed bounded chain:
+
+`AYA normal authentication`
+→ `existing GT63 session binding`
+→ `real GitHub Device Flow`
+→ exact principal `gt63-machine:principal:github:239696056`
+→ trust-decision presentation
+→ explicit human `APPROVE_TRUST_REGISTRATION`
+→ durable exact decision evidence
+→ provenance acceptance
+→ trust-declaration authorization
+→ registration-evidence acceptance
+→ trust-registration resolution
+→ `TRUST_RUNTIME_CHAIN_RESOLVED`.
+
+Durable decision evidence:
+
+`gt63-evidence:trust-decision:20792926432b837655a9619ae4a56af8`
+
+Exact presentation:
+
+`gt63-trust-decision-presentation:67b1e090600c8044246602fed56332d2`
+
+Persistent staging proof:
+
+- pre-decision `gt63GovernanceEvidence = 0`
+- post-decision `gt63GovernanceEvidence = 1`
+- post-consume `gt63GovernanceEvidence = 1`
+- activities remained `10` across consume
+- no duplicate evidenceRef
+- authority remained `NONE`
+
+Experiment correction #1A accepted two already-observed normal AYA logins and prohibited a third login; no auth/A-class record was deleted, repaired, or rewritten.
+
+Preserve:
+
+- `REAL HUMAN TRUST DECISION → DURABLE EXACT DECISION EVIDENCE = PROVEN IN ISOLATED STAGING`
+- `DURABLE DECISION EVIDENCE ≠ DURABLE ENTIRE TRUST CHAIN`
+- GitHub identity/challenge state remains process-local.
+- Presentation ledger remains process-local.
+- Downstream provenance/authorization/registration stores remain process-local unless separately proven otherwise.
+- Production deployment/execution is NOT proven by this staging experiment.
+- No new architecture gap or implementation requirement is inferred automatically.
+- MACHINE AUTHORITY: NONE.
+- authorityEffect: NONE.
+
+### Next causal entry point
+
+Resume Genesis only through **READ-ONLY CAUSAL FRONTIER** inspection.
+
+Determine from authoritative current source/evidence exactly what `TRUST_REGISTRATION_RESOLVED` establishes for Genesis and identify the earliest still-unproven prerequisite.
+
+Do not create a new Genesis component merely because the trust-runtime experiment completed.
