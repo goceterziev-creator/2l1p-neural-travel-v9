@@ -211,8 +211,16 @@ function ensureDb() {
   }
   try {
     const current = readDbSnapshotFile(DB_FILE);
+    let establishmentRequired = false;
     if (!current.schemaVersion) {
       current.schemaVersion = GT63_DATABASE_SCHEMA_VERSION;
+      establishmentRequired = true;
+    }
+    if (!Object.prototype.hasOwnProperty.call(current, "gt63GovernanceEvidence")) {
+      current.gt63GovernanceEvidence = [];
+      establishmentRequired = true;
+    }
+    if (establishmentRequired) {
       fs.writeFileSync(DB_FILE, JSON.stringify(current, null, 2), "utf8");
     }
   } catch {
@@ -264,6 +272,10 @@ function normalizeDbSnapshot(db) {
   if (!Array.isArray(db.clients)) db.clients = [];
   if (!Array.isArray(db.offers)) db.offers = [];
   if (!Array.isArray(db.activities)) db.activities = [];
+  if (Object.prototype.hasOwnProperty.call(db, "gt63GovernanceEvidence")
+      && !Array.isArray(db.gt63GovernanceEvidence)) {
+    throw new Error("Invalid GT63 governance evidence ledger");
+  }
   if (!db.schemaVersion) db.schemaVersion = GT63_DATABASE_SCHEMA_VERSION;
   return db;
 }
