@@ -15,7 +15,7 @@ function fixture(o={}){
  const calls=[];
  const request=q=>{calls.push(q);assert.equal(q.method,"GET");assert.equal(q.headers["X-GitHub-Api-Version"],T.API_VERSION);
   if(q.path.endsWith("/git/ref/heads/main"))return {status:200,body:{ref:T.AUTHORITATIVE_REF,object:{type:"commit",sha:o.refSha||C}}};
-  if(q.path.includes("/git/commits/"))return {status:200,body:{sha:C,tree:{sha:TR}}};
+  if(q.path.includes("/git/commits/")){const sha=q.path.split("/").pop();return {status:200,body:{sha,tree:{sha:TR}}};}
   if(q.path.includes("/git/trees/"))return {status:200,body:{sha:TR,truncated:Boolean(o.truncated),tree:[
     {path:root.ROOT_PATH,mode:"100644",type:"blob",sha:RS},{path:root.REGISTERED_SOURCE_PATH,mode:"100644",type:"blob",sha:PS}]}};
   if(q.path.includes("/git/blobs/")){const sha=q.path.split("/").pop(),b=sha===RS?RB:PB;return {status:200,body:{sha,encoding:"base64",content:b.toString("base64")}};}
