@@ -227,7 +227,8 @@ function createEmptyDbSnapshot() {
     users: [],
     clients: [],
     offers: [],
-    activities: []
+    activities: [],
+    gt63GovernanceEvidence: []
   };
 }
 
