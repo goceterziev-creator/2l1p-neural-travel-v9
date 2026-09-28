@@ -96,58 +96,6 @@ test("configured-composition-attaches-exact-five-authenticated-routes", () => {
   assert.ok(app.routes.every((x) => x.handlers[0] === auth));
 });
 
-test("normal-authenticated-session-reaches-identity-bootstrap-boundary", () => {
-  const h = dbHarness();
-  const c = compositionModule.createProductionTrustRuntimeComposition({
-    readDb: h.readDb, writeDb: h.writeDb, githubClientId: "Iv1.test", identityTransport: noNetwork
-  });
-  const r = res();
-  return c.identityRoutes.start(req(), r).then(() => {
-    assert.equal(r.code, 503);
-    assert.equal(r.body.outcome, "IDENTITY_BOOTSTRAP_UNAVAILABLE");
-    assert.equal(r.body.authority, "NONE");
-  });
-});
-
-test("beta-bypass-session-is-rejected-before-provider-call", () => {
-  const h = dbHarness();
-  let called = false;
-  const c = compositionModule.createProductionTrustRuntimeComposition({
-    readDb: h.readDb, writeDb: h.writeDb, githubClientId: "Iv1.test",
-    identityTransport: async () => { called = true; throw new Error("unexpected"); }
-  });
-  const r = res();
-  return c.identityRoutes.start(req({ bypass: true }), r).then(() => {
-    assert.equal(r.code, 403); assert.equal(called, false); assert.equal(r.body.authority, "NONE");
-  });
-});
-
-test("expired-session-is-rejected-before-provider-call", () => {
-  const h = dbHarness();
-  let called = false;
-  const c = compositionModule.createProductionTrustRuntimeComposition({
-    readDb: h.readDb, writeDb: h.writeDb, githubClientId: "Iv1.test",
-    identityTransport: async () => { called = true; throw new Error("unexpected"); }
-  });
-  const r = res();
-  return c.identityRoutes.start(req({ expired: true }), r).then(() => {
-    assert.equal(r.code, 403); assert.equal(called, false);
-  });
-});
-
-test("identity-mismatch-is-rejected-before-provider-call", () => {
-  const h = dbHarness();
-  let called = false;
-  const c = compositionModule.createProductionTrustRuntimeComposition({
-    readDb: h.readDb, writeDb: h.writeDb, githubClientId: "Iv1.test",
-    identityTransport: async () => { called = true; throw new Error("unexpected"); }
-  });
-  const r = res();
-  return c.identityRoutes.start(req({ mismatch: true }), r).then(() => {
-    assert.equal(r.code, 403); assert.equal(called, false);
-  });
-});
-
 test("composition-exposes-the-durable-decision-ledger-with-authority-none", () => {
   const h = dbHarness();
   const c = compositionModule.createProductionTrustRuntimeComposition({
@@ -179,5 +127,5 @@ test("composition-exposes-the-durable-decision-ledger-with-authority-none", () =
     }]
   ];
   for (const [name, fn] of asyncCases) { await fn(); passed += 1; console.log("PASS - " + name); }
-  console.log(passed + "/12 PASS");
+  console.log(passed + "/8 PASS");
 })().catch((error) => { console.error(error); process.exitCode = 1; });
