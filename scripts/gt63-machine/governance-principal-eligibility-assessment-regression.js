@@ -1,0 +1,28 @@
+"use strict";
+const assert=require("node:assert/strict"),M=require("./governance-principal-eligibility-assessment");
+const scope={scopeType:"GATE",interactionId:"i1",fromInteractionRevision:1,throughInteractionRevision:1,gateId:"g1",gateRevision:1,authorityScopeDigest:"sha256:"+"a".repeat(64),continuationTargetRef:"c1"};
+const req=()=>({rulesetVersion:M.RULESET_VERSION,principalRef:"p1",principalRevision:"1",governanceAct:"GATE_AUTHORIZATION",contextScope:scope});
+const principal=()=>({principalRef:"p1",principalRevision:"1",principalEvidenceRef:"ep",lifecycleState:"CURRENT",freshnessState:"CURRENT",contradictionState:"NONE",authority:"NONE"});
+const requirement=()=>({requirementRef:"rq",requirementRevision:"1",governanceAct:"GATE_AUTHORIZATION",requiredRoleRef:"r",requiredRoleRevision:"1",contextScope:scope,roleRequirementEvidenceRef:"er",lifecycleState:"CURRENT",freshnessState:"CURRENT",contradictionState:"NONE",authority:"NONE"});
+const role=(state="MATCH")=>({roleResolutionType:"DIRECT_ASSIGNMENT",principalRef:"p1",principalRevision:"1",roleRef:"r",roleRevision:"1",contextScope:scope,roleEvidenceRefs:["ea"],resolutionState:state,lifecycleState:"CURRENT",freshnessState:"CURRENT",contradictionState:"NONE",authority:"NONE"});
+function sys(o={}){return M.createGovernancePrincipalEligibilityAssessment({authenticatedPrincipalPort:o.p||(()=>principal()),governanceRoleRequirementPort:o.q||(()=>requirement()),roleResolutionPort:o.r||(()=>role())})}
+let n=0;const t=(name,f)=>{f();n++;console.log("PASS - "+name)};
+t("eligible exact current match",()=>{const x=sys().assess(req());assert.equal(x.outcome,"ELIGIBLE");assert.equal(x.evidence.eligibilityState,"ELIGIBLE")});
+t("eligible creates no authority",()=>{const x=sys().assess(req());for(const k of ["humanAuthorizationCreated","humanGateSatisfied","continuationAuthorityCreated","executionAuthorityCreated","effectAuthorized"])assert.equal(x[k],false);assert.equal(x.authority,"NONE")});
+t("positive mismatch only becomes not eligible",()=>assert.equal(sys({r:()=>role("MISMATCH")}).assess(req()).outcome,"NOT_ELIGIBLE"));
+t("unknown role remains unknown",()=>assert.equal(sys({r:()=>role("UNKNOWN")}).assess(req()).outcome,"UNKNOWN"));
+t("missing principal remains unknown",()=>assert.equal(sys({p:()=>null}).assess(req()).outcome,"UNKNOWN"));
+t("stale principal remains unknown",()=>assert.equal(sys({p:()=>({...principal(),freshnessState:"STALE"})}).assess(req()).outcome,"UNKNOWN"));
+t("conflicting principal remains unknown",()=>assert.equal(sys({p:()=>({...principal(),contradictionState:"CONFLICT"})}).assess(req()).outcome,"UNKNOWN"));
+t("missing requirement remains unknown",()=>assert.equal(sys({q:()=>null}).assess(req()).outcome,"UNKNOWN"));
+t("wrong requirement scope remains unknown",()=>assert.equal(sys({q:()=>({...requirement(),contextScope:{...scope,gateId:"g2"}})}).assess(req()).outcome,"UNKNOWN"));
+t("missing role evidence remains unknown",()=>assert.equal(sys({r:()=>null}).assess(req()).outcome,"UNKNOWN"));
+t("stale role remains unknown",()=>assert.equal(sys({r:()=>({...role(),freshnessState:"STALE"})}).assess(req()).outcome,"UNKNOWN"));
+t("revoked role remains unknown",()=>assert.equal(sys({r:()=>({...role(),lifecycleState:"REVOKED"})}).assess(req()).outcome,"UNKNOWN"));
+t("conflicting role remains unknown",()=>assert.equal(sys({r:()=>({...role(),contradictionState:"CONFLICT"})}).assess(req()).outcome,"UNKNOWN"));
+t("wrong principal role binding remains unknown",()=>assert.equal(sys({r:()=>({...role(),principalRef:"p2"})}).assess(req()).outcome,"UNKNOWN"));
+t("wrong role remains unknown",()=>assert.equal(sys({r:()=>({...role(),roleRef:"other"})}).assess(req()).outcome,"UNKNOWN"));
+t("unsupported governance act invalid",()=>assert.equal(sys().assess({...req(),governanceAct:"INTENT_AUTHORSHIP"}).outcome,"INVALID"));
+t("malformed scope invalid",()=>assert.equal(sys().assess({...req(),contextScope:{}}).outcome,"INVALID"));
+t("deterministic evidence identity",()=>{const a=sys().assess(req()),b=sys().assess(req());assert.equal(a.evidence.eligibilityEvidenceRef,b.evidence.eligibilityEvidenceRef)});
+console.log(JSON.stringify({suite:"GT63 MACHINE — GOVERNANCE PRINCIPAL ELIGIBILITY ASSESSMENT V0",passed:n,cases:n,authorityInvariant:"PASS: NONE"}));
