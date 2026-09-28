@@ -1,0 +1,25 @@
+"use strict";
+const assert=require("node:assert/strict"),M=require("./governance-role-resolution");
+const scope={scopeType:"GATE",interactionId:"i1",fromInteractionRevision:2,throughInteractionRevision:8,gateId:"g1",gateRevision:1,authorityScopeDigest:"sha256:"+"a".repeat(64),continuationTargetRef:"c1"};
+const req=()=>({rulesetVersion:M.RULESET_VERSION,principalRef:"p1",principalRevision:"1",roleRef:"GATE_AUTHORIZER",roleRevision:"1",contextScope:scope});
+const assignment=()=>({type:"DIRECT_PRINCIPAL_ROLE_ASSIGNMENT_EVIDENCE_ACCEPTANCE",assignmentAcceptanceId:"a1",principalRef:"p1",principalRevision:"1",roleRef:"GATE_AUTHORIZER",roleRevision:"1",contextScope:scope,authority:"NONE"});
+const delegation=()=>({type:"DIRECT_DELEGATION_EVIDENCE_ACCEPTANCE",delegationAcceptanceId:"d1",granteeRef:"p1",granteeRevision:"1",roleRef:"GATE_AUTHORIZER",roleRevision:"1",delegatedScope:scope,chainDepth:1,redelegationPermitted:false,authority:"NONE"});
+const state=(k,id)=>({[k]:id,state:"CURRENT",lifecycleRevision:"1",contradictionState:"NONE",evidenceRef:"current:"+id});
+function sys(o={}){return M.createGovernanceRoleResolution({acceptedAssignmentPort:o.a||(()=>[assignment()]),acceptedDelegationPort:o.d||(()=>[]),assignmentCurrentStatePort:o.as||(()=>state("assignmentAcceptanceId","a1")),delegationCurrentStatePort:o.ds||(()=>state("delegationAcceptanceId","d1"))})}
+let n=0;const t=(s,f)=>{f();n++;console.log("PASS - "+s)};
+t("current direct assignment resolves match",()=>{const x=sys().resolve(req());assert.equal(x.outcome,"MATCH");assert.equal(x.resolution.resolutionState,"MATCH");assert.equal(x.resolution.roleResolutionType,"DIRECT_ASSIGNMENT")});
+t("current direct delegation resolves match",()=>{const x=sys({a:()=>[],d:()=>[delegation()]}).resolve(req());assert.equal(x.outcome,"MATCH");assert.equal(x.resolution.roleResolutionType,"DELEGATION")});
+t("absence remains unknown not mismatch",()=>{const x=sys({a:()=>[],d:()=>[]}).resolve(req());assert.equal(x.outcome,"UNKNOWN");assert.equal(JSON.stringify(x).includes("MISMATCH"),false)});
+t("unavailable evidence remains unknown",()=>assert.equal(sys({a:()=>{throw Error()}}).resolve(req()).outcome,"UNKNOWN"));
+t("stale assignment remains unknown",()=>assert.equal(sys({as:()=>({...state("assignmentAcceptanceId","a1"),state:"STALE"})}).resolve(req()).outcome,"UNKNOWN"));
+t("revoked assignment remains unknown",()=>assert.equal(sys({as:()=>({...state("assignmentAcceptanceId","a1"),state:"REVOKED"})}).resolve(req()).outcome,"UNKNOWN"));
+t("conflicting currentness remains unknown",()=>assert.equal(sys({as:()=>({...state("assignmentAcceptanceId","a1"),state:"CONFLICT",contradictionState:"CONFLICT"})}).resolve(req()).outcome,"UNKNOWN"));
+t("assignment plus delegation conflicts",()=>assert.equal(sys({d:()=>[delegation()]}).resolve(req()).outcome,"CONFLICT"));
+t("multiple assignments conflict",()=>assert.equal(sys({a:()=>[assignment(),{...assignment(),assignmentAcceptanceId:"a2"}]}).resolve(req()).outcome,"CONFLICT"));
+t("wrong principal evidence ignored to unknown",()=>assert.equal(sys({a:()=>[{...assignment(),principalRef:"p2"}]}).resolve(req()).outcome,"UNKNOWN"));
+t("wrong role evidence ignored to unknown",()=>assert.equal(sys({a:()=>[{...assignment(),roleRef:"OTHER"}]}).resolve(req()).outcome,"UNKNOWN"));
+t("wrong scope evidence ignored to unknown",()=>assert.equal(sys({a:()=>[{...assignment(),contextScope:{...scope,gateId:"g2"}}]}).resolve(req()).outcome,"UNKNOWN"));
+t("invalid request rejected",()=>assert.equal(sys().resolve({...req(),roleRef:""}).outcome,"INVALID"));
+t("resolution creates no eligibility or authority",()=>{const x=sys().resolve(req());assert.equal(x.authority,"NONE");for(const k of ["eligibilityCreated","humanAuthorizationCreated","humanGateSatisfied","continuationAuthorityCreated","executionAuthorityCreated","effectAuthorized"])assert.equal(x[k],false)});
+t("deterministic resolution identity",()=>assert.equal(sys().resolve(req()).resolution.roleResolutionRef,sys().resolve(req()).resolution.roleResolutionRef));
+console.log(JSON.stringify({suite:"GT63 MACHINE — GOVERNANCE ROLE RESOLUTION V0",passed:n,cases:n,authorityInvariant:"PASS: NONE",absenceInvariant:"PASS: ABSENCE != MISMATCH"}));
