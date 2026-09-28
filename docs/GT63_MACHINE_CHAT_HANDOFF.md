@@ -1,5 +1,46 @@
 # GT63 MACHINE — CHAT HANDOFF / CONTINUITY INDEX
 
+## 2026-09-28 — GitHub Git Evidence Transport V0 integrated checkpoint
+
+Authoritative technical checkpoint before this documentation-only handoff update:
+
+`a21dde4e1bdcf40cf00ec6ddae29e09264046ea9`
+
+Dedicated checkpoint:
+
+`docs/gt63-machine/GT63_GITHUB_GIT_EVIDENCE_TRANSPORT_V0_CHECKPOINT_2026-09-28.md`
+
+Checkpoint documentation commit:
+
+`b3d56d590d330afe9f650da73ea45ad2ba7bbbf2`
+
+Integrated evidence chain:
+
+`GitHub REST GET-only → Git Object Transport V0 → Git Object Evidence Adapter V0 → Frozen Root Verifier → Registered Source Verifier`
+
+Validated locally at the promoted transport HEAD:
+
+- Evidence Adapter V0: `14/14 PASS`
+- REST Transport V0: `12/12 PASS`
+- transport network invariant: GET ONLY
+- authority invariant: NONE
+
+Important non-claims:
+
+- production/runtime wiring NOT PERFORMED;
+- real GitHub network execution through the new transport NOT PROVEN;
+- production credential topology NOT ESTABLISHED;
+- human lifecycle-issuer policy acceptance NOT PERFORMED;
+- role assignment / eligibility / gate authorization NOT implied;
+- deployment NOT PERFORMED;
+- MACHINE AUTHORITY remains NONE.
+
+Preserve:
+
+> GITHUB REST OBSERVATION ≠ GOVERNANCE VERIFICATION ≠ GOVERNANCE AUTHORITY.
+
+
+
 **Status:** NON-CANONICAL CONTINUITY ARTIFACT  
 **Purpose:** Preserve the minimum important cross-chat state needed to continue GT63 MACHINE work without reconstructing the conversation from memory.  
 
