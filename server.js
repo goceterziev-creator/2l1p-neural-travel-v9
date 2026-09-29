@@ -46,6 +46,8 @@ const {
   createProductionTrustRuntimeComposition,
   attachProductionTrustRuntimeRoutes
 } = require("./scripts/gt63-machine/human-governance-trust-production-composition");
+const gt63AyaAuthEventSessionBinding = require("./scripts/gt63-machine/aya-auth-event-session-binding-v0");
+const gt63AyaPrincipalAuthEpoch = require("./scripts/gt63-machine/aya-principal-auth-epoch-v0");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -69,6 +71,7 @@ const providerRegistry = createProviderRegistry([
   createOpenAiProvider(providerConfig),
   createSerpApiImageProvider(providerConfig)
 ]);
+const gt63AyaAuthEventSessionBindingStore = gt63AyaAuthEventSessionBinding.createProcessLocalAuthEventSessionBindingStore();
 
 const DB_FILE = process.env.DB_FILE
   ? path.resolve(process.env.DB_FILE)
@@ -398,32 +401,51 @@ function getUserSessionVersion(user = {}) {
   return Number.isInteger(Number(user.sessionVersion)) ? Number(user.sessionVersion) : 1;
 }
 
+function getUserPrincipalAuthEpoch(user = {}) {
+  const result = gt63AyaPrincipalAuthEpoch.getPrincipalAuthEpoch(user);
+  return result.outcome === gt63AyaPrincipalAuthEpoch.OUTCOMES.ACCEPTED ? result.principalAuthEpoch : null;
+}
+
 function normalizeSessionIdentity(user = {}) {
   const role = getCurrentUserRole(user);
+  const principalAuthEpoch = getUserPrincipalAuthEpoch(user);
   return {
     userId: user.id,
     agencyId: user.agencyId || "AGY-AYA",
     role,
-    sessionVersion: getUserSessionVersion(user)
+    sessionVersion: getUserSessionVersion(user),
+    principalAuthEpoch
   };
 }
 
-function signSession(userOrId) {
+function createSessionMaterial(userOrId, issuedAtMs = Date.now()) {
   const identity = typeof userOrId === "object"
     ? normalizeSessionIdentity(userOrId)
     : { userId: userOrId };
-  const now = Date.now();
-  const payload = JSON.stringify({
+  const payload = {
     userId: identity.userId,
     agencyId: identity.agencyId,
     role: identity.role,
     sessionVersion: identity.sessionVersion,
-    iat: now,
-    exp: now + SESSION_MAX_AGE_SECONDS * 1000
+    principalAuthEpoch: identity.principalAuthEpoch,
+    iat: issuedAtMs,
+    exp: issuedAtMs + SESSION_MAX_AGE_SECONDS * 1000
+  };
+  return Object.freeze({
+    identity: Object.freeze({ ...identity }),
+    payload: Object.freeze(payload)
   });
-  const encoded = base64Url(payload);
+}
+
+function signSessionMaterial(sessionMaterial = {}) {
+  const payload = sessionMaterial.payload || sessionMaterial;
+  const encoded = base64Url(JSON.stringify(payload));
   const signature = crypto.createHmac("sha256", AUTH_SECRET).update(encoded).digest("base64url");
   return `${encoded}.${signature}`;
+}
+
+function signSession(userOrId) {
+  return signSessionMaterial(createSessionMaterial(userOrId));
 }
 
 function verifySession(token = "") {
@@ -455,6 +477,8 @@ function isSessionValidForUser(session = {}, user = {}) {
   if (session.agencyId && session.agencyId !== (user.agencyId || "AGY-AYA")) return false;
   if (session.role && session.role !== getCurrentUserRole(user)) return false;
   if (session.sessionVersion && Number(session.sessionVersion) !== getUserSessionVersion(user)) return false;
+  const principalAuthEpoch = getUserPrincipalAuthEpoch(user);
+  if (principalAuthEpoch && session.principalAuthEpoch && Number(session.principalAuthEpoch) !== principalAuthEpoch) return false;
   return true;
 }
 
@@ -486,7 +510,7 @@ function createUser({ name, email, password, role = "agent", agencyId = "AGY-AYA
     throw err;
   }
 
-  return {
+  const user = {
     id: `USR-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`,
     name: cleanName,
     email: cleanEmail,
@@ -498,6 +522,8 @@ function createUser({ name, email, password, role = "agent", agencyId = "AGY-AYA
     credits,
     createdAt: new Date().toISOString()
   };
+  gt63AyaPrincipalAuthEpoch.initializePrincipalAuthEpochForNewUser(user);
+  return user;
 }
 
 function normalizeInviteRole(role = "agent") {
@@ -1000,6 +1026,7 @@ function ensureDefaultUser() {
       role: "admin",
       agencyId: "AGY-AYA",
       sessionVersion: 1,
+      principalAuthEpoch: 1,
       plan: "PRO",
       credits: 999,
       createdAt: now
@@ -1007,11 +1034,27 @@ function ensureDefaultUser() {
     db.users.unshift(admin);
     changed = true;
   } else if (!admin.passwordHash) {
+    const epochIncrement = gt63AyaPrincipalAuthEpoch.incrementPrincipalAuthEpochForCredentialTransition(admin, {
+      transition: "bootstrap_admin_password_materialized"
+    });
+    if (epochIncrement.outcome !== gt63AyaPrincipalAuthEpoch.OUTCOMES.ACCEPTED) {
+      console.warn("Bootstrap admin password materialization skipped: principalAuthEpoch is uninitialized or invalid");
+      if (changed) writeDb(db);
+      return;
+    }
     admin.passwordHash = hashPassword(password);
     admin.role = admin.role || "admin";
     admin.updatedAt = now;
     changed = true;
   } else if (forceAdminPasswordReset) {
+    const epochIncrement = gt63AyaPrincipalAuthEpoch.incrementPrincipalAuthEpochForCredentialTransition(admin, {
+      transition: "bootstrap_admin_password_reset"
+    });
+    if (epochIncrement.outcome !== gt63AyaPrincipalAuthEpoch.OUTCOMES.ACCEPTED) {
+      console.warn("Bootstrap admin password reset skipped: principalAuthEpoch is uninitialized or invalid");
+      if (changed) writeDb(db);
+      return;
+    }
     admin.passwordHash = hashPassword(password);
     admin.passwordResetRequired = false;
     admin.sessionVersion = getUserSessionVersion(admin) + 1;
@@ -8494,7 +8537,8 @@ function buildAClassAuthenticationEvidence(user = {}, capture = {}) {
       applicationAccountSubject: {
         id: user.id,
         email: user.email || "",
-        agencyId: user.agencyId || "AGY-AYA"
+        agencyId: user.agencyId || "AGY-AYA",
+        principalAuthEpoch: getUserPrincipalAuthEpoch(user)
       },
       authenticationMethod: "PASSWORD",
       authenticationResult: "SUCCESS",
@@ -8599,8 +8643,9 @@ app.post("/api/auth/login", (req, res) => {
   }
 
   const authenticationCapture = createAClassAuthenticationCaptureContext();
+  let aClassEvidence;
   try {
-    persistAClassAuthenticationEvidence(db, user, authenticationCapture);
+    aClassEvidence = persistAClassAuthenticationEvidence(db, user, authenticationCapture);
   } catch (err) {
     console.error("A-class authentication evidence persistence failed:", err);
     return res.status(500).json({
@@ -8617,11 +8662,35 @@ app.post("/api/auth/login", (req, res) => {
   } catch (err) {
     console.warn("Login timestamp update skipped:", err.message);
   }
-  setSessionCookie(res, signSession(user));
+  const sessionMaterial = createSessionMaterial(user);
+  const authEventSessionBinding = gt63AyaAuthEventSessionBinding.createAuthEventSessionBinding({
+    aClassEvidence,
+    sessionMaterial
+  });
+  if (authEventSessionBinding.outcome !== gt63AyaAuthEventSessionBinding.OUTCOMES.ACCEPTED) {
+    console.error("A-class authentication event/session binding failed:", authEventSessionBinding);
+    return res.status(500).json({
+      error: "Authentication session binding failed",
+      authenticationResult: "SUCCESS",
+      sessionIssued: false,
+      authority: "NONE"
+    });
+  }
+  const bindingCommit = gt63AyaAuthEventSessionBindingStore.commit(authEventSessionBinding.binding);
+  if (bindingCommit.outcome !== gt63AyaAuthEventSessionBinding.OUTCOMES.ACCEPTED) {
+    console.error("A-class authentication event/session binding commit failed:", bindingCommit);
+    return res.status(500).json({
+      error: "Authentication session binding commit failed",
+      authenticationResult: "SUCCESS",
+      sessionIssued: false,
+      authority: "NONE"
+    });
+  }
+  setSessionCookie(res, signSessionMaterial(sessionMaterial));
   res.json({
     success: true,
     user: publicUser(user),
-    session: normalizeSessionIdentity(user),
+    session: sessionMaterial.identity,
     passwordResetRequired: Boolean(user.passwordResetRequired)
   });
 });
@@ -8713,7 +8782,17 @@ app.post("/api/admin/reset-password", requireCapability("users.manage"), async (
       );
       if (!target) throw routeError("User not found in current agency scope", 404);
 
-      target.passwordHash = hashPassword(temporaryPassword);
+      const nextPasswordHash = hashPassword(temporaryPassword);
+      const epochIncrement = gt63AyaPrincipalAuthEpoch.incrementPrincipalAuthEpochForCredentialTransition(target, {
+        transition: "admin_password_reset"
+      });
+      if (epochIncrement.outcome !== gt63AyaPrincipalAuthEpoch.OUTCOMES.ACCEPTED) {
+        throw routeError("Principal auth epoch is uninitialized for this account", 409, {
+          outcome: epochIncrement.outcome,
+          reason: epochIncrement.reason
+        });
+      }
+      target.passwordHash = nextPasswordHash;
       target.passwordResetRequired = true;
       target.sessionVersion = getUserSessionVersion(target) + 1;
       target.updatedAt = new Date().toISOString();
@@ -8725,7 +8804,8 @@ app.post("/api/admin/reset-password", requireCapability("users.manage"), async (
         metadata: {
           email: target.email || "",
           resetBy: req.user.id,
-          sessionVersion: target.sessionVersion
+          sessionVersion: target.sessionVersion,
+          principalAuthEpoch: target.principalAuthEpoch
         }
       });
       response = {
@@ -12351,6 +12431,14 @@ module.exports = {
   createAClassAuthenticationCaptureContext,
   buildAClassAuthenticationEvidence,
   persistAClassAuthenticationEvidence,
+  getUserPrincipalAuthEpoch,
+  createSessionMaterial,
+  signSessionMaterial,
+  signSession,
+  verifySession,
+  gt63AyaAuthEventSessionBindingStore,
+  gt63AyaAuthEventSessionBinding,
+  gt63AyaPrincipalAuthEpoch,
   resolveSessionContext,
   buildBookingAndroidFlightProfileTrace,
   cleanupFlightDateTimeDisplay,
