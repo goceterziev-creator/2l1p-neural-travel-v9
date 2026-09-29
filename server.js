@@ -48,6 +48,7 @@ const {
 } = require("./scripts/gt63-machine/human-governance-trust-production-composition");
 const gt63AyaAuthEventSessionBinding = require("./scripts/gt63-machine/aya-auth-event-session-binding-v0");
 const gt63AyaPrincipalAuthEpoch = require("./scripts/gt63-machine/aya-principal-auth-epoch-v0");
+const gt63AyaLivePrincipalBoundary = require("./scripts/gt63-machine/aya-live-principal-boundary-v0");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -637,12 +638,23 @@ function requireAuthPage(req, res, next) {
   next();
 }
 
+function assessGt63LivePrincipalForRequest(req, { now = Date.now() } = {}) {
+  return gt63AyaLivePrincipalBoundary.assessLivePrincipalBoundary({
+    req,
+    currentDbUser: req.user,
+    store: gt63AyaAuthEventSessionBindingStore,
+    authEventSessionBinding: gt63AyaAuthEventSessionBinding,
+    now
+  });
+}
+
 function requireAuthApi(req, res, next) {
   const context = resolveSessionContext(req);
   if (!context) return res.status(401).json({ error: "Authentication required" });
   req.user = context.user;
   req.session = context.session;
   req.sessionIdentity = context.identity;
+  req.gt63PrincipalAssessment = assessGt63LivePrincipalForRequest(req);
   next();
 }
 
@@ -8493,6 +8505,7 @@ app.get("/api/auth/me", requireAuthApi, (req, res) => {
       valid: true,
       betaAuthBypass: Boolean(req.session?.betaAuthBypass)
     },
+    gt63PrincipalAssessment: req.gt63PrincipalAssessment || null,
     agency: agency ? {
       agencyId: agency.agencyId || agency.id,
       name: agency.name || "",
@@ -12439,6 +12452,8 @@ module.exports = {
   gt63AyaAuthEventSessionBindingStore,
   gt63AyaAuthEventSessionBinding,
   gt63AyaPrincipalAuthEpoch,
+  gt63AyaLivePrincipalBoundary,
+  assessGt63LivePrincipalForRequest,
   resolveSessionContext,
   buildBookingAndroidFlightProfileTrace,
   cleanupFlightDateTimeDisplay,
