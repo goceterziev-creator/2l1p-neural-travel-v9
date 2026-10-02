@@ -1,5 +1,38 @@
 # GT63 MACHINE — CHAT HANDOFF / CONTINUITY INDEX
 
+## 2026-10-02 — CURRENT AYA authenticated-principal admission design checkpoint
+
+Goce explicitly confirmed the exact normative-field-mapping proposal supplied on 2026-10-02 at 14:33 Europe/Sofia: **32/32 decisions ACCEPTED AS DESIGN ONLY**.
+Source baseline reported by Goshko: `bd5bae5f7ba9117f6a62684dca5d4a029a8ba933`.
+
+Complete checkpoint and six chronological source reports:
+`GT63_AYA_ADMISSION_V0_ACCEPTED_CHECKPOINT_2026-10-02.md`.
+Archive SHA-256: `8c3c14825893fac6775d83de4086ddf203401cecd99d9fcba4f363cef02638fe`.
+
+MACHINE repository archive path:
+`docs/gt63-machine/GT63_AYA_ADMISSION_V0_ACCEPTED_CHECKPOINT_2026-10-02.md`
+on preservation branch `docs/aya-admission-v0-accepted-2026-10-02`.
+Atanascho main archive path:
+`checkpoints/GT63_AYA_ADMISSION_V0_ACCEPTED_CHECKPOINT_2026-10-02.md`.
+
+Accepted design: one DB snapshot, read-only binding view, principal identity/revision from durable binding, distinct auth epoch, exact mapped digest and types, no normalization/coercion, fresh admission per call, ephemeral evidence, no cache/reuse/persistence, query-only contextScope, sufficient validated auth/session A-class provenance, evidence only on ACCEPTED.
+Explicit accepted limitation: freshness is enforced by conforming producer and trusted wiring; unchanged consumer cannot independently detect stale non-conforming output.
+
+Binding #1: PROVEN AND CLOSED per supplied witness; not freshly re-observed in this preservation task.
+Admission runtime evidence: NOT CREATED.
+Eligibility: NOT REACHED; NOT ASSESSED.
+Implementation / provider-free verification / runtime wiring / deployment: NOT AUTHORIZED.
+No new role, delegation, gate, governance package, effect authorization or offer mutation.
+MACHINE AUTHORITY: NONE. authorityEffect: NONE.
+
+Proposed future scope only: one admission module plus one provider-free regression, without server wiring or eligibility execution. Reviewer recommendation: exercise real existing validators with in-memory fixtures rather than rely only on a premanufactured ACCEPTED result.
+STOP: await separate implementation/verification authorization.
+
+Preservation authorization is documentation-only; it does not broaden any runtime or governance authority.
+This section is the current AYA continuation entry; older checkpoints below remain historical and retain their independent boundaries.
+
+
+
 ## 2026-09-28 — GitHub Git Evidence Transport V0 integrated checkpoint
 
 Authoritative technical checkpoint before this documentation-only handoff update:
