@@ -41,6 +41,10 @@ function plain(value) {
   return prototype === Object.prototype || prototype === null;
 }
 
+function requestContainer(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
 function nonEmpty(value) {
   return typeof value === "string" && value.length > 0;
 }
@@ -196,7 +200,7 @@ function deriveTrustedQuery({ readDb, req, observationRef, principalBinding = de
   if (!plain(snapshot) || !Array.isArray(snapshot.users) || !Array.isArray(snapshot[principalBinding.COLLECTION])) {
     return derivationFailure("UNKNOWN");
   }
-  if (!plain(req) || !plain(req.user)
+  if (!requestContainer(req) || !plain(req.user)
     || !requiredExactString(req.user, "id")
     || !requiredExactString(req.user, "agencyId")) {
     return derivationFailure("INVALID");

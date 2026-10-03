@@ -1,7 +1,8 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const { Readable } = require("node:stream");
+const { IncomingMessage } = require("node:http");
+const { Duplex, Readable } = require("node:stream");
 const fs = require("node:fs");
 const path = require("node:path");
 const observation = require("./aya-authenticated-principal-observation-v0");
@@ -248,6 +249,20 @@ function streamRequest(start, headers = {}) {
       start(this);
     }
   });
+  req.originalUrl = observation.ROUTE_PATH;
+  req.headers = headers;
+  return req;
+}
+
+class MemorySocket extends Duplex {
+  _read() {}
+  _write(_chunk, _encoding, callback) { callback(); }
+}
+
+function incomingRequest(headers = {}) {
+  const req = new IncomingMessage(new MemorySocket());
+  req.method = "POST";
+  req.url = observation.ROUTE_PATH;
   req.originalUrl = observation.ROUTE_PATH;
   req.headers = headers;
   return req;
@@ -946,6 +961,117 @@ test("request-stream failure with an unwritable destroyed response ends without 
     admissionConstruction: 0,
     portInvocations: 0
   });
+});
+
+test("real IncomingMessage bodyless handler composition reaches ADMITTED with real validators", async () => {
+  const fixture = createFixture();
+  const snapshotBefore = JSON.stringify(fixture.snapshot);
+  let authenticationDoubleCalls = 0;
+  let reads = 0;
+  let writeAttempts = 0;
+  const bindingProbe = Object.freeze({
+    ...durableBinding,
+    createDurablePrincipalBindingLedger(dependencies) {
+      return durableBinding.createDurablePrincipalBindingLedger({
+        ...dependencies,
+        writeDb(...args) {
+          writeAttempts += 1;
+          return dependencies.writeDb(...args);
+        }
+      });
+    }
+  });
+  const handlers = observation.createAyaAuthenticatedPrincipalObservationRouteHandlers({
+    getRuntimeEnv: () => "staging",
+    requireAuthApi(req, _res, next) {
+      authenticationDoubleCalls += 1;
+      Object.assign(req, clone(fixture.req));
+      next();
+    },
+    evaluatorDependencies: {
+      readDb() { reads += 1; return fixture.snapshot; },
+      authEventSessionBindingStore: fixture.store,
+      createObservationRef: () => OBSERVATION_REF,
+      observeNow: () => OBSERVED_AT,
+      admissionNow: () => NOW,
+      authEventSessionBinding: authBinding,
+      livePrincipalBoundary: liveBoundary,
+      principalBinding: bindingProbe
+    }
+  });
+  const req = incomingRequest({ "content-length": "0" });
+  const pending = runHandlers(handlers, req);
+  queueMicrotask(() => req.push(null));
+  const res = await pending;
+
+  assert.equal(req.constructor, IncomingMessage);
+  assert.notEqual(Object.getPrototypeOf(req), Object.prototype);
+  assert.equal(req.readableEnded, true);
+  assert.equal(authenticationDoubleCalls, 1);
+  assert.equal(reads, 2);
+  assert.equal(writeAttempts, 0);
+  assert.equal(JSON.stringify(fixture.snapshot), snapshotBefore);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.headers["cache-control"], "no-store");
+  assert.equal(res.body.observationState, "ADMITTED");
+  assert.equal(res.body.portInvocationCount, 1);
+  assert.deepEqual(res.body.provenance, {
+    principalBindingEvidenceRef: "gt63-principal-binding-evidence:aya-account:73ccf85e7f4c1bd6e86ceea024dc338f62b66b3e64a85898d0a8cab915d423f1",
+    authEventSessionBindingRef: "gt63-aya-auth-event-session-binding:6063ca573da9f962ab16de6026d9bef6b8a820357ecd3485316767f1609549a5",
+    authenticationEventIdentity: "gt63-auth-event:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    aClassEvidenceIdentity: "gt63-evidence:a-class:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    aClassEvidenceRevision: "1",
+    sessionRef: "gt63-aya-session:21e86f9e8eac0f43f239344d26ef79da00f94e1b15dd9aa7c599c0bda4ed4d23",
+    sessionVersion: "1",
+    observedPrincipalAuthEpoch: "1",
+    currentPrincipalAuthEpoch: "1"
+  });
+});
+
+test("request container compatibility rejects invalid containers and preserves nested context validation", () => {
+  for (const invalidRequest of [null, "request", 17, [], true]) {
+    const fixture = createFixture();
+    const derived = observation.deriveTrustedQuery({
+      readDb: () => fixture.snapshot,
+      req: invalidRequest,
+      observationRef: OBSERVATION_REF,
+      principalBinding: durableBinding
+    });
+    assert.equal(derived.ok, false);
+    assert.equal(derived.classification, "INVALID");
+    const admission = admissionModule.createAyaAuthenticatedPrincipalAdmission({
+      readDb: () => fixture.snapshot,
+      req: invalidRequest,
+      authEventSessionBindingStore: fixture.store,
+      now: () => NOW,
+      authEventSessionBinding: authBinding,
+      livePrincipalBoundary: liveBoundary,
+      principalBinding: durableBinding
+    });
+    assert.equal(admission.assess(query()).outcome, admissionModule.OUTCOMES.UNKNOWN);
+    assert.equal(admission.authenticatedPrincipalPort(query()), null);
+  }
+
+  for (const mutate of [
+    (req) => { req.user = []; },
+    (req) => { req.session = []; },
+    (req) => { req.sessionIdentity = null; }
+  ]) {
+    const fixture = createFixture();
+    const req = incomingRequest();
+    Object.assign(req, clone(fixture.req));
+    mutate(req);
+    const admission = admissionModule.createAyaAuthenticatedPrincipalAdmission({
+      readDb: () => fixture.snapshot,
+      req,
+      authEventSessionBindingStore: fixture.store,
+      now: () => NOW,
+      authEventSessionBinding: authBinding,
+      livePrincipalBoundary: liveBoundary,
+      principalBinding: durableBinding
+    });
+    assert.equal(admission.authenticatedPrincipalPort(query()), null);
+  }
 });
 
 test("provider-free route success uses authenticated request context and real validators", async () => {

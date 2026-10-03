@@ -55,6 +55,10 @@ function plain(value) {
   return prototype === Object.prototype || prototype === null;
 }
 
+function requestContainer(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
 function nonEmpty(value) {
   return typeof value === "string" && value.length > 0;
 }
@@ -290,7 +294,7 @@ function createAyaAuthenticatedPrincipalAdmission({
     }
 
     const snapshotView = makeReadOnlyView(snapshot);
-    if (!plain(req) || !plain(req.user)) {
+    if (!requestContainer(req) || !plain(req.user)) {
       return diagnostic(OUTCOMES.UNKNOWN, "authenticated request user unavailable");
     }
     if (typeof req.user.id !== "string" || hasUnpairedSurrogate(req.user.id)) {
