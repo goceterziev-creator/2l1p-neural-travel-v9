@@ -1,3 +1,21 @@
+## 2026-10-03 — CURRENT AYA observation V0 accepted design checkpoint
+
+Goce explicitly accepted the exact final consolidated proposal supplied 2026-10-03 10:00 Europe/Sofia, at 10:02:48 Europe/Sofia. Human decisions: 45/45 ACCEPTED AS DESIGN ONLY.
+Full checkpoint: GT63_AYA_OBSERVATION_V0_ACCEPTED_CHECKPOINT_2026-10-03.md.
+SHA-256: 5ac5fd1b34c5a1c8ab5262d1e1ef744a20b362dcb7cd58169092c525f48413fa.
+Atanascho: checkpoints/GT63_AYA_OBSERVATION_V0_ACCEPTED_CHECKPOINT_2026-10-03.md.
+MACHINE: docs/gt63-machine/GT63_AYA_OBSERVATION_V0_ACCEPTED_CHECKPOINT_2026-10-03.md on docs/aya-observation-v0-accepted-2026-10-03 (not main).
+
+Accepted: trusted query owner, exact staging-only early POST, forbidden inputs, separate authentication/derivation/admission reads, precise null/error accounting, unchanged GATE plus observation scope, synchronous lifetime including exceptional exit, historical witness, exact schema/provenance/nonClaims, no-store, no cache/retry/persistence, bounded single future request.
+Implementation / provider-free verification / runtime wiring / live invocation / login / promotion / deployment: NOT AUTHORIZED.
+Binding #1: PROVEN / CLOSED / UNCHANGED per supplied evidence. Eligibility: NOT REACHED / NOT ASSESSED. MACHINE AUTHORITY: NONE; authorityEffect: NONE.
+Source baseline cb614c0272895f7efc3d5aab0e5b0ca03cab9850 is executor-reported. Fresh authoritative remote drift at proposal review: UNKNOWN. Direct deployed filesystem hashes: NOT VERIFIED.
+Prior admission implementation promotion and staging deployment to cb614 were reported by Goshko; this save does not independently verify runtime or activate observation.
+This entry is current continuation state; older entries below remain historical. Handoff is continuity, not canonical evidence or authority.
+Next: separate bounded implementation/verification authorization. No runtime action implied.
+
+---
+
 # GT63 MACHINE — CHAT HANDOFF / CONTINUITY INDEX
 
 ## 2026-10-02 — CURRENT AYA authenticated-principal admission design checkpoint
