@@ -31,7 +31,7 @@ const NON_CLAIMS = Object.freeze({
   offerMutationPerformed: false
 });
 
-const SCOPE_FIELDS = Object.freeze([
+const GATE_SCOPE_FIELDS = Object.freeze([
   "scopeType",
   "interactionId",
   "fromInteractionRevision",
@@ -40,6 +40,13 @@ const SCOPE_FIELDS = Object.freeze([
   "gateRevision",
   "authorityScopeDigest",
   "continuationTargetRef"
+]);
+
+const OBSERVATION_SCOPE_FIELDS = Object.freeze([
+  "scopeType",
+  "observationType",
+  "observationRef",
+  "observationRevision"
 ]);
 
 function plain(value) {
@@ -160,8 +167,8 @@ function exactObjectFields(value, fields) {
     && Object.keys(value).every((key) => fields.includes(key));
 }
 
-function validScope(scope) {
-  return exactObjectFields(scope, SCOPE_FIELDS)
+function validGateScope(scope) {
+  return exactObjectFields(scope, GATE_SCOPE_FIELDS)
     && scope.scopeType === "GATE"
     && nonEmpty(scope.interactionId)
     && Number.isInteger(scope.fromInteractionRevision)
@@ -175,6 +182,19 @@ function validScope(scope) {
     && /^sha256:[0-9a-f]{64}$/.test(scope.authorityScopeDigest)
     && nonEmpty(scope.continuationTargetRef)
     && !Object.values(scope).some(hasUnpairedSurrogate);
+}
+
+function validObservationScope(scope) {
+  return exactObjectFields(scope, OBSERVATION_SCOPE_FIELDS)
+    && scope.scopeType === "AUTHENTICATED_PRINCIPAL_OBSERVATION"
+    && scope.observationType === "BOUNDED_LIVE_WITNESS"
+    && nonEmpty(scope.observationRef)
+    && !hasUnpairedSurrogate(scope.observationRef)
+    && scope.observationRevision === 1;
+}
+
+function validScope(scope) {
+  return validGateScope(scope) || validObservationScope(scope);
 }
 
 function validateQuery(query) {

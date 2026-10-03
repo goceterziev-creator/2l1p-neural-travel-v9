@@ -49,6 +49,9 @@ const {
 const gt63AyaAuthEventSessionBinding = require("./scripts/gt63-machine/aya-auth-event-session-binding-v0");
 const gt63AyaPrincipalAuthEpoch = require("./scripts/gt63-machine/aya-principal-auth-epoch-v0");
 const gt63AyaLivePrincipalBoundary = require("./scripts/gt63-machine/aya-live-principal-boundary-v0");
+const {
+  attachAyaAuthenticatedPrincipalObservationRoute
+} = require("./scripts/gt63-machine/aya-authenticated-principal-observation-v0");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -124,6 +127,18 @@ if (BETA_AUTH_BYPASS) {
 }
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+attachAyaAuthenticatedPrincipalObservationRoute(app, {
+  getRuntimeEnv: () => process.env.GT63_RUNTIME_ENV,
+  requireAuthApi,
+  evaluatorDependencies: {
+    readDb,
+    authEventSessionBindingStore: gt63AyaAuthEventSessionBindingStore,
+    admissionNow: () => Date.now(),
+    authEventSessionBinding: gt63AyaAuthEventSessionBinding,
+    livePrincipalBoundary: gt63AyaLivePrincipalBoundary
+  }
+});
 
 app.use(cors());
 app.use(express.json({ limit: "25mb" }));
