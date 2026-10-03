@@ -1,3 +1,27 @@
+## 2026-10-03 — CURRENT: live authenticated-principal admission observation #1
+
+Reported staging witness: ADMITTED, 2026-10-03 21:27:43.558 Europe/Sofia.
+Exact response and limits: GT63_AYA_LIVE_PRINCIPAL_OBSERVATION_1_CHECKPOINT_2026-10-03.md.
+Checkpoint SHA-256: 43a271ace36deabbbcb4fc4d895c1426bbca57f38a46fcd2bb50b26986759dc7.
+Atanascho path: checkpoints/GT63_AYA_LIVE_PRINCIPAL_OBSERVATION_1_CHECKPOINT_2026-10-03.md.
+MACHINE path: docs/gt63-machine/GT63_AYA_LIVE_PRINCIPAL_OBSERVATION_1_CHECKPOINT_2026-10-03.md, branch docs/aya-live-observation-1-2026-10-03 (not main).
+
+Reported authoritative promoted/deployed commit: 173633cd2a2e802d5d2a8e145c30c98091e7d5ae; tree c7f5072e651f2f46b0612a4644b624eb51c60a4d; deployment 3f62d0da-ff0e-4e24-abee-4d828dffda73 SUCCESS.
+156/156 provider-free and 15/15 minimal Express/HTTP PASS per executor. Source review independently identified and checked correction of IncomingMessage incompatibility.
+Final live pass: one normal login plus one observation POST, zero retries, same in-memory jar then cleared. An earlier successful login lost its cookie; a preparation failure sent zero requests. No further login or POST is authorized.
+Principal: gt63-principal:aya-account:AGY-AYA:USR-ADMIN.
+Revision: aya-principal-binding-revision:1.
+Evidence ref: gt63-evidence:aya-authenticated-principal:5d7a6cd6217ea029f4e94f73a67e9268d86f4f4c853aae195e2bab0988ef489a.
+Observation ref: 5d301638-8501-49b1-b14f-292487c07a6b.
+Historical witness only: ephemeral evidence lifetime ENDED; reusablePrincipalProof false.
+DB non-mutation NOT MEASURED; runtime read count NOT CLAIMED; direct deployed hashes NOT VERIFIED; startup DB byte changes UNKNOWN.
+Binding #1 PROVEN/CLOSED/UNCHANGED per supplied evidence. Eligibility NOT REACHED/NOT ASSESSED. All seven downstream nonClaims false. MACHINE AUTHORITY NONE; authorityEffect NONE.
+Live/provider evidence is supplied by Goshko, not independently re-observed by this preservation pass.
+Next proposed prerequisite: read-only eligibility causal-frontier discovery; no eligibility execution or implementation authority.
+Earlier sections remain historical continuity. Handoff is not canonical state or authority. This entry supersedes earlier AYA 'no witness yet' navigation only.
+
+---
+
 # GT63 MACHINE — CHAT HANDOFF / CONTINUITY INDEX
 
 ## 2026-10-02 — CURRENT AYA authenticated-principal admission design checkpoint
