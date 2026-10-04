@@ -99,6 +99,15 @@ function isAllowedGitArguments(args) {
   }
 
   if (
+    args.length === 3 &&
+    args[0] === "cat-file" &&
+    args[1] === "blob" &&
+    SHA_PATTERN.test(args[2])
+  ) {
+    return true;
+  }
+
+  if (
     args.length === 4 &&
     args[0] === "show" &&
     args[1] === "-s" &&
@@ -128,15 +137,6 @@ function isAllowedGitArguments(args) {
     args[5] === DOCS_ROOT
   ) {
     return true;
-  }
-
-  if (args.length === 2 && args[0] === "show") {
-    const separator = args[1].indexOf(":");
-    if (separator === 40) {
-      const commit = args[1].slice(0, separator);
-      const path = args[1].slice(separator + 1);
-      return SHA_PATTERN.test(commit) && isSafePath(path);
-    }
   }
 
   if (
@@ -255,13 +255,13 @@ function createGitReader(repo) {
       return Object.freeze({ mode: match[1], type: match[2], blob: match[3], path: match[4] });
     },
 
-    showPath(commit, path) {
-      if (!isSafePath(path)) {
-        throw new HardStopError("UNALLOWLISTED_DATA_SOURCE");
+    readBlob(blob) {
+      if (!SHA_PATTERN.test(blob)) {
+        throw new HardStopError("CHECKPOINT_CONTENT_UNAVAILABLE");
       }
-      const result = invoke(["show", `${commit}:${path}`]);
+      const result = invoke(["cat-file", "blob", blob]);
       if (!result.ok) {
-        throw new HardStopError("CHECKPOINT_BLOB_MISMATCH");
+        throw new HardStopError("CHECKPOINT_CONTENT_UNAVAILABLE");
       }
       return result.stdout;
     },
@@ -363,7 +363,12 @@ function readCheckpoint(git, commit, descriptor) {
   if (entry.blob !== descriptor.blob) {
     throw new HardStopError("CHECKPOINT_BLOB_MISMATCH");
   }
-  const content = git.showPath(commit, descriptor.path);
+  let content;
+  try {
+    content = git.readBlob(entry.blob);
+  } catch (_error) {
+    throw new HardStopError("CHECKPOINT_CONTENT_UNAVAILABLE");
+  }
   const section = extractSection(content, descriptor.section);
   return Object.freeze({ descriptor, present: true, entry, content, section });
 }

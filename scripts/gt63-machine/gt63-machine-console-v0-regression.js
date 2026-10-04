@@ -38,11 +38,15 @@ function runGit(repo, args) {
       args[0] === "cat-file" &&
       args[1] === "-e" &&
       /^[0-9a-f]{40}\^\{commit\}$/.test(args[2])) ||
-    (args.length === 2 &&
-      args[0] === "show" &&
-      args[1].startsWith(`${args[1].slice(0, 40)}:`) &&
-      SHA_PATTERN.test(args[1].slice(0, 40)) &&
-      args[1].slice(41) === CLI_PATH);
+    (args.length === 4 &&
+      args[0] === "ls-tree" &&
+      SHA_PATTERN.test(args[1]) &&
+      args[2] === "--" &&
+      args[3] === CLI_PATH) ||
+    (args.length === 3 &&
+      args[0] === "cat-file" &&
+      args[1] === "blob" &&
+      SHA_PATTERN.test(args[2]));
 
   if (!allowed) {
     fail("UNSAFE_GIT_OPERATION_REQUESTED");
@@ -62,7 +66,13 @@ function runGit(repo, args) {
 
 function loadConsoleModule(repo, commit) {
   runGit(repo, ["cat-file", "-e", `${commit}^{commit}`]);
-  const source = runGit(repo, ["show", `${commit}:${CLI_PATH}`]);
+  const treeText = runGit(repo, ["ls-tree", commit, "--", CLI_PATH]).trim();
+  const treeMatch = /^(\d+) blob ([0-9a-f]{40})\t(.+)$/.exec(treeText);
+  if (!treeMatch || treeMatch[3] !== CLI_PATH) {
+    fail("required CLI blob identity is unavailable");
+  }
+  const cliBlob = treeMatch[2];
+  const source = runGit(repo, ["cat-file", "blob", cliBlob]);
   const moduleRecord = { exports: {} };
   function boundedRequire(identifier) {
     if (identifier === "child_process") {
@@ -81,7 +91,11 @@ function loadConsoleModule(repo, commit) {
     { timeout: 1000 }
   );
   wrapper(boundedRequire, moduleRecord, moduleRecord.exports);
-  return Object.freeze({ source, api: moduleRecord.exports });
+  return Object.freeze({
+    source,
+    api: moduleRecord.exports,
+    loadEvidence: Object.freeze({ path: CLI_PATH, blob: cliBlob, reader: "cat-file blob" })
+  });
 }
 
 function makeFixture(api, overrides = {}) {
@@ -158,6 +172,7 @@ function makeFixture(api, overrides = {}) {
     [paths.plan.path, paths.plan.blob],
     [paths.owner.path, paths.owner.blob]
   ]);
+  const blobReads = [];
   if (overrides.missingOwner) {
     content.delete(paths.owner.path);
     blobs.delete(paths.owner.path);
@@ -205,10 +220,17 @@ function makeFixture(api, overrides = {}) {
           ? Object.freeze({ mode: "100644", type: "blob", blob, path })
           : null;
       },
-      showPath(value, path) {
-        assert(value === commit, "unexpected show commit");
+      readBlob(blob) {
+        assert(SHA_PATTERN.test(blob), `unexpected blob identity: ${blob}`);
+        blobReads.push(blob);
+        const entry = [...blobs.entries()].find(([, value]) => value === blob);
+        assert(entry, `unexpected content blob: ${blob}`);
+        const [path] = entry;
+        if (overrides.unavailablePath === path) {
+          throw new Error("fixture content unavailable");
+        }
         const result = content.get(path);
-        assert(typeof result === "string", `unexpected show path: ${path}`);
+        assert(typeof result === "string", `unexpected content blob: ${blob}`);
         return result;
       },
       logPath(value, path) {
@@ -221,11 +243,12 @@ function makeFixture(api, overrides = {}) {
           subject: `fixture checkpoint ${order}`
         });
       }
-    })
+    }),
+    blobReads
   });
 }
 
-function runRegression(source, api) {
+function runRegression(source, api, loadEvidence) {
   const results = [];
   function test(name, operation) {
     try {
@@ -245,6 +268,23 @@ function runRegression(source, api) {
   const fixture = makeFixture(api);
   const first = api.executeConsoleV0({ argv: fixture.argv, git: fixture.git });
   const second = api.executeConsoleV0({ argv: fixture.argv, git: fixture.git });
+
+  test("primary source loads through exact Git blob identity", () => {
+    assert(loadEvidence.path === CLI_PATH, "unexpected primary source path");
+    assert(SHA_PATTERN.test(loadEvidence.blob), "invalid primary source blob identity");
+    assert(loadEvidence.reader === "cat-file blob", "primary source was not read by blob");
+  });
+  test("checkpoint content reads use verified blob identities", () => {
+    assert(fixture.blobReads.length === 6, "unexpected checkpoint content read count");
+    assert(
+      fixture.blobReads.every((blob) => SHA_PATTERN.test(blob)),
+      "checkpoint content read did not use an exact blob identity"
+    );
+    assert(
+      fixture.blobReads.every((blob) => !blob.includes(":")),
+      "checkpoint content read used commit:path"
+    );
+  });
 
   test("bounded output exits zero", () => assert(first.exitCode === 0, "expected exit code 0"));
   test("output is deterministic", () => assert(first.output === second.output, "output drift"));
@@ -319,6 +359,17 @@ function runRegression(source, api) {
     assert(result.output.includes("reason: CHECKPOINT_BLOB_MISMATCH"), "wrong blob reason");
   });
 
+  test("checkpoint content unavailable hard stops distinctly", () => {
+    const unavailable = makeFixture(api, { unavailablePath: api.CHECKPOINTS.owner.path });
+    const result = api.executeConsoleV0({ argv: unavailable.argv, git: unavailable.git });
+    assert(result.exitCode === 2, "content failure did not hard stop");
+    assert(
+      result.output.includes("reason: CHECKPOINT_CONTENT_UNAVAILABLE"),
+      "wrong content failure reason"
+    );
+    assert(!result.output.includes("reason: CHECKPOINT_BLOB_MISMATCH"), "content failure misclassified");
+  });
+
   test("duplicate authoritative label hard stops", () => {
     const duplicateDesign = [
       "# Design",
@@ -390,6 +441,11 @@ function runRegression(source, api) {
       assert(!source.includes(`["${operation}"`), `forbidden Git operation found: ${operation}`);
     }
   });
+  test("primary source does not read checkpoint content by commit path", () => {
+    assert(!source.includes("showPath("), "legacy commit:path content reader found");
+    assert(!source.includes("`${commit}:${path}`"), "commit:path content read found");
+    assert(source.includes('["cat-file", "blob", blob]'), "blob content reader missing");
+  });
   test("hard stop preserves non-authority", () => {
     const result = api.executeConsoleV0({ argv: [], git: fixture.git });
     assert(result.output.includes("MACHINE AUTHORITY: NONE"), "missing MACHINE boundary");
@@ -402,7 +458,7 @@ function runRegression(source, api) {
 function main() {
   const parsed = parseArguments(process.argv.slice(2));
   const loaded = loadConsoleModule(parsed.repo, parsed.commit);
-  const results = runRegression(loaded.source, loaded.api);
+  const results = runRegression(loaded.source, loaded.api, loaded.loadEvidence);
   const failures = results.filter((result) => !result.passed);
   for (const result of results) {
     process.stdout.write(`${result.passed ? "PASS" : "FAIL"} ${result.name}`);
