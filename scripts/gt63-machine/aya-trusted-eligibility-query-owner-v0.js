@@ -1,7 +1,7 @@
 "use strict";
 
 const { createHash } = require("node:crypto");
-const { TextDecoder, types: { isProxy } } = require("node:util");
+const { TextDecoder, types: { isPromise, isProxy } } = require("node:util");
 
 const RESULT_TYPE = "GT63_AYA_TRUSTED_ELIGIBILITY_QUERY_OWNER_RESULT";
 const RESULT_SCHEMA_VERSION = "1.0";
@@ -812,6 +812,9 @@ function copyEligibilityResult(value, query) {
   const seen = new Set();
 
   function copy(node, keyContext = null) {
+    if (keyContext === "nonClaims" && !isPlainRecord(node)) {
+      throw new ContractError("PRINCIPAL_ELIGIBILITY_PORT_RETURNED_MALFORMED");
+    }
     if (node === null || typeof node === "boolean") {
       return node;
     }
@@ -898,6 +901,20 @@ function copyEligibilityResult(value, query) {
   return deepFreeze(copy(value));
 }
 
+function isEligibilityThenableWithoutUserCode(value) {
+  if (value === null || (typeof value !== "object" && typeof value !== "function")) {
+    return false;
+  }
+  if (isProxy(value)) {
+    return false;
+  }
+  if (isPromise(value)) {
+    return true;
+  }
+  const descriptor = Object.getOwnPropertyDescriptor(value, "then");
+  return Boolean(descriptor && "value" in descriptor && typeof descriptor.value === "function");
+}
+
 function isThenable(value) {
   if (value === null || (typeof value !== "object" && typeof value !== "function")) {
     return false;
@@ -981,7 +998,7 @@ function evaluateRawCandidateSet(raw, principalEligibilityPort) {
         eligibilityResult: null
       });
     }
-    if (isThenable(eligibilityResult)) {
+    if (isEligibilityThenableWithoutUserCode(eligibilityResult)) {
       portState = "RETURNED_ASYNC";
       return evaluationError("PRINCIPAL_ELIGIBILITY_PORT_RETURNED_ASYNC", {
         queryState,

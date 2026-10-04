@@ -316,6 +316,66 @@ test("eligibility-result accessors are rejected without invoking the getter", ()
   assert.equal(getterCalls, 0);
 });
 
+test("eligibility-result then accessor is malformed and is never invoked", () => {
+  let getterCalls = 0;
+  const value = { authority: "NONE" };
+  Object.defineProperty(value, "then", {
+    enumerable: true,
+    get() { getterCalls += 1; return () => {}; }
+  });
+  const result = ownerFor({ port: () => value }).evaluate();
+  assert.equal(result.reason, "PRINCIPAL_ELIGIBILITY_PORT_RETURNED_MALFORMED");
+  assert.equal(result.portState, "RETURNED_MALFORMED");
+  assert.equal(getterCalls, 0);
+});
+
+test("eligibility-result Proxy is malformed without invoking its get trap", () => {
+  let getTrapCalls = 0;
+  const value = new Proxy({ authority: "NONE" }, {
+    get(target, key, receiver) {
+      getTrapCalls += 1;
+      return Reflect.get(target, key, receiver);
+    }
+  });
+  const result = ownerFor({ port: () => value }).evaluate();
+  assert.equal(result.reason, "PRINCIPAL_ELIGIBILITY_PORT_RETURNED_MALFORMED");
+  assert.equal(result.portState, "RETURNED_MALFORMED");
+  assert.equal(getTrapCalls, 0);
+});
+
+test("eligibility-result nonClaims must be a plain object", () => {
+  for (const nonClaims of [true, null, []]) {
+    const result = ownerFor({
+      port: () => ({ authority: "NONE", nonClaims })
+    }).evaluate();
+    assert.equal(result.reason, "PRINCIPAL_ELIGIBILITY_PORT_RETURNED_MALFORMED");
+    assert.equal(result.portState, "RETURNED_MALFORMED");
+  }
+});
+
+test("eligibility-result nonClaims accepts only false boolean values", () => {
+  const accepted = ownerFor({
+    port: () => ({
+      authority: "NONE",
+      nonClaims: {
+        roleCreated: false,
+        executionAuthorityCreated: false
+      }
+    })
+  }).evaluate();
+  assert.equal(accepted.outcome, "ELIGIBILITY_RESULT_RETURNED");
+  assert.equal(accepted.eligibilityResult.nonClaims.roleCreated, false);
+  assert.equal(accepted.eligibilityResult.nonClaims.executionAuthorityCreated, false);
+
+  for (const value of [true, 0, "false", null, {}, []]) {
+    const result = ownerFor({
+      port: () => ({ authority: "NONE", nonClaims: { claim: value } })
+    }).evaluate();
+    assert.equal(result.reason, "PRINCIPAL_ELIGIBILITY_PORT_RETURNED_MALFORMED");
+    assert.equal(result.portState, "RETURNED_MALFORMED");
+  }
+});
+
 test("returned query identity or nested query identity is never exposed as evidence", () => {
   let directResult;
   directResult = ownerFor({ port: (query) => query }).evaluate();
