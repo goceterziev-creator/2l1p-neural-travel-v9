@@ -1,0 +1,36 @@
+{
+  "type": "GT63_AYA_DURABLE_INTERACTION_EVIDENCE_OBJECT",
+  "schemaVersion": 1,
+  "decision": "ACCEPTED",
+  "interactionEvidenceRef": "gt63-interaction-evidence:aya:AGY-AYA:INT-0001:1",
+  "interactionRef": "gt63-interaction:aya:AGY-AYA:INT-0001",
+  "interactionRevision": 1,
+  "identityAtoms": {
+    "agencyId": "AGY-AYA",
+    "interactionId": "INT-0001"
+  },
+  "authoritativeProducer": "EXPLICIT_HUMAN_GOVERNANCE_ISSUANCE_ONLY",
+  "checkpointProvenance": {
+    "repository": "goceterziev-creator/2l1p-neural-travel-v9",
+    "path": "docs/gt63-machine/GT63_AYA_INTERACTION_IDENTITY_ACCEPTED_CHECKPOINT_2026-10-05.md",
+    "commit": "ed9c3ebd3a4493afeac41bff784a2b849e21eeb9",
+    "blob": "492e1dfa7d145a06a773a54475eaf8601f2e6a49",
+    "sha256": "bee83bd597d32e96586446b1b7a34ed11f025042fca29a372dadee28954347f5"
+  },
+  "nonClaims": {
+    "currentnessAssessed": false,
+    "accountInteractionAssociationAccepted": false,
+    "principalInteractionAssociationAccepted": false,
+    "eligibilityExecutionAuthorized": false,
+    "gateActionAuthorized": false,
+    "workflowExecutionAuthorized": false,
+    "continuationAuthorityCreated": false,
+    "effectAuthorizationCreated": false,
+    "offerMutationAuthorized": false,
+    "implementationAuthorized": false,
+    "runtimeIntegrationClaimed": false,
+    "machineAuthorityCreated": false
+  },
+  "authority": "NONE",
+  "authorityEffect": "NONE"
+}
