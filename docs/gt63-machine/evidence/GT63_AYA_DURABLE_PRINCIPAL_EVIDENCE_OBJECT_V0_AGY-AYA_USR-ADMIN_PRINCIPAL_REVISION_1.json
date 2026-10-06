@@ -1,0 +1,36 @@
+{
+  "type": "GT63_AYA_DURABLE_PRINCIPAL_EVIDENCE_OBJECT",
+  "schemaVersion": 1,
+  "decision": "ACCEPTED",
+  "principalEvidenceRef": "gt63-principal-evidence:aya-account-principal-binding:AGY-AYA:USR-ADMIN:1",
+  "accountRef": "gt63-account:aya:AGY-AYA:USR-ADMIN",
+  "accountRevision": 1,
+  "principalRef": "gt63-principal:aya-account:AGY-AYA:USR-ADMIN",
+  "principalRevision": 1,
+  "identityAtoms": {
+    "agencyId": "AGY-AYA",
+    "applicationUserId": "USR-ADMIN"
+  },
+  "authoritativeProducer": "EXPLICIT_HUMAN_GOVERNANCE_DECISION",
+  "checkpointProvenance": {
+    "repository": "goceterziev-creator/2l1p-neural-travel-v9",
+    "path": "docs/gt63-machine/GT63_AYA_ACCOUNT_TO_PRINCIPAL_BINDING_RULE_ACCEPTED_CHECKPOINT_2026-10-05.md",
+    "commit": "854833760a605ea98df6260032b43ab0ba2796ac",
+    "blob": "7083b0a4a769a9f24181a556b7dc4ad96337232a",
+    "sha256": "768717866aa7165d31f8624f580c16e88fd6e592f24b601594230fe6dc43209d"
+  },
+  "nonClaims": {
+    "protectedSnapshotProven": false,
+    "currentnessAssessed": false,
+    "durableInteractionEvidenceMaterialized": false,
+    "accountInteractionAssociationAccepted": false,
+    "principalInteractionAssociationAccepted": false,
+    "eligibilityExecutionAuthorized": false,
+    "gateActionAuthorized": false,
+    "offerMutationAuthorized": false,
+    "implementationAuthorized": false,
+    "machineAuthorityCreated": false
+  },
+  "authority": "NONE",
+  "authorityEffect": "NONE"
+}
