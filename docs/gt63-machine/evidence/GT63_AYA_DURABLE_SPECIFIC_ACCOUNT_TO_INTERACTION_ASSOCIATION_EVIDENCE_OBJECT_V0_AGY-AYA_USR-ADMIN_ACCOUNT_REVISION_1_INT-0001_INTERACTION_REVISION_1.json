@@ -1,0 +1,73 @@
+{
+  "type": "GT63_AYA_SPECIFIC_ACCOUNT_INTERACTION_ASSOCIATION_EVIDENCE_OBJECT",
+  "schemaVersion": 1,
+  "representedHumanGovernanceDecisionState": "ALREADY_ACCEPTED_BY_EXPLICIT_HUMAN_GOVERNANCE",
+  "associationEvidenceRef": "gt63-association-evidence:aya:account-interaction:AGY-AYA:USR-ADMIN:1:INT-0001:1",
+  "accountRef": "gt63-account:aya:AGY-AYA:USR-ADMIN",
+  "accountRevision": 1,
+  "interactionRef": "gt63-interaction:aya:AGY-AYA:INT-0001",
+  "interactionRevision": 1,
+  "identityAtoms": {
+    "agencyId": "AGY-AYA",
+    "applicationUserId": "USR-ADMIN",
+    "interactionId": "INT-0001"
+  },
+  "authoritativeIssuer": "EXPLICIT HUMAN GOVERNANCE ISSUANCE ONLY",
+  "checkpointProvenance": {
+    "repository": "goceterziev-creator/2l1p-neural-travel-v9",
+    "pinnedCommit": "c97b6993a57bda67015e0e17cc3ff33793966734",
+    "specificDecisionCheckpoint": {
+      "path": "docs/gt63-machine/GT63_AYA_SPECIFIC_ACCOUNT_TO_INTERACTION_V0_ASSOCIATION_DECISION_ACCEPTED_CHECKPOINT_2026-10-07.md",
+      "blob": "075999baa30e2a947e27e67638cf1562870cb8f5",
+      "sha256": "0b225dc49c5dc852dd56855c956ea7ef970e851227dc1d9b4352210a22fee8a9"
+    },
+    "issuerModelCheckpoint": {
+      "path": "docs/gt63-machine/GT63_AYA_ACCOUNT_TO_INTERACTION_ASSOCIATION_V0_ISSUER_MODEL_ACCEPTED_CHECKPOINT_2026-10-06.md",
+      "blob": "de35dfc89ec8fd4ac6100268eb24e6c892ea0497",
+      "sha256": "aa7743aed352d1de107ec2827ec381d56a34dec278022eda8c0d2858498c5911"
+    },
+    "accountIdentityCheckpoint": {
+      "path": "docs/gt63-machine/GT63_AYA_CANONICAL_ACCOUNT_IDENTITY_ACCEPTED_CHECKPOINT_2026-10-04.md",
+      "blob": "c3d1ca626c58a4149b05f5a0157d25f436445e81",
+      "sha256": "f1f902fa205b08fa2906568a02bfaf64fae3efc742c6aadfcae9b60af96bbbc5"
+    },
+    "principalEvidenceObjectContainingAccountTuple": {
+      "path": "docs/gt63-machine/evidence/GT63_AYA_DURABLE_PRINCIPAL_EVIDENCE_OBJECT_V0_AGY-AYA_USR-ADMIN_PRINCIPAL_REVISION_1.json",
+      "blob": "9740b945cab08db1600f4e8154f36c5e713f0e92",
+      "sha256": "fc6f989af4994f8cb9f1fd7be74f08345cdc3db3f60aaff8153b81b1f16be33e"
+    },
+    "interactionIdentityCheckpoint": {
+      "path": "docs/gt63-machine/GT63_AYA_INTERACTION_IDENTITY_ACCEPTED_CHECKPOINT_2026-10-05.md",
+      "blob": "492e1dfa7d145a06a773a54475eaf8601f2e6a49",
+      "sha256": "bee83bd597d32e96586446b1b7a34ed11f025042fca29a372dadee28954347f5"
+    },
+    "interactionEvidenceObject": {
+      "path": "docs/gt63-machine/evidence/GT63_AYA_DURABLE_INTERACTION_EVIDENCE_OBJECT_V0_AGY-AYA_INT-0001_INTERACTION_REVISION_1.json",
+      "blob": "40be2180fa42f28582cfcfe6e11d6b766c171bcf",
+      "sha256": "c30332eff9b015daffe3ed92a5e0a14c67837d8bedb98aa461d5e3ae4795ed1d"
+    }
+  },
+  "nonClaims": {
+    "generalAssociationContractAccepted": false,
+    "associationRefAccepted": false,
+    "associationRevisionAccepted": false,
+    "lifecycleSemanticsAccepted": false,
+    "currentnessAssessed": false,
+    "supersessionSemanticsAccepted": false,
+    "contradictionSemanticsAccepted": false,
+    "materializationAuthorityCreated": false,
+    "authoritativeProviderAccepted": false,
+    "storageAccepted": false,
+    "runtimeIntegrationClaimed": false,
+    "eligibilityExecutionAuthorized": false,
+    "gateActionAuthorized": false,
+    "workflowExecutionAuthorized": false,
+    "continuationAuthorityCreated": false,
+    "effectAuthorityCreated": false,
+    "offerMutationAuthorized": false,
+    "implementationAuthorized": false,
+    "machineAuthorityCreated": false
+  },
+  "authority": "NONE",
+  "authorityEffect": "NONE"
+}
