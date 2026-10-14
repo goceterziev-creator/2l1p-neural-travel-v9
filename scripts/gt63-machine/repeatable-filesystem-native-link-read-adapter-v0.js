@@ -4,7 +4,7 @@
 const {createNativeFilesystemPreparationLinkV0}=require("./repeatable-filesystem-native-preparation-link-v0");
 const isFn=x=>typeof x==="function";
 function createNativeFilesystemLinkReadAdapterV0({claimLedger,filesystemPreparationLedger,linkEvidenceStore}={}){
- if(!claimLedger||!isFn(claimLedger.findClaimById)||!isFn(claimLedger.findClaimsByAttempt))
+ if(!claimLedger||!isFn(claimLedger.findClaimById)||!isFn(claimLedger.findClaimsByAttempt)||!isFn(claimLedger.findClaimEvidenceRef))
   throw new TypeError("native claim ledger read interface required");
  if(!filesystemPreparationLedger||!isFn(filesystemPreparationLedger.findByExecutionPreparationId))
   throw new TypeError("filesystem preparation read interface required");
@@ -17,9 +17,8 @@ function createNativeFilesystemLinkReadAdapterV0({claimLedger,filesystemPreparat
   if(!Array.isArray(history)||history.length===0)throw Error("claim history unavailable");
   const active=history.filter(x=>x.ownershipState==="ACTIVE");
   const competing=active.length!==1||active[0].attemptClaimId!==attemptClaimId;
-  const ordinal=history.reduce((m,x)=>Math.max(m,Number.isInteger(x.claimOrdinal)?x.claimOrdinal:0),0);
   const uncertain=history.some(x=>!Number.isInteger(x.claimOrdinal)||!Number.isInteger(x.claimRevision));
-  const evidence=claimLedger.findClaimEvidenceRef?.(attemptClaimId);
+  const evidence=claimLedger.findClaimEvidenceRef(attemptClaimId);
   if(typeof evidence!=="string"||!evidence)throw Error("claim evidence ref unavailable");
   return {evidenceRef:evidence,currentClaimId:competing?null:attemptClaimId,competingActiveClaim:competing,uncertainClaimHistory:uncertain,record};
  };
