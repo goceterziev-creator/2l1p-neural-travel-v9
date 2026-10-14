@@ -1,0 +1,25 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {createNativeFilesystemLifecycleCompatibilityV0,OUTCOMES}=require("./repeatable-filesystem-native-lifecycle-compatibility-v0");
+const req={executionAttemptId:"attempt",attemptClaimId:"claim",executionStartId:"start",executionPreparationId:"prep",authorizationId:"auth"};
+const c={type:"EXECUTION_ATTEMPT_CLAIM",status:"ATTEMPT_CLAIMED",attemptClaimId:"claim",executionAttemptId:"attempt",ownershipState:"ACTIVE",exclusiveOwnership:true,claimRevision:1,preparationEvidenceRef:"native-prep-evidence",authorityEvidenceRef:"native-authority",effectContractRef:"contract"};
+const cs={evidenceRef:"claim-evidence",claimHistoryRevision:1,currentClaimId:"claim",competingActiveClaim:false,uncertainClaimHistory:false,conflictingLifecycleEvidence:false,adapterRegistrationCurrent:true,ownerIdentityCurrent:true,record:c};
+const st={type:"EXECUTION_ATTEMPT_START",status:"EXECUTION_ATTEMPT_STARTED",executionStartId:"start",executionAttemptId:"attempt",attemptClaimId:"claim",claimEvidenceRef:"claim-evidence",claimRevision:1,executionActivityStarted:true,singleAuthoritativeStart:true,preparationEvidenceRef:"native-prep-evidence",authorityEvidenceRef:"native-authority",effectContractRef:"contract"};
+const p={executionPreparationId:"prep",authorizationId:"auth",effectPerformed:false,authorityEffect:"NONE"};
+const a={authorizationId:"auth",authorizationState:"AUTHORIZED",consumptionState:"UNCONSUMED",effectPerformed:false,authorityEffect:"NONE"};
+const make=(x=cs,y=st,z=p,w=a)=>createNativeFilesystemLifecycleCompatibilityV0({claimSnapshotPort:()=>x,startRecordPort:()=>y,preparationPort:()=>z,authorizationPort:()=>w});
+let n=0;function check(name,fn){fn();n++;}
+check("ports mandatory",()=>assert.throws(()=>createNativeFilesystemLifecycleCompatibilityV0(),TypeError));
+check("missing request denied",()=>assert.equal(make().assess({}).outcome,OUTCOMES.DENIED));
+check("duplicate IDs denied",()=>assert.equal(make().assess({...req,authorizationId:"claim"}).outcome,OUTCOMES.DENIED));
+check("competing claim denied",()=>assert.equal(make({...cs,competingActiveClaim:true}).assess(req).outcome,OUTCOMES.DENIED));
+check("uncertain history denied",()=>assert.equal(make({...cs,uncertainClaimHistory:true}).assess(req).outcome,OUTCOMES.DENIED));
+check("stale owner denied",()=>assert.equal(make({...cs,ownerIdentityCurrent:false}).assess(req).outcome,OUTCOMES.DENIED));
+check("claim mismatch denied",()=>assert.equal(make({...cs,record:{...c,attemptClaimId:"other"}}).assess(req).outcome,OUTCOMES.DENIED));
+check("start mismatch denied",()=>assert.equal(make(cs,{...st,claimEvidenceRef:"other"}).assess(req).outcome,OUTCOMES.DENIED));
+check("start activity must be true",()=>assert.equal(make(cs,{...st,executionActivityStarted:false}).assess(req).outcome,OUTCOMES.DENIED));
+check("consumed authorization denied",()=>assert.equal(make(cs,st,p,{...a,consumptionState:"CONSUMED"}).assess(req).outcome,OUTCOMES.DENIED));
+check("missing cross domain binding unknown",()=>assert.equal(make().assess(req).reason.startsWith("CROSS_DOMAIN_BINDING_NOT_PROVEN"),true));
+check("no effect authorized",()=>assert.equal(make().assess(req).executionAuthorized,false));
+check("unavailable port unknown",()=>assert.equal(createNativeFilesystemLifecycleCompatibilityV0({claimSnapshotPort:()=>{throw Error("offline")},startRecordPort:()=>st,preparationPort:()=>p,authorizationPort:()=>a}).assess(req).outcome,OUTCOMES.UNKNOWN));
+process.stdout.write(JSON.stringify({status:"PASS",cases:n,scope:"READ_ONLY_COMPATIBILITY_ONLY",effectPerformed:false})+"\n");
